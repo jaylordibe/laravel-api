@@ -1,0 +1,19 @@
+# Set workflow name
+name: Deploy To Production
+
+# Set events that triggers the workflow
+on:
+  push:
+    branches:
+      - main
+
+# Set jobs to be executed in the workflow
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup checkout
+        uses: actions/checkout@v2
+      - name: Deploy to production
+        run: |
+          echo 'Add production deployment script here...'

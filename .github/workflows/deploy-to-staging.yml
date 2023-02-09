@@ -1,0 +1,19 @@
+# Set workflow name
+name: Deploy To Staging
+
+# Set events that triggers the workflow
+on:
+  push:
+    branches:
+      - staging
+
+# Set jobs to be executed in the workflow
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup checkout
+        uses: actions/checkout@v2
+      - name: Deploy to staging
+        run: |
+          echo 'Add staging deployment script here...'

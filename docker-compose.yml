@@ -1,0 +1,67 @@
+version: '3.7'
+services:
+  laravel-boilerplate-api:
+    image: jaylordibe/laravel-php
+    container_name: laravel-boilerplate-api
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "8000:80"
+    volumes:
+      - .:/var/www/html
+    working_dir: /var/www/html
+    networks:
+      - laravel-boilerplate-network
+  laravel-boilerplate-database:
+    image: mysql:8.0.25
+    container_name: laravel-boilerplate-database
+    restart: unless-stopped
+    tty: true
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - ./docker/database/data:/var/lib/mysql
+    networks:
+      - laravel-boilerplate-network
+  laravel-boilerplate-database-gui-admin:
+    image: phpmyadmin/phpmyadmin
+    container_name: laravel-boilerplate-database-gui-admin
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "8001:80"
+    environment:
+      PMA_HOST: laravel-boilerplate-database
+    networks:
+      - laravel-boilerplate-network
+  laravel-boilerplate-test-database:
+    image: mysql:8.0.25
+    container_name: laravel-boilerplate-test-database
+    restart: unless-stopped
+    tty: true
+    environment:
+      MYSQL_ROOT_PASSWORD: ${TEST_DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${TEST_DB_DATABASE}
+      MYSQL_USER: ${TEST_DB_USERNAME}
+      MYSQL_PASSWORD: ${TEST_DB_PASSWORD}
+    volumes:
+      - ./docker/database/test-data:/var/lib/mysql
+    networks:
+      - laravel-boilerplate-network
+  laravel-boilerplate-test-database-gui-admin:
+    image: phpmyadmin/phpmyadmin
+    container_name: laravel-boilerplate-test-database-gui-admin
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "8002:80"
+    environment:
+      PMA_HOST: laravel-boilerplate-test-database
+    networks:
+      - laravel-boilerplate-network
+networks:
+  laravel-boilerplate-network:
+    driver: bridge
