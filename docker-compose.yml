@@ -1,7 +1,7 @@
 version: '3.7'
 services:
   laravel-boilerplate-api:
-    image: jaylordibe/laravel-php
+    image: jaylordibe/laravel-php:8.1
     container_name: laravel-boilerplate-api
     restart: unless-stopped
     tty: true
