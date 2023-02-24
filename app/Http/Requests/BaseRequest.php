@@ -129,7 +129,7 @@ class BaseRequest extends FormRequest
                 $dateTime = Carbon::parse($dateString);
             }
         } catch (InvalidFormatException $e) {
-            Log::error('Failed to parse input as carbon datetime.');
+            Log::error("Failed to parse input as carbon datetime: {$e->getMessage()}");
         }
 
         return $dateTime;

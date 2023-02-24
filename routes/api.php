@@ -1,6 +1,8 @@
 <?php
 
-use Illuminate\Http\Request;
+use App\Constants\RoutePatternConstant;
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -14,6 +16,19 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::middleware('auth:api')->get('/user', function (Request $request) {
-    return $request->user();
+# Public Routes
+Route::post('authenticate', [AuthController::class, 'authenticate']);
+
+# Authenticated Routes
+Route::middleware('auth:api')->group(function () {
+    # Auth
+    Route::post('sign-out', [AuthController::class, 'signOut']);
+
+    # User
+    Route::post('users', [UserController::class, 'create']);
+    Route::get('users', [UserController::class, 'get']);
+    Route::get('users/auth', [UserController::class, 'getAuthUser']);
+    Route::get('users/{userId}', [UserController::class, 'getById'])->where('userId', RoutePatternConstant::NUMERIC);
+    Route::put('users/{userId}', [UserController::class, 'update'])->where('userId', RoutePatternConstant::NUMERIC);
+    Route::delete('users/{userId}', [UserController::class, 'delete'])->where('userId', RoutePatternConstant::NUMERIC);
 });

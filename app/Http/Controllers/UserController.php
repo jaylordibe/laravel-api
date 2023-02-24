@@ -16,19 +16,15 @@ use Illuminate\Support\Facades\Gate;
 class UserController extends Controller
 {
 
-    private UserService $userService;
-
-    /**
-     * @param UserService $userService
-     */
-    public function __construct(UserService $userService)
-    {
-        $this->userService = $userService;
-    }
+    public function __construct(
+        private readonly UserService $userService
+    ) {}
 
     /**
      * Get the authenticated user.
+     *
      * @param GenericRequest $request
+     *
      * @return JsonResponse|JsonResource
      */
     public function getAuthUser(GenericRequest $request): JsonResponse|JsonResource
@@ -44,6 +40,7 @@ class UserController extends Controller
 
     /**
      * @param UserRequest $request
+     *
      * @return JsonResponse|JsonResource
      */
     public function create(UserRequest $request): JsonResponse|JsonResource
@@ -61,6 +58,7 @@ class UserController extends Controller
 
     /**
      * @param GenericRequest $request
+     *
      * @return JsonResponse|JsonResource
      */
     public function get(GenericRequest $request): JsonResponse|JsonResource
@@ -80,6 +78,7 @@ class UserController extends Controller
     /**
      * @param GenericRequest $request
      * @param int $id
+     *
      * @return JsonResponse|JsonResource
      */
     public function getById(GenericRequest $request, int $id): JsonResponse|JsonResource
@@ -96,6 +95,7 @@ class UserController extends Controller
     /**
      * @param UserRequest $request
      * @param int $id
+     *
      * @return JsonResponse|JsonResource
      */
     public function update(UserRequest $request, int $id): JsonResponse|JsonResource
@@ -116,6 +116,7 @@ class UserController extends Controller
     /**
      * @param GenericRequest $request
      * @param int $id
+     *
      * @return JsonResponse
      */
     public function delete(GenericRequest $request, int $id): JsonResponse
@@ -130,4 +131,5 @@ class UserController extends Controller
 
         return ResponseUtil::success($serviceResponse->getMessage());
     }
+
 }

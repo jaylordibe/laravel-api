@@ -11,18 +11,18 @@ use Laravel\Passport\HasApiTokens;
 
 /**
  * @property int $id
- * @property ?Carbon $created_at
- * @property ?Carbon $updated_at
- * @property ?Carbon $deleted_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property Carbon|null $deleted_at
  * @property string $first_name
- * @property ?string $middle_name
+ * @property string|null $middle_name
  * @property string $last_name
  * @property string $email
- * @property ?Carbon $email_verified_at
+ * @property Carbon|null $email_verified_at
  * @property string $password
- * @property ?string $remember_token
+ * @property string|null $remember_token
  * @property string $role
- * @property ?string $timezone
+ * @property string|null $timezone
  */
 class User extends Authenticatable
 {

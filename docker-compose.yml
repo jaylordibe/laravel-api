@@ -6,7 +6,7 @@ services:
     restart: unless-stopped
     tty: true
     ports:
-      - "8000:80"
+      - "9000:80"
     volumes:
       - .:/var/www/html
     working_dir: /var/www/html
@@ -17,6 +17,8 @@ services:
     container_name: laravel-boilerplate-database
     restart: unless-stopped
     tty: true
+    ports:
+      - "3326:3306"
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
       MYSQL_DATABASE: ${DB_DATABASE}
@@ -32,7 +34,7 @@ services:
     restart: unless-stopped
     tty: true
     ports:
-      - "8001:80"
+      - "9001:80"
     environment:
       PMA_HOST: laravel-boilerplate-database
     networks:
@@ -42,6 +44,8 @@ services:
     container_name: laravel-boilerplate-test-database
     restart: unless-stopped
     tty: true
+    ports:
+      - "3327:3306"
     environment:
       MYSQL_ROOT_PASSWORD: ${TEST_DB_ROOT_PASSWORD}
       MYSQL_DATABASE: ${TEST_DB_DATABASE}
@@ -57,7 +61,7 @@ services:
     restart: unless-stopped
     tty: true
     ports:
-      - "8002:80"
+      - "9002:80"
     environment:
       PMA_HOST: laravel-boilerplate-test-database
     networks:
