@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -a
 
+echo -e "\033[0m \033[1;35m Stopping existing services \033[0m"
+docker-compose down
+
 TYPE=$1
 
 if [ "$TYPE" = "fresh" ]; then
@@ -21,18 +24,18 @@ if [ "$TYPE" = "fresh" ]; then
 fi
 
 if [[ ! -f ".env" ]]; then
-    echo -e "\033[0m \033[1;35m Creating .env file... \033[0m"
+    echo -e "\033[0m \033[1;35m Creating .env file \033[0m"
     cp .env.example .env
 fi
 
 source .env
 COMMANDS=""
 
-echo -e "\033[0m \033[1;35m Starting services... \033[0m"
+echo -e "\033[0m \033[1;35m Starting services \033[0m"
 docker-compose up -d
 
 # Wait for the containers to initialize
-echo -e "\033[0m \033[1;35m Waiting for the containers to initialize... \033[0m"
+echo -e "\033[0m \033[1;35m Waiting for the containers to initialize \033[0m"
 
 while ! docker exec laravel-db mysql -uroot -p$DB_ROOT_PASSWORD -e "SELECT 1" >/dev/null 2>&1; do
     sleep 1
