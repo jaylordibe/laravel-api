@@ -1,8 +1,8 @@
 version: '3.7'
 services:
-  laravel-boilerplate-api:
+  laravel-api:
     image: jaylordibe/laravel-php:8.1
-    container_name: laravel-boilerplate-api
+    container_name: laravel-api
     restart: unless-stopped
     tty: true
     ports:
@@ -11,10 +11,10 @@ services:
       - .:/var/www/html
     working_dir: /var/www/html
     networks:
-      - laravel-boilerplate-network
-  laravel-boilerplate-database:
+      - laravel-network
+  laravel-db:
     image: mysql:8.0.25
-    container_name: laravel-boilerplate-database
+    container_name: laravel-db
     restart: unless-stopped
     tty: true
     ports:
@@ -27,21 +27,22 @@ services:
     volumes:
       - ./docker/database/data:/var/lib/mysql
     networks:
-      - laravel-boilerplate-network
-  laravel-boilerplate-database-gui-admin:
+      - laravel-network
+  laravel-db-gui-admin:
     image: phpmyadmin/phpmyadmin
-    container_name: laravel-boilerplate-database-gui-admin
+    container_name: laravel-db-gui-admin
     restart: unless-stopped
     tty: true
     ports:
       - "9001:80"
     environment:
-      PMA_HOST: laravel-boilerplate-database
+      PMA_HOST: laravel-db
+      UPLOAD_LIMIT: 300M
     networks:
-      - laravel-boilerplate-network
-  laravel-boilerplate-test-database:
+      - laravel-network
+  laravel-db-test:
     image: mysql:8.0.25
-    container_name: laravel-boilerplate-test-database
+    container_name: laravel-db-test
     restart: unless-stopped
     tty: true
     ports:
@@ -54,18 +55,19 @@ services:
     volumes:
       - ./docker/database/test-data:/var/lib/mysql
     networks:
-      - laravel-boilerplate-network
-  laravel-boilerplate-test-database-gui-admin:
+      - laravel-network
+  laravel-db-test-gui-admin:
     image: phpmyadmin/phpmyadmin
-    container_name: laravel-boilerplate-test-database-gui-admin
+    container_name: laravel-db-test-gui-admin
     restart: unless-stopped
     tty: true
     ports:
       - "9002:80"
     environment:
-      PMA_HOST: laravel-boilerplate-test-database
+      PMA_HOST: laravel-db-test
+      UPLOAD_LIMIT: 300M
     networks:
-      - laravel-boilerplate-network
+      - laravel-network
 networks:
-  laravel-boilerplate-network:
+  laravel-network:
     driver: bridge

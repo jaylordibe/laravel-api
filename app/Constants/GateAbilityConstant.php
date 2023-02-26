@@ -1,8 +1,6 @@
 <?php
 
-
 namespace App\Constants;
-
 
 class GateAbilityConstant extends BaseConstant
 {
@@ -11,4 +9,5 @@ class GateAbilityConstant extends BaseConstant
     const ADMIN = 'ADMIN';
     const MEMBER = 'MEMBER';
     const SYSTEM_ADMIN_OR_ADMIN = 'SYSTEM_ADMIN_OR_ADMIN';
+
 }

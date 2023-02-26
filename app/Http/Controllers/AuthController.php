@@ -40,7 +40,7 @@ class AuthController extends Controller
         }
 
         $response = [
-            'token' => $user->createToken(AppConstant::APP_NAME)->accessToken
+            'token' => $user->createToken(env('APP_NAME'))->accessToken
         ];
 
         return ResponseUtil::json($response);
