@@ -8,7 +8,6 @@ use App\Http\Requests\GenericRequest;
 use App\Services\UserService;
 use App\Utils\ResponseUtil;
 use App\Utils\AppUtil;
-use Illuminate\Foundation\Auth\AuthenticatesUsers;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Auth;
@@ -16,14 +15,9 @@ use Illuminate\Support\Facades\Auth;
 class AuthController extends Controller
 {
 
-    use AuthenticatesUsers;
-
-    private UserService $userService;
-
     public function __construct(UserService $userService)
     {
         $this->middleware('guest')->except('signOut');
-        $this->userService = $userService;
     }
 
     public function authenticate(AuthRequest $request): JsonResponse
@@ -46,7 +40,7 @@ class AuthController extends Controller
         }
 
         $response = [
-            'token' => $user->createToken(AppConstant::APP_NAME)->accessToken
+            'token' => $user->createToken(env('APP_NAME'))->accessToken
         ];
 
         return ResponseUtil::json($response);
@@ -59,4 +53,5 @@ class AuthController extends Controller
 
         return ResponseUtil::success('Logout successful.');
     }
+
 }

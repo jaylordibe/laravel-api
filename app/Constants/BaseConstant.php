@@ -11,10 +11,12 @@ class BaseConstant
 
     /**
      * Get constant value.
+     *
      * @param string $search
-     * @return string
+     *
+     * @return string|null
      */
-    public static function fromString(string $search): string
+    public static function fromString(string $search): ?string
     {
         $constants = self::asList();
 
@@ -24,37 +26,34 @@ class BaseConstant
             }
         }
 
-        return '';
+        return null;
     }
 
     /**
      * Get list of constants from the called class(a class which extends BaseConstant).
+     *
      * @param bool $preserveKeys - optional
      *     Default - false.
      *     If true, it returns the list of constants with their corresponding keys.
+     *
      * @return array
      */
     public static function asList(bool $preserveKeys = false): array
     {
-        try {
-            $reflectionClass = new ReflectionClass(get_called_class());
-            $constants = $reflectionClass->getConstants();
+        $reflectionClass = new ReflectionClass(get_called_class());
+        $constants = $reflectionClass->getConstants();
 
-            if ($preserveKeys) {
-                return $constants;
-            }
-
-            $constantValues = [];
-
-            foreach ($constants as $constant) {
-                $constantValues[] = $constant;
-            }
-
-            return $constantValues;
-        } catch (ReflectionException $e) {
-            Log::error(print_r(['GetConstantAsListException' => $e->getTraceAsString()], true));
+        if ($preserveKeys) {
+            return $constants;
         }
 
-        return [];
+        $constantValues = [];
+
+        foreach ($constants as $constant) {
+            $constantValues[] = $constant;
+        }
+
+        return $constantValues;
     }
+
 }

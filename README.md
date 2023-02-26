@@ -1,11 +1,11 @@
-# LARAVEL BOILERPLATE API #
+# LARAVEL API #
 
 This README would normally document whatever steps are necessary to get your application up and running.
 
 ### What is this repository for? ###
 
 * Quick summary
-    * This repository is the Laravel Boilerplate API.
+    * This repository is the Laravel API.
 * Version
     * v1.0
 

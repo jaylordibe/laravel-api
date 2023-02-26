@@ -2,11 +2,8 @@
 
 namespace App\Services;
 
-use App\Constants\AppConstant;
-use App\Constants\UserRoleConstant;
 use App\Dtos\UserDto;
 use App\Models\Custom\ServiceResponse;
-use App\Models\User;
 use App\Repositories\UserRepository;
 use App\Utils\AppUtil;
 use Illuminate\Support\Str;
@@ -14,28 +11,13 @@ use Illuminate\Support\Str;
 class UserService
 {
 
-    private UserRepository $userRepository;
-
-    /**
-     * @param UserRepository $userRepository
-     */
-    public function __construct(UserRepository $userRepository)
+    public function __construct(private readonly UserRepository $userRepository)
     {
-        $this->userRepository = $userRepository;
-    }
-
-    /**
-     * @param int $id
-     * @param array|null $relations
-     * @return UserDto
-     */
-    public function findById(int $id, array $relations = null): UserDto
-    {
-        return $this->userRepository->findById($id, $relations)->toDto();
     }
 
     /**
      * @param UserDto $userDto
+     *
      * @return ServiceResponse
      */
     public function create(UserDto $userDto): ServiceResponse
@@ -51,6 +33,7 @@ class UserService
 
     /**
      * @param UserDto $userDto
+     *
      * @return ServiceResponse
      */
     public function get(UserDto $userDto): ServiceResponse
@@ -62,6 +45,7 @@ class UserService
 
     /**
      * @param int $id
+     *
      * @return ServiceResponse
      */
     public function getById(int $id): ServiceResponse
@@ -73,6 +57,7 @@ class UserService
 
     /**
      * @param UserDto $userDto
+     *
      * @return ServiceResponse
      */
     public function update(UserDto $userDto): ServiceResponse
@@ -94,7 +79,9 @@ class UserService
 
     /**
      * Delete user.
+     *
      * @param int $id
+     *
      * @return ServiceResponse
      */
     public function delete(int $id): ServiceResponse
@@ -110,6 +97,7 @@ class UserService
 
     /**
      * @param string $email
+     *
      * @return bool
      */
     public function isEmailExists(string $email): bool
@@ -119,6 +107,7 @@ class UserService
 
     /**
      * @param string $username
+     *
      * @return bool
      */
     public function isUsernameExists(string $username): bool
@@ -129,29 +118,7 @@ class UserService
     /**
      * @param string $text
      * @param int $count
-     * @return string
-     */
-    public function generateEmail(string $text, int $count = 0): string
-    {
-        $email = strtolower(str_replace(' ', '', $text));
-
-        if (!empty($count)) {
-            $email .= $count;
-        }
-
-        $email .= AppConstant::WEB_MAIL;
-        $isEmailExists = $this->isEmailExists($email);
-
-        if ($isEmailExists) {
-            $email = $this->generateEmail($text, ++$count);
-        }
-
-        return $email;
-    }
-
-    /**
-     * @param string $text
-     * @param int $count
+     *
      * @return string
      */
     public function generateUsername(string $text, int $count = 0): string
@@ -178,4 +145,5 @@ class UserService
 
         return $username;
     }
+
 }

@@ -7,8 +7,11 @@ class ServiceResponse
 
     private bool $success = false;
     private bool $error = false;
+    private int $code = 0;
+    private string $status = '';
     private string $message = '';
-    private mixed $data = null;
+    private string $rawData = '';
+    private $data = null;
 
     /**
      * @return bool
@@ -24,6 +27,7 @@ class ServiceResponse
     public function setSuccess(bool $success): void
     {
         $this->success = $success;
+        $this->error = !$success;
     }
 
     /**
@@ -40,6 +44,39 @@ class ServiceResponse
     public function setError(bool $error): void
     {
         $this->error = $error;
+        $this->success = !$error;
+    }
+
+    /**
+     * @return int
+     */
+    public function getCode(): int
+    {
+        return $this->code;
+    }
+
+    /**
+     * @param int $code
+     */
+    public function setCode(int $code): void
+    {
+        $this->code = $code;
+    }
+
+    /**
+     * @return string
+     */
+    public function getStatus(): string
+    {
+        return $this->status;
+    }
+
+    /**
+     * @param string $status
+     */
+    public function setStatus(string $status): void
+    {
+        $this->status = $status;
     }
 
     /**
@@ -59,17 +96,33 @@ class ServiceResponse
     }
 
     /**
-     * @return mixed|null
+     * @return string
      */
-    public function getData(): mixed
+    public function getRawData(): string
+    {
+        return $this->rawData;
+    }
+
+    /**
+     * @param string $rawData
+     */
+    public function setRawData(string $rawData): void
+    {
+        $this->rawData = $rawData;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getData()
     {
         return $this->data;
     }
 
     /**
-     * @param mixed|null $data
+     * @param mixed $data
      */
-    public function setData(mixed $data): void
+    public function setData($data): void
     {
         $this->data = $data;
     }

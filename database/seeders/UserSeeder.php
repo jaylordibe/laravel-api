@@ -4,46 +4,30 @@ namespace Database\Seeders;
 
 use App\Constants\UserRoleConstant;
 use App\Models\User;
+use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class UserSeeder extends Seeder
 {
 
-    public function __construct()
-    {
-    }
-
     /**
      * Run the database seeds.
-     *
-     * @return void
      */
-    public function run()
+    public function run(): void
     {
-        $this->createSystemAdminUser();
+        // Create system admin user
+        User::insert([
+            'first_name' => 'System',
+            'last_name' => 'Admin',
+            'username' => Str::before(env('SYSTEM_ADMIN_EMAIL'), '@'),
+            'email' => env('SYSTEM_ADMIN_EMAIL'),
+            'email_verified_at' => Carbon::now(),
+            'password' => Hash::make(env('SYSTEM_ADMIN_PASSWORD')),
+            'role' => UserRoleConstant::SYSTEM_ADMIN
+        ]);
     }
 
-    /**
-     * Create system admin user.
-     * @return void
-     */
-    private function createSystemAdminUser(): void
-    {
-        $systemAdminInfo = [
-            'first_name' => UserRoleConstant::SYSTEM_ADMIN,
-            'middle_name' => '',
-            'last_name' => 'User',
-            'email' => env('SYSTEM_ADMIN_EMAIL'),
-            'username' => 'systemadmin',
-            'password' => Hash::make(env('SYSTEM_ADMIN_PASSWORD')),
-            'role' => UserRoleConstant::SYSTEM_ADMIN,
-            'phone_number' => '',
-            'address' => '',
-            'profile_image' => 'https://i.imgur.com/UJ0N2SN.jpg',
-            'email_verified_at' => Carbon::now()
-        ];
-        User::insert($systemAdminInfo);
-    }
 }

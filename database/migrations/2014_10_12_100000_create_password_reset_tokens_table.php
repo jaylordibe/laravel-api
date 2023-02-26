@@ -9,12 +9,11 @@ return new class extends Migration {
 
     /**
      * Run the migrations.
-     *
-     * @return void
      */
-    public function up() {
-        Schema::create(DatabaseTableConstant::PASSWORD_RESETS, function (Blueprint $table) {
-            $table->string('email')->index();
+    public function up(): void
+    {
+        Schema::create(DatabaseTableConstant::PASSWORD_RESET_TOKENS, function (Blueprint $table) {
+            $table->string('email')->primary();
             $table->string('token');
             $table->timestamp('created_at')->nullable();
         });
@@ -22,10 +21,10 @@ return new class extends Migration {
 
     /**
      * Reverse the migrations.
-     *
-     * @return void
      */
-    public function down() {
-        Schema::dropIfExists(DatabaseTableConstant::PASSWORD_RESETS);
+    public function down(): void
+    {
+        Schema::dropIfExists(DatabaseTableConstant::PASSWORD_RESET_TOKENS);
     }
+
 };
