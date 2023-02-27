@@ -22,10 +22,10 @@ class UserSeeder extends Seeder
         User::insert([
             'first_name' => 'System',
             'last_name' => 'Admin',
-            'username' => Str::before(env('SYSTEM_ADMIN_EMAIL'), '@'),
-            'email' => env('SYSTEM_ADMIN_EMAIL'),
+            'username' => Str::before(config('custom.sysad_email'), '@'),
+            'email' => config('custom.sysad_email'),
             'email_verified_at' => Carbon::now(),
-            'password' => Hash::make(env('SYSTEM_ADMIN_PASSWORD')),
+            'password' => Hash::make(config('custom.sysad_password')),
             'role' => UserRoleConstant::SYSTEM_ADMIN
         ]);
     }
