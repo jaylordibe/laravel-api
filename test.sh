@@ -11,7 +11,10 @@ if [[ -n "$CLASS_NAME_OR_METHOD_NAME" && -n "$FILE_PATH" ]]; then
 fi
 
 COMMANDS="
-php artisan migrate --env=testing
+php artisan migrate:fresh --seed --env=testing
+php artisan key:generate --env=testing
+php artisan passport:install --env=testing
+php artisan passport:keys --env=testing
 php artisan test --profile $FILTER
 "
 

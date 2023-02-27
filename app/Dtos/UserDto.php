@@ -10,12 +10,14 @@ class UserDto extends BaseDto
     private ?string $firstName = null;
     private ?string $middleName = null;
     private ?string $lastName = null;
-    private ?string $email = null;
     private ?string $username = null;
+    private ?string $email = null;
     private ?string $timezone = null;
     private ?string $phoneNumber = null;
     private ?Carbon $birthday = null;
     private ?string $profilePicture = null;
+    private ?string $password = null;
+    private ?string $passwordConfirmation = null;
 
     public function __construct()
     {
@@ -73,22 +75,6 @@ class UserDto extends BaseDto
     /**
      * @return string|null
      */
-    public function getEmail(): ?string
-    {
-        return $this->email;
-    }
-
-    /**
-     * @param string|null $email
-     */
-    public function setEmail(?string $email): void
-    {
-        $this->email = $email;
-    }
-
-    /**
-     * @return string|null
-     */
     public function getUsername(): ?string
     {
         return $this->username;
@@ -100,6 +86,22 @@ class UserDto extends BaseDto
     public function setUsername(?string $username): void
     {
         $this->username = $username;
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getEmail(): ?string
+    {
+        return $this->email;
+    }
+
+    /**
+     * @param string|null $email
+     */
+    public function setEmail(?string $email): void
+    {
+        $this->email = $email;
     }
 
     /**
@@ -164,6 +166,38 @@ class UserDto extends BaseDto
     public function setProfilePicture(?string $profilePicture): void
     {
         $this->profilePicture = $profilePicture;
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getPassword(): ?string
+    {
+        return $this->password;
+    }
+
+    /**
+     * @param string|null $password
+     */
+    public function setPassword(?string $password): void
+    {
+        $this->password = $password;
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getPasswordConfirmation(): ?string
+    {
+        return $this->passwordConfirmation;
+    }
+
+    /**
+     * @param string|null $passwordConfirmation
+     */
+    public function setPasswordConfirmation(?string $passwordConfirmation): void
+    {
+        $this->passwordConfirmation = $passwordConfirmation;
     }
 
 }

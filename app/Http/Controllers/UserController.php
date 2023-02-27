@@ -49,7 +49,11 @@ class UserController extends Controller
     {
         Gate::authorize(GateAbilityConstant::CAN_CREATE_USER);
 
-        $serviceResponse = $this->userService->create($request->toDto());
+        $userDto = $request->toDto();
+        $userDto->setEmail($request->getInputAsString('email'));
+        $userDto->setPassword($request->getInputAsString('password'));
+        $userDto->setPasswordConfirmation($request->getInputAsString('passwordConfirmation'));
+        $serviceResponse = $this->userService->create($userDto);
 
         if ($serviceResponse->isError()) {
             return ResponseUtil::error($serviceResponse->getMessage());

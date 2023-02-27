@@ -18,8 +18,8 @@ class UserRequest extends BaseRequest
         return [
             'firstName' => 'required',
             'lastName' => 'required',
-            'emaik' => 'required',
-            'phoneNumber' => 'required'
+            'phoneNumber' => 'required',
+            'birthday' => 'required'
         ];
     }
 
@@ -47,12 +47,9 @@ class UserRequest extends BaseRequest
         $dto->setFirstName($this->getInputAsString('firstName'));
         $dto->setMiddleName($this->getInputAsString('middleName'));
         $dto->setLastName($this->getInputAsString('lastName'));
-        $dto->setEmail($this->getInputAsString('email'));
-        $dto->setUsername($this->getInputAsString('username'));
         $dto->setTimezone($this->getInputAsString('timezone'));
         $dto->setPhoneNumber($this->getInputAsString('phoneNumber'));
         $dto->setBirthday($this->getInputAsCarbon('birthday'));
-        $dto->setProfilePicture($this->getInputAsCarbon('birthday'));
 
         return $dto;
     }

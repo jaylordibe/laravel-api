@@ -26,6 +26,23 @@ class UserService
      */
     public function create(UserDto $userDto): ServiceResponseDto
     {
+        if (empty($userDto->getEmail())) {
+            return ServiceResponseUtil::error('Email is required.');
+        }
+
+        if (empty($userDto->getPassword())) {
+            return ServiceResponseUtil::error('Password is required.');
+        }
+
+        if (empty($userDto->getPasswordConfirmation())) {
+            return ServiceResponseUtil::error('Please confirm your password.');
+        }
+
+        if ($userDto->getPassword() !== $userDto->getPasswordConfirmation()) {
+            return ServiceResponseUtil::error('Passwords does not match.');
+        }
+
+        $userDto->setUsername($this->generateUsername($userDto->getEmail()));
         $user = $this->userRepository->save($userDto);
 
         if (empty($user)) {

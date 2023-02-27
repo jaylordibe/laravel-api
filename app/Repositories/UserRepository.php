@@ -10,6 +10,7 @@ use Exception;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 
 class UserRepository
@@ -43,6 +44,9 @@ class UserRepository
 
         if ($create) {
             $user->created_by = $userDto->getAuthUser()->id;
+            $user->email = $userDto->getEmail();
+            $user->username = $userDto->getUsername();
+            $user->password = Hash::make($userDto->getPassword());
         } else {
             $user->updated_by = $userDto->getAuthUser()->id;
         }
@@ -50,12 +54,9 @@ class UserRepository
         $user->first_name = $userDto->getFirstName();
         $user->middle_name = $userDto->getMiddleName();
         $user->last_name = $userDto->getLastName();
-        $user->email = $userDto->getEmail();
-        $user->username = $userDto->getUsername();
         $user->timezone = $userDto->getTimezone();
         $user->phone_number = $userDto->getPhoneNumber();
         $user->birthday = $userDto->getBirthday();
-        $user->profile_picture = $userDto->getProfilePicture();
         $user->save();
 
         return $user;
