@@ -50,10 +50,6 @@ if [ "$TYPE" = "fresh" ]; then
     php artisan key:generate
     php artisan passport:install
     php artisan passport:keys
-    php artisan migrate:fresh --seed --env=testing
-    php artisan key:generate --env=testing
-    php artisan passport:install --env=testing
-    php artisan passport:keys --env=testing
     "
 else
     COMMANDS="
@@ -61,7 +57,6 @@ else
     chmod -R 777 bootstrap/cache
     composer update
     php artisan migrate
-    php artisan migrate --env=testing
     "
 fi
 

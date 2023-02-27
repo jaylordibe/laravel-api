@@ -10,15 +10,14 @@ class UserDto extends BaseDto
     private ?string $firstName = null;
     private ?string $middleName = null;
     private ?string $lastName = null;
-    private ?string $fullName = null;
-    private ?string $email = null;
     private ?string $username = null;
-    private ?string $role = null;
-    private ?string $phoneNumber = null;
-    private ?string $address = null;
-    private ?Carbon $birthday = null;
-    private ?string $profileImage = null;
+    private ?string $email = null;
     private ?string $timezone = null;
+    private ?string $phoneNumber = null;
+    private ?Carbon $birthday = null;
+    private ?string $profilePicture = null;
+    private ?string $password = null;
+    private ?string $passwordConfirmation = null;
 
     public function __construct()
     {
@@ -76,17 +75,17 @@ class UserDto extends BaseDto
     /**
      * @return string|null
      */
-    public function getFullName(): ?string
+    public function getUsername(): ?string
     {
-        return "{$this->firstName} {$this->lastName}";
+        return $this->username;
     }
 
     /**
-     * @param string|null $fullName
+     * @param string|null $username
      */
-    public function setFullName(?string $fullName): void
+    public function setUsername(?string $username): void
     {
-        $this->fullName = $fullName;
+        $this->username = $username;
     }
 
     /**
@@ -108,33 +107,17 @@ class UserDto extends BaseDto
     /**
      * @return string|null
      */
-    public function getUsername(): ?string
+    public function getTimezone(): ?string
     {
-        return $this->username;
+        return $this->timezone;
     }
 
     /**
-     * @param string|null $username
+     * @param string|null $timezone
      */
-    public function setUsername(?string $username): void
+    public function setTimezone(?string $timezone): void
     {
-        $this->username = $username;
-    }
-
-    /**
-     * @return string|null
-     */
-    public function getRole(): ?string
-    {
-        return $this->role;
-    }
-
-    /**
-     * @param string|null $role
-     */
-    public function setRole(?string $role): void
-    {
-        $this->role = $role;
+        $this->timezone = $timezone;
     }
 
     /**
@@ -151,22 +134,6 @@ class UserDto extends BaseDto
     public function setPhoneNumber(?string $phoneNumber): void
     {
         $this->phoneNumber = $phoneNumber;
-    }
-
-    /**
-     * @return string|null
-     */
-    public function getAddress(): ?string
-    {
-        return $this->address;
-    }
-
-    /**
-     * @param string|null $address
-     */
-    public function setAddress(?string $address): void
-    {
-        $this->address = $address;
     }
 
     /**
@@ -188,32 +155,49 @@ class UserDto extends BaseDto
     /**
      * @return string|null
      */
-    public function getProfileImage(): ?string
+    public function getProfilePicture(): ?string
     {
-        return $this->profileImage;
+        return $this->profilePicture;
     }
 
     /**
-     * @param string|null $profileImage
+     * @param string|null $profilePicture
      */
-    public function setProfileImage(?string $profileImage): void
+    public function setProfilePicture(?string $profilePicture): void
     {
-        $this->profileImage = $profileImage;
+        $this->profilePicture = $profilePicture;
     }
 
     /**
      * @return string|null
      */
-    public function getTimezone(): ?string
+    public function getPassword(): ?string
     {
-        return $this->timezone;
+        return $this->password;
     }
 
     /**
-     * @param string|null $timezone
+     * @param string|null $password
      */
-    public function setTimezone(?string $timezone): void
+    public function setPassword(?string $password): void
     {
-        $this->timezone = $timezone;
+        $this->password = $password;
     }
+
+    /**
+     * @return string|null
+     */
+    public function getPasswordConfirmation(): ?string
+    {
+        return $this->passwordConfirmation;
+    }
+
+    /**
+     * @param string|null $passwordConfirmation
+     */
+    public function setPasswordConfirmation(?string $passwordConfirmation): void
+    {
+        $this->passwordConfirmation = $passwordConfirmation;
+    }
+
 }

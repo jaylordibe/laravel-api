@@ -12,25 +12,20 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::create(DatabaseTableConstant::USERS, function (Blueprint $table) {
+        Schema::create(DatabaseTableConstant::ADDRESSES, function (Blueprint $table) {
             $table->id();
             $table->timestamps();
             $table->softDeletes();
             $table->foreignId('created_by')->nullable()->constrained(DatabaseTableConstant::USERS);
             $table->foreignId('updated_by')->nullable()->constrained(DatabaseTableConstant::USERS);
             $table->foreignId('deleted_by')->nullable()->constrained(DatabaseTableConstant::USERS);
-            $table->string('first_name');
-            $table->string('middle_name')->nullable();
-            $table->string('last_name');
-            $table->string('username')->unique();
-            $table->string('email')->unique();
-            $table->timestamp('email_verified_at')->nullable();
-            $table->string('password');
-            $table->rememberToken();
-            $table->string('timezone')->nullable();
-            $table->string('phone_number')->nullable();
-            $table->timestamp('birthday')->nullable();
-            $table->text('profile_picture')->nullable();
+            $table->foreignId('user_id')->nullable()->constrained(DatabaseTableConstant::USERS);
+            $table->string('address');
+            $table->string('village_or_barangay');
+            $table->string('city_or_municipality');
+            $table->string('state_or_province');
+            $table->string('zip_or_postal_code');
+            $table->string('country');
         });
     }
 
@@ -39,7 +34,7 @@ return new class extends Migration {
      */
     public function down(): void
     {
-        Schema::dropIfExists(DatabaseTableConstant::USERS);
+        Schema::dropIfExists(DatabaseTableConstant::ADDRESSES);
     }
 
 };

@@ -2,10 +2,15 @@
 
 namespace App\Dtos;
 
+use App\Models\User;
 use Illuminate\Support\Carbon;
 
 class BaseDto
 {
+
+    public function __construct()
+    {
+    }
 
     private ?int $id = null;
     private ?Carbon $createdAt = null;
@@ -14,14 +19,8 @@ class BaseDto
     private ?int $createdBy = null;
     private ?int $updatedBy = null;
     private ?int $deletedBy = null;
-    private ?MetaDto $meta;
-    private ?AuthUserDto $authUser;
-
-    public function __construct()
-    {
-        $this->meta = new MetaDto();
-        $this->authUser = new AuthUserDto();
-    }
+    private ?MetaDto $meta = null;
+    private ?User $authUser = null;
 
     /**
      * @return int|null
@@ -152,23 +151,24 @@ class BaseDto
     }
 
     /**
-     * @return AuthUserDto|null
+     * @return User|null
      */
-    public function getAuthUser(): ?AuthUserDto
+    public function getAuthUser(): ?User
     {
         return $this->authUser;
     }
 
     /**
-     * @param AuthUserDto|null $authUser
+     * @param User|null $authUser
      */
-    public function setAuthUser(?AuthUserDto $authUser): void
+    public function setAuthUser(?User $authUser): void
     {
         $this->authUser = $authUser;
     }
 
     /**
      * Check if the DTO is empty.
+     *
      * @return bool
      */
     public function isEmpty(): bool
@@ -178,10 +178,12 @@ class BaseDto
 
     /**
      * Check if the DTO is present.
+     *
      * @return bool
      */
     public function isPresent(): bool
     {
         return !$this->isEmpty();
     }
+
 }

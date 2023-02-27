@@ -29,6 +29,7 @@ class GenericRequest extends BaseRequest
 
     /**
      * Transform request to data transfer object.
+     *
      * @return GenericDto
      */
     public function toDto(): GenericDto
@@ -39,4 +40,5 @@ class GenericRequest extends BaseRequest
 
         return $genericDto;
     }
+
 }

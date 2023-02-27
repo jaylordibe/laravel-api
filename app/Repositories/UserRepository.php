@@ -4,9 +4,13 @@ namespace App\Repositories;
 
 use App\Constants\AppConstant;
 use App\Dtos\UserDto;
+use App\Dtos\UserFilterDto;
 use App\Models\User;
 use Exception;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 
 class UserRepository
@@ -17,6 +21,7 @@ class UserRepository
      *
      * @param int $id
      * @param array $relations
+     *
      * @return User|null
      */
     public function findById(int $id, array $relations = []): ?User
@@ -25,33 +30,33 @@ class UserRepository
     }
 
     /**
-     * Save user info.
+     * Save user.
      *
      * @param UserDto $userDto
      * @param User|null $user
+     *
      * @return User|null
      */
     public function save(UserDto $userDto, ?User $user = null): ?User
     {
+        $create = empty($user);
         $user ??= new User();
 
-        if (empty($user)) {
-            $user->created_by = $userDto->getAuthUser()->getId();
+        if ($create) {
+            $user->created_by = $userDto->getAuthUser()->id;
+            $user->email = $userDto->getEmail();
+            $user->username = $userDto->getUsername();
+            $user->password = Hash::make($userDto->getPassword());
         } else {
-            $user->updated_by = $userDto->getAuthUser()->getId();
+            $user->updated_by = $userDto->getAuthUser()->id;
         }
 
         $user->first_name = $userDto->getFirstName();
         $user->middle_name = $userDto->getMiddleName();
         $user->last_name = $userDto->getLastName();
-        $user->email = $userDto->getEmail();
-        $user->username = $userDto->getUsername();
-        $user->role = $userDto->getRole();
-        $user->phone_number = $userDto->getPhoneNumber();
-        $user->address = $userDto->getAddress();
-        $user->birthday = $userDto->getBirthday();
-        $user->profile_image = $userDto->getProfileImage();
         $user->timezone = $userDto->getTimezone();
+        $user->phone_number = $userDto->getPhoneNumber();
+        $user->birthday = $userDto->getBirthday();
         $user->save();
 
         return $user;
@@ -59,6 +64,7 @@ class UserRepository
 
     /**
      * @param string $email
+     *
      * @return bool
      */
     public function isEmailExists(string $email): bool
@@ -68,6 +74,7 @@ class UserRepository
 
     /**
      * @param string $username
+     *
      * @return bool
      */
     public function isUsernameExists(string $username): bool
@@ -76,19 +83,28 @@ class UserRepository
     }
 
     /**
-     * @param UserDto $userDto
+     * @param UserFilterDto $userFilterDto
+     *
      * @return LengthAwarePaginator
      */
-    public function get(UserDto $userDto): LengthAwarePaginator
+    public function get(UserFilterDto $userFilterDto): LengthAwarePaginator
     {
-        $relations = $userDto->getMeta()->getRelations();
-        $sortField = $userDto->getMeta()->getSortField() === AppConstant::DEFAULT_DB_QUERY_SORT_FIELD ? 'first_name' : $userDto->getMeta()->getSortField();
-        $sortDirection = $userDto->getMeta()->getSortDirection();
-        $limit = $userDto->getMeta()->getLimit();
+        $relations = $userFilterDto->getMeta()->getRelations();
+        $sortField = $userFilterDto->getMeta()->getSortField() === AppConstant::DEFAULT_DB_QUERY_SORT_FIELD ? 'first_name' : $userDto->getMeta()->getSortField();
+        $sortDirection = $userFilterDto->getMeta()->getSortDirection();
+        $limit = $userFilterDto->getMeta()->getLimit();
         $users = User::with($relations);
 
-        if (!empty($userDto->getRole())) {
-            $users->where('role', $userDto->getRole());
+        if (!empty($userFilterDto->getRoles())) {
+            $users->whereHas('roles', function (Builder $roles) use ($userFilterDto) {
+                $roles->whereIn('name', $userFilterDto->getRoles());
+            });
+        }
+
+        if (!empty($userFilterDto->getPermissions())) {
+            $users->whereHas('permissions', function (Builder $roles) use ($userFilterDto) {
+                $roles->whereIn('name', $userFilterDto->getPermissions());
+            });
         }
 
         return $users->orderBy($sortField, $sortDirection)->paginate($limit);
@@ -96,25 +112,29 @@ class UserRepository
 
     /**
      * Delete user.
+     *
      * @param int $id
+     *
      * @return bool
      */
     public function delete(int $id): bool
     {
         $user = $this->findById($id);
 
-        if ($user->isEmpty()) {
+        if (empty($user)) {
             return false;
         }
 
         try {
+            $user->deleted_by = Auth::user()->id;
+            $user->save();
+
             return (bool) $user->delete();
         } catch (Exception $exception) {
-            Log::debug('DeleteUserException', [
-                'exception' => $exception
-            ]);
+            Log::error("DeleteUserException: {$exception->getMessage()}");
         }
 
         return false;
     }
+
 }

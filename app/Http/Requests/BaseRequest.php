@@ -3,16 +3,15 @@
 namespace App\Http\Requests;
 
 use App\Constants\AppConstant;
-use App\Constants\UserRoleConstant;
-use App\Dtos\AuthUserDto;
 use App\Dtos\MetaDto;
-use App\Dtos\UserDto;
+use App\Models\User;
 use App\Utils\ResponseUtil;
 use Carbon\Exceptions\InvalidFormatException;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
 class BaseRequest extends FormRequest
@@ -20,15 +19,17 @@ class BaseRequest extends FormRequest
 
     /**
      * Determine if the user is authorized to make this request.
+     *
      * @return bool
      */
-    public function authorize()
+    public function authorize(): bool
     {
         return true;
     }
 
     /**
      * Handle a failed validation attempt.
+     *
      * @param Validator $validator
      */
     public function failedValidation(Validator $validator)
@@ -38,84 +39,98 @@ class BaseRequest extends FormRequest
 
     /**
      * Transform input value to string.
+     *
      * @param string $key
+     * @param string|null $default
+     *
      * @return string|null
      */
-    public function getInputAsString(string $key): ?string
+    public function getInputAsString(string $key, ?string $default = null): ?string
     {
         $data = $this->input($key);
-        return is_null($data) ? null : (string) $data;
+        return is_null($data) ? $default : (string) $data;
     }
 
     /**
      * Transform input value to int.
+     *
      * @param string $key
+     * @param int|null $default
+     *
      * @return int|null
      */
-    public function getInputAsInt(string $key): ?int
+    public function getInputAsInt(string $key, ?int $default = null): ?int
     {
         $data = $this->input($key);
-        return is_null($data) ? null : (int) $data;
+        return is_null($data) ? $default : (int) $data;
     }
 
     /**
      * Transform input value to float.
+     *
      * @param string $key
+     * @param float|null $default
+     *
      * @return float|null
      */
-    public function getInputAsFloat(string $key): ?float
+    public function getInputAsFloat(string $key, ?float $default = null): ?float
     {
         $data = $this->input($key);
-        return is_null($data) ? null : (float) $data;
+        return is_null($data) ? $default : (float) $data;
     }
 
     /**
      * Transform input value to boolean.
+     *
      * @param string $key
+     * @param bool|null $default
+     *
      * @return bool|null
      */
-    public function getInputAsBoolean(string $key): ?bool
+    public function getInputAsBoolean(string $key, ?bool $default = null): ?bool
     {
         $data = $this->input($key);
-        return is_null($data) ? null : filter_var($data, FILTER_VALIDATE_BOOLEAN);
+        return is_null($data) ? $default : filter_var($data, FILTER_VALIDATE_BOOLEAN);
     }
 
     /**
      * Transform input value to array.
+     *
      * @param string $key
+     * @param array|null $default
+     *
      * @return array|null
      */
-    public function getInputAsArray(string $key): ?array
+    public function getInputAsArray(string $key, ?array $default = null): ?array
     {
         $data = $this->input($key);
-        return is_null($data) ? null : (array) $data;
+        return is_null($data) ? $default : (array) $data;
     }
 
     /**
-     * Transform input value to json object.
+     * Transform input value to array from a comma separated string.
+     *
      * @param string $key
-     * @return object|null
+     * @param array|null $default
+     *
+     * @return array|null
      */
-    public function getInputAsJsonObject(string $key): ?object
+    public function getInputAsArrayFromCommaSeparatedString(string $key, ?array $default = null): ?array
     {
-        $data = $this->input($key);
-        return is_null($data) ? null : json_decode($data);
-    }
+        $value = $this->input($key);
 
-    /**
-     * Transform unix timestamp input to carbon datetime. Timestamp in seconds.
-     * @param string $key
-     * @return Carbon|null
-     */
-    public function getTimestampInputAsCarbon(string $key): ?Carbon
-    {
-        $inputTimestamp = $this->getInputAsInt($key);
-        return is_null($inputTimestamp) ? null : Carbon::createFromTimestamp($inputTimestamp);
+        if (empty($value)) {
+            return $default;
+        }
+
+        return explode(',', (string) $value);
     }
 
     /**
      * Transform input value to carbon datetime.
+     *
      * @param string $key
+     *
      * @return Carbon|null
      */
     public function getInputAsCarbon(string $key): ?Carbon
@@ -137,7 +152,9 @@ class BaseRequest extends FormRequest
 
     /**
      * Transform input value to url.
+     *
      * @param string $key
+     *
      * @return string
      */
     public function getInputAsUrl(string $key): string
@@ -147,6 +164,7 @@ class BaseRequest extends FormRequest
 
     /**
      * For pagination. Get the requested page number.
+     *
      * @return int
      */
     public function getPage(): int
@@ -156,6 +174,7 @@ class BaseRequest extends FormRequest
 
     /**
      * For pagination. Get the requested page limit.
+     *
      * @return int
      */
     public function getPageLimit(): int
@@ -166,6 +185,7 @@ class BaseRequest extends FormRequest
 
     /**
      * For pagination. Get the requested page offset.
+     *
      * @return int
      */
     public function getPageOffset(): int
@@ -176,6 +196,7 @@ class BaseRequest extends FormRequest
 
     /**
      * Get request meta.
+     *
      * @return MetaDto
      */
     public function getMeta(): MetaDto
@@ -195,47 +216,12 @@ class BaseRequest extends FormRequest
 
     /**
      * Get authenticated user.
-     * @return AuthUserDto
+     *
+     * @return User
      */
-    public function getAuthUser(): AuthUserDto
+    public function getAuthUser(): User
     {
-        /** @var UserDto $userDto */
-        $userDto = $this->user()->toDto();
-
-        $authUserDto = new AuthUserDto();
-        $authUserDto->setId($userDto->getId());
-        $authUserDto->setFirstName($userDto->getFirstName());
-        $authUserDto->setLastName($userDto->getLastName());
-        $authUserDto->setEmail($userDto->getEmail());
-        $authUserDto->setRole($userDto->getRole());
-
-        return $authUserDto;
+        return Auth::user();
     }
 
-    /**
-     * Check if the authenticated user role is system admin.
-     * @return bool
-     */
-    public function isSystemAdmin(): bool
-    {
-        return $this->getAuthUser()->getRole() === UserRoleConstant::SYSTEM_ADMIN;
-    }
-
-    /**
-     * Check if the authenticated user role is admin.
-     * @return bool
-     */
-    public function isAdmin(): bool
-    {
-        return $this->getAuthUser()->getRole() === UserRoleConstant::ADMIN;
-    }
-
-    /**
-     * Check if the authenticated user role is member.
-     * @return bool
-     */
-    public function isMember(): bool
-    {
-        return $this->getAuthUser()->getRole() === UserRoleConstant::MEMBER;
-    }
 }
