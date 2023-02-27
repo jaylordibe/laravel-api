@@ -31,7 +31,7 @@ class UserController extends Controller
      */
     public function getAuthUser(GenericRequest $request): JsonResponse|JsonResource
     {
-        $serviceResponse = $this->userService->getById($request->getAuthUser()->getId());
+        $serviceResponse = $this->userService->getById($request->getAuthUser()->id);
 
         if ($serviceResponse->isError()) {
             return ResponseUtil::error($serviceResponse->getMessage());
@@ -67,8 +67,8 @@ class UserController extends Controller
     {
         Gate::authorize(GateAbilityConstant::CAN_READ_USER);
 
-        $userDto = UserRequest::createFrom($request)->toDto();
-        $serviceResponse = $this->userService->get($userDto);
+        $userFilterDto = UserRequest::createFrom($request)->toFilterDto();
+        $serviceResponse = $this->userService->get($userFilterDto);
 
         if ($serviceResponse->isError()) {
             return ResponseUtil::error($serviceResponse->getMessage());

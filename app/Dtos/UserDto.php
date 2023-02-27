@@ -10,15 +10,12 @@ class UserDto extends BaseDto
     private ?string $firstName = null;
     private ?string $middleName = null;
     private ?string $lastName = null;
-    private ?string $fullName = null;
     private ?string $email = null;
     private ?string $username = null;
-    private ?string $role = null;
-    private ?string $phoneNumber = null;
-    private ?string $address = null;
-    private ?Carbon $birthday = null;
-    private ?string $profileImage = null;
     private ?string $timezone = null;
+    private ?string $phoneNumber = null;
+    private ?Carbon $birthday = null;
+    private ?string $profilePicture = null;
 
     public function __construct()
     {
@@ -76,22 +73,6 @@ class UserDto extends BaseDto
     /**
      * @return string|null
      */
-    public function getFullName(): ?string
-    {
-        return "{$this->firstName} {$this->lastName}";
-    }
-
-    /**
-     * @param string|null $fullName
-     */
-    public function setFullName(?string $fullName): void
-    {
-        $this->fullName = $fullName;
-    }
-
-    /**
-     * @return string|null
-     */
     public function getEmail(): ?string
     {
         return $this->email;
@@ -124,17 +105,17 @@ class UserDto extends BaseDto
     /**
      * @return string|null
      */
-    public function getRole(): ?string
+    public function getTimezone(): ?string
     {
-        return $this->role;
+        return $this->timezone;
     }
 
     /**
-     * @param string|null $role
+     * @param string|null $timezone
      */
-    public function setRole(?string $role): void
+    public function setTimezone(?string $timezone): void
     {
-        $this->role = $role;
+        $this->timezone = $timezone;
     }
 
     /**
@@ -151,22 +132,6 @@ class UserDto extends BaseDto
     public function setPhoneNumber(?string $phoneNumber): void
     {
         $this->phoneNumber = $phoneNumber;
-    }
-
-    /**
-     * @return string|null
-     */
-    public function getAddress(): ?string
-    {
-        return $this->address;
-    }
-
-    /**
-     * @param string|null $address
-     */
-    public function setAddress(?string $address): void
-    {
-        $this->address = $address;
     }
 
     /**
@@ -188,32 +153,17 @@ class UserDto extends BaseDto
     /**
      * @return string|null
      */
-    public function getProfileImage(): ?string
+    public function getProfilePicture(): ?string
     {
-        return $this->profileImage;
+        return $this->profilePicture;
     }
 
     /**
-     * @param string|null $profileImage
+     * @param string|null $profilePicture
      */
-    public function setProfileImage(?string $profileImage): void
+    public function setProfilePicture(?string $profilePicture): void
     {
-        $this->profileImage = $profileImage;
+        $this->profilePicture = $profilePicture;
     }
 
-    /**
-     * @return string|null
-     */
-    public function getTimezone(): ?string
-    {
-        return $this->timezone;
-    }
-
-    /**
-     * @param string|null $timezone
-     */
-    public function setTimezone(?string $timezone): void
-    {
-        $this->timezone = $timezone;
-    }
 }

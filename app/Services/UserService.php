@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Dtos\ServiceResponseDto;
 use App\Dtos\UserDto;
+use App\Dtos\UserFilterDto;
 use App\Repositories\UserRepository;
 use App\Utils\AppUtil;
 use App\Utils\ServiceResponseUtil;
@@ -12,7 +13,9 @@ use Illuminate\Support\Str;
 class UserService
 {
 
-    public function __construct(private readonly UserRepository $userRepository)
+    public function __construct(
+        private readonly UserRepository $userRepository
+    )
     {
     }
 
@@ -33,14 +36,14 @@ class UserService
     }
 
     /**
-     * @param UserDto $userDto
+     * @param UserFilterDto $userFilterDto
      *
      * @return ServiceResponseDto
      */
-    public function get(UserDto $userDto): ServiceResponseDto
+    public function get(UserFilterDto $userFilterDto): ServiceResponseDto
     {
         return ServiceResponseUtil::map(
-            $this->userRepository->get($userDto)
+            $this->userRepository->get($userFilterDto)
         );
     }
 

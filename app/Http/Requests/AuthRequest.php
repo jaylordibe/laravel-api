@@ -47,4 +47,5 @@ class AuthRequest extends BaseRequest
 
         return $authDto;
     }
+
 }
