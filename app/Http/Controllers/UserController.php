@@ -18,7 +18,9 @@ class UserController extends Controller
 
     public function __construct(
         private readonly UserService $userService
-    ) {}
+    )
+    {
+    }
 
     /**
      * Get the authenticated user.
@@ -45,7 +47,7 @@ class UserController extends Controller
      */
     public function create(UserRequest $request): JsonResponse|JsonResource
     {
-        Gate::authorize(GateAbilityConstant::SYSTEM_ADMIN_OR_ADMIN);
+        Gate::authorize(GateAbilityConstant::CAN_CREATE_USER);
 
         $serviceResponse = $this->userService->create($request->toDto());
 
@@ -63,7 +65,7 @@ class UserController extends Controller
      */
     public function get(GenericRequest $request): JsonResponse|JsonResource
     {
-        Gate::authorize(GateAbilityConstant::SYSTEM_ADMIN_OR_ADMIN);
+        Gate::authorize(GateAbilityConstant::CAN_READ_USER);
 
         $userDto = UserRequest::createFrom($request)->toDto();
         $serviceResponse = $this->userService->get($userDto);
@@ -83,6 +85,8 @@ class UserController extends Controller
      */
     public function getById(GenericRequest $request, int $id): JsonResponse|JsonResource
     {
+        Gate::authorize(GateAbilityConstant::CAN_READ_USER);
+
         $serviceResponse = $this->userService->getById($id);
 
         if ($serviceResponse->isError()) {
@@ -100,7 +104,7 @@ class UserController extends Controller
      */
     public function update(UserRequest $request, int $id): JsonResponse|JsonResource
     {
-        Gate::authorize(GateAbilityConstant::SYSTEM_ADMIN_OR_ADMIN);
+        Gate::authorize(GateAbilityConstant::CAN_UPDATE_USER);
 
         $userDto = $request->toDto();
         $userDto->setId($id);
@@ -121,7 +125,7 @@ class UserController extends Controller
      */
     public function delete(GenericRequest $request, int $id): JsonResponse
     {
-        Gate::authorize(GateAbilityConstant::SYSTEM_ADMIN_OR_ADMIN);
+        Gate::authorize(GateAbilityConstant::CAN_DELETE_USER);
 
         $serviceResponse = $this->userService->delete($id);
 

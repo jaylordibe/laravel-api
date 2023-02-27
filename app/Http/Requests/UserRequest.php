@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests;
 
-use App\Constants\UserRoleConstant;
+use App\Constants\RoleConstant;
 use App\Dtos\UserDto;
 
 class UserRequest extends BaseRequest

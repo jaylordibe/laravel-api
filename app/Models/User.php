@@ -8,6 +8,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
 use Laravel\Passport\HasApiTokens;
+use Spatie\Permission\Traits\HasRoles;
 
 /**
  * @property int $id
@@ -22,13 +23,12 @@ use Laravel\Passport\HasApiTokens;
  * @property Carbon|null $email_verified_at
  * @property string $password
  * @property string|null $remember_token
- * @property string $role
  * @property string|null $timezone
  */
 class User extends Authenticatable
 {
 
-    use HasApiTokens, HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, HasRoles, Notifiable;
 
     /**
      * The attributes that are mass assignable.

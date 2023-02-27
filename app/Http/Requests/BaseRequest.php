@@ -3,7 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Constants\AppConstant;
-use App\Constants\UserRoleConstant;
+use App\Constants\RoleConstant;
 use App\Dtos\AuthUserDto;
 use App\Dtos\MetaDto;
 use App\Dtos\UserDto;
@@ -218,7 +218,7 @@ class BaseRequest extends FormRequest
      */
     public function isSystemAdmin(): bool
     {
-        return $this->getAuthUser()->getRole() === UserRoleConstant::SYSTEM_ADMIN;
+        return $this->getAuthUser()->getRole() === RoleConstant::SYSTEM_ADMIN;
     }
 
     /**
@@ -227,7 +227,7 @@ class BaseRequest extends FormRequest
      */
     public function isAdmin(): bool
     {
-        return $this->getAuthUser()->getRole() === UserRoleConstant::ADMIN;
+        return $this->getAuthUser()->getRole() === RoleConstant::ADMIN;
     }
 
     /**
@@ -236,6 +236,6 @@ class BaseRequest extends FormRequest
      */
     public function isMember(): bool
     {
-        return $this->getAuthUser()->getRole() === UserRoleConstant::MEMBER;
+        return $this->getAuthUser()->getRole() === RoleConstant::MEMBER;
     }
 }

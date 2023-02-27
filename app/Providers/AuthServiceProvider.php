@@ -2,9 +2,8 @@
 
 namespace App\Providers;
 
-// use Illuminate\Support\Facades\Gate;
 use App\Constants\GateAbilityConstant;
-use App\Constants\UserRoleConstant;
+use App\Constants\RoleConstant;
 use App\Models\User;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Gate;
@@ -31,22 +30,31 @@ class AuthServiceProvider extends ServiceProvider
         Passport::refreshTokensExpireIn(now()->addDays(30));
         Passport::personalAccessTokensExpireIn(now()->addMonths(6));
 
+        // Implicitly grant "SYSTEM_ADMIN" role all permission checks using can()
+        Gate::before(function (User $user, $ability) {
+            return $user->hasRole(RoleConstant::SYSTEM_ADMIN);
+        });
+
         // Define gate (authorization)
-        Gate::define(GateAbilityConstant::SYSTEM_ADMIN, function (User $user) {
-            return $user->role === UserRoleConstant::SYSTEM_ADMIN;
+        $this->defineUserGates();
+    }
+
+    private function defineUserGates(): void
+    {
+        Gate::define(GateAbilityConstant::CAN_CREATE_USER, function (User $user) {
+            return $user->can(GateAbilityConstant::CAN_CREATE_USER);
         });
 
-        Gate::define(GateAbilityConstant::ADMIN, function (User $user) {
-            return $user->role === UserRoleConstant::ADMIN;
+        Gate::define(GateAbilityConstant::CAN_READ_USER, function (User $user) {
+            return $user->can(GateAbilityConstant::CAN_READ_USER);
         });
 
-        Gate::define(GateAbilityConstant::MEMBER, function (User $user) {
-            return $user->role === UserRoleConstant::MEMBER;
+        Gate::define(GateAbilityConstant::CAN_UPDATE_USER, function (User $user) {
+            return $user->can(GateAbilityConstant::CAN_UPDATE_USER);
         });
 
-        Gate::define(GateAbilityConstant::SYSTEM_ADMIN_OR_ADMIN, function (User $user) {
-            $allowedRoles = [UserRoleConstant::SYSTEM_ADMIN, UserRoleConstant::ADMIN];
-            return in_array($user->role, $allowedRoles, true);
+        Gate::define(GateAbilityConstant::CAN_DELETE_USER, function (User $user) {
+            return $user->can(GateAbilityConstant::CAN_DELETE_USER);
         });
     }
 
