@@ -2,10 +2,11 @@
 
 namespace App\Services;
 
+use App\Dtos\ServiceResponseDto;
 use App\Dtos\UserDto;
-use App\Models\Custom\ServiceResponse;
 use App\Repositories\UserRepository;
 use App\Utils\AppUtil;
+use App\Utils\ServiceResponseUtil;
 use Illuminate\Support\Str;
 
 class UserService
@@ -18,27 +19,27 @@ class UserService
     /**
      * @param UserDto $userDto
      *
-     * @return ServiceResponse
+     * @return ServiceResponseDto
      */
-    public function create(UserDto $userDto): ServiceResponse
+    public function create(UserDto $userDto): ServiceResponseDto
     {
         $user = $this->userRepository->save($userDto);
 
         if (empty($user)) {
-            return ServiceResponse::error('Failed to create user.');
+            return ServiceResponseUtil::error('Failed to create user.');
         }
 
-        return ServiceResponse::success('User successfully created.', $user);
+        return ServiceResponseUtil::success('User successfully created.', $user);
     }
 
     /**
      * @param UserDto $userDto
      *
-     * @return ServiceResponse
+     * @return ServiceResponseDto
      */
-    public function get(UserDto $userDto): ServiceResponse
+    public function get(UserDto $userDto): ServiceResponseDto
     {
-        return ServiceResponse::map(
+        return ServiceResponseUtil::map(
             $this->userRepository->get($userDto)
         );
     }
@@ -46,11 +47,11 @@ class UserService
     /**
      * @param int $id
      *
-     * @return ServiceResponse
+     * @return ServiceResponseDto
      */
-    public function getById(int $id): ServiceResponse
+    public function getById(int $id): ServiceResponseDto
     {
-        return ServiceResponse::map(
+        return ServiceResponseUtil::map(
             $this->userRepository->findById($id)
         );
     }
@@ -58,23 +59,23 @@ class UserService
     /**
      * @param UserDto $userDto
      *
-     * @return ServiceResponse
+     * @return ServiceResponseDto
      */
-    public function update(UserDto $userDto): ServiceResponse
+    public function update(UserDto $userDto): ServiceResponseDto
     {
         $user = $this->userRepository->findById($userDto->getId());
 
         if (empty($user)) {
-            return ServiceResponse::error('User not found.');
+            return ServiceResponseUtil::error('User not found.');
         }
 
         $user = $this->userRepository->save($userDto, $user);
 
         if (empty($user)) {
-            return ServiceResponse::error('Failed to update user.');
+            return ServiceResponseUtil::error('Failed to update user.');
         }
 
-        return ServiceResponse::success('User successfully updated.', $user);
+        return ServiceResponseUtil::success('User successfully updated.', $user);
     }
 
     /**
@@ -82,17 +83,17 @@ class UserService
      *
      * @param int $id
      *
-     * @return ServiceResponse
+     * @return ServiceResponseDto
      */
-    public function delete(int $id): ServiceResponse
+    public function delete(int $id): ServiceResponseDto
     {
         $isDeleted = $this->userRepository->delete($id);
 
         if (!$isDeleted) {
-            return ServiceResponse::error('Failed to delete user.');
+            return ServiceResponseUtil::error('Failed to delete user.');
         }
 
-        return ServiceResponse::success('User successfully deleted.');
+        return ServiceResponseUtil::success('User successfully deleted.');
     }
 
     /**
