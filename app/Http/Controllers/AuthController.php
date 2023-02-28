@@ -20,6 +20,9 @@ class AuthController extends Controller
         $this->middleware('guest')->except('signOut');
     }
 
+    /**
+     * Log the user in to the application.
+     */
     public function authenticate(AuthRequest $request): JsonResponse
     {
         $authDto = $request->toDto();
@@ -40,16 +43,19 @@ class AuthController extends Controller
         }
 
         $response = [
-            'token' => $user->createToken(env('APP_NAME'))->accessToken
+            'token' => $user->createToken(config('app.name'))->accessToken
         ];
 
         return ResponseUtil::json($response);
     }
 
+    /**
+     * Log the user out of the application.
+     */
     public function signOut(GenericRequest $request): JsonResponse
     {
-        $token = $request->user()->token();
-        $token->revoke();
+        Auth::user()->token()->delete();
+        Auth::logout();
 
         return ResponseUtil::success('Logout successful.');
     }

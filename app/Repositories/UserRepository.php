@@ -137,4 +137,58 @@ class UserRepository
         return false;
     }
 
+    /**
+     * Update username.
+     *
+     * @param int $id
+     * @param string $username
+     *
+     * @return User|null
+     */
+    public function updateUsername(int $id, string $username): ?User
+    {
+        $user = $this->findById($id);
+
+        if (empty($user)) {
+            return null;
+        }
+
+        if ($this->isUsernameExists($username)) {
+            return null;
+        }
+
+        $user->username = $username;
+        $user->updated_by = Auth::user()->id;
+        $user->save();
+
+        return $user;
+    }
+
+    /**
+     * Update email.
+     *
+     * @param int $id
+     * @param string $email
+     *
+     * @return User|null
+     */
+    public function updateEmail(int $id, string $email): ?User
+    {
+        $user = $this->findById($id);
+
+        if (empty($user)) {
+            return null;
+        }
+
+        if ($this->isEmailExists($email)) {
+            return null;
+        }
+
+        $user->email = $email;
+        $user->updated_by = Auth::user()->id;
+        $user->save();
+
+        return $user;
+    }
+
 }

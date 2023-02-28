@@ -167,4 +167,42 @@ class UserService
         return $username;
     }
 
+    /**
+     * Update username.
+     *
+     * @param int $id
+     * @param string $username
+     *
+     * @return ServiceResponseDto
+     */
+    public function updateUsername(int $id, string $username): ServiceResponseDto
+    {
+        $user = $this->userRepository->updateUsername($id, $username);
+
+        if (empty($user)) {
+            return ServiceResponseUtil::error('Failed to update username');
+        }
+
+        return ServiceResponseUtil::map($user);
+    }
+
+    /**
+     * Update email.
+     *
+     * @param int $id
+     * @param string $email
+     *
+     * @return ServiceResponseDto
+     */
+    public function updateEmail(int $id, string $email): ServiceResponseDto
+    {
+        $user = $this->userRepository->updateEmail($id, $email);
+
+        if (empty($user)) {
+            return ServiceResponseUtil::error('Failed to update email');
+        }
+
+        return ServiceResponseUtil::map($user);
+    }
+
 }

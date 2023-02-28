@@ -41,6 +41,32 @@ class UserTest extends TestCase
     }
 
     /**
+     * A basic test in updating auth user's username.
+     */
+    public function testUpdateAuthUserName(): void
+    {
+        $user = User::factory()->create();
+        $token = $this->login($user->email);
+        $payload = ['username' => fake()->unique()->userName()];
+        $response = $this->withToken($token)->put("{$this->endpoint}/auth/username", $payload);
+
+        $response->assertOk()->assertJson(['username' => $payload['username']]);
+    }
+
+    /**
+     * A basic test in updating auth user's email.
+     */
+    public function testUpdateAuthUserEmail(): void
+    {
+        $user = User::factory()->create();
+        $token = $this->login($user->email);
+        $payload = ['email' => fake()->unique()->safeEmail()];
+        $response = $this->withToken($token)->put("{$this->endpoint}/auth/email", $payload);
+
+        $response->assertOk()->assertJson(['email' => $payload['email']]);
+    }
+
+    /**
      * A basic test in creating a user.
      */
     public function testCreateUser(): void

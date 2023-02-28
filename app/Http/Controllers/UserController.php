@@ -41,6 +41,54 @@ class UserController extends Controller
     }
 
     /**
+     * Update auth user's username.
+     *
+     * @param GenericRequest $request
+     *
+     * @return JsonResponse|JsonResource
+     */
+    public function updateAuthUserName(GenericRequest $request): JsonResponse|JsonResource
+    {
+        $username = $request->getInputAsString('username');
+
+        if (empty($username)) {
+            return ResponseUtil::error('Username is required.');
+        }
+
+        $serviceResponse = $this->userService->updateUsername($request->getAuthUser()->id, $username);
+
+        if ($serviceResponse->isError()) {
+            return ResponseUtil::error($serviceResponse->getMessage());
+        }
+
+        return ResponseUtil::resource(UserResource::class, $serviceResponse->getData());
+    }
+
+    /**
+     * Update auth user's email.
+     *
+     * @param GenericRequest $request
+     *
+     * @return JsonResponse|JsonResource
+     */
+    public function updateAuthUserEmail(GenericRequest $request): JsonResponse|JsonResource
+    {
+        $email = $request->getInputAsString('email');
+
+        if (empty($email)) {
+            return ResponseUtil::error('Email is required.');
+        }
+
+        $serviceResponse = $this->userService->updateEmail($request->getAuthUser()->id, $email);
+
+        if ($serviceResponse->isError()) {
+            return ResponseUtil::error($serviceResponse->getMessage());
+        }
+
+        return ResponseUtil::resource(UserResource::class, $serviceResponse->getData());
+    }
+
+    /**
      * @param UserRequest $request
      *
      * @return JsonResponse|JsonResource
