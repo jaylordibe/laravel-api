@@ -29,6 +29,8 @@ Route::middleware('auth:api')->group(function () {
     Route::post('users', [UserController::class, 'create']);
     Route::get('users', [UserController::class, 'get']);
     Route::get('users/auth', [UserController::class, 'getAuthUser']);
+    Route::put('users/auth/username', [UserController::class, 'updateAuthUserName']);
+    Route::put('users/auth/email', [UserController::class, 'updateAuthUserEmail']);
     Route::get('users/{userId}', [UserController::class, 'getById'])->where('userId', RoutePatternConstant::NUMERIC);
     Route::put('users/{userId}', [UserController::class, 'update'])->where('userId', RoutePatternConstant::NUMERIC);
     Route::delete('users/{userId}', [UserController::class, 'delete'])->where('userId', RoutePatternConstant::NUMERIC);

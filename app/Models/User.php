@@ -13,6 +13,8 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
 use Laravel\Passport\HasApiTokens;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 use Spatie\Permission\Traits\HasRoles;
 
 /**
@@ -37,6 +39,8 @@ use Spatie\Permission\Traits\HasRoles;
  * @property string|null $profile_picture
  *
  * Model relationships
+ * @property Collection|Role[]|null $roles
+ * @property Collection|Permission[]|null $permissions
  * @property Collection|Address[]|null $addresses
  */
 class User extends Authenticatable

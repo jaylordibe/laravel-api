@@ -25,7 +25,7 @@ class PermissionsSeeder extends Seeder
         $permissions = PermissionConstant::asList();
 
         foreach ($permissions as $permission) {
-            Permission::create(['name' => $permission, 'guard_name' => 'api']);
+            Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'api']);
         }
 
         // Create roles and assign existing permissions
@@ -33,7 +33,7 @@ class PermissionsSeeder extends Seeder
 
         foreach ($roles as $role) {
             $rolePermissions = PermissionConstant::fromRole($role);
-            Role::create(['name' => $role, 'guard_name' => 'api'])->givePermissionTo($rolePermissions);
+            Role::firstOrCreate(['name' => $role, 'guard_name' => 'api'])->givePermissionTo($rolePermissions);
         }
     }
 
