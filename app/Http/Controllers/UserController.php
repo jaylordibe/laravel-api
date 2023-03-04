@@ -31,7 +31,8 @@ class UserController extends Controller
      */
     public function getAuthUser(GenericRequest $request): JsonResponse|JsonResource
     {
-        $serviceResponse = $this->userService->getById($request->getAuthUser()->id);
+        $relations = ['roles', 'permissions'];
+        $serviceResponse = $this->userService->getById($request->getAuthUser()->id, $relations);
 
         if ($serviceResponse->isError()) {
             return ResponseUtil::error($serviceResponse->getMessage());

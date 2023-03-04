@@ -25,6 +25,8 @@ class UserResource extends JsonResource
             'fullName' => $this->full_name,
             'username' => $this->username,
             'email' => $this->email,
+            'roles' => $this->roles->map(fn($role) => $role->name),
+            'permissions' => $this->permissions->map(fn($role) => $role->name),
             'timezone' => $this->timezone,
             'phoneNumber' => $this->phone_number,
             'birthday' => $this->birthday,
