@@ -55,8 +55,6 @@ class AuthController extends Controller
     public function signOut(GenericRequest $request): JsonResponse
     {
         Auth::user()->token()->delete();
-        Auth::logout();
-
         return ResponseUtil::success('Logout successful.');
     }
 
