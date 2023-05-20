@@ -48,6 +48,7 @@ class BaseRequest extends FormRequest
     public function getInputAsString(string $key, ?string $default = null): ?string
     {
         $data = $this->input($key);
+
         return is_null($data) ? $default : (string) $data;
     }
 
@@ -62,6 +63,7 @@ class BaseRequest extends FormRequest
     public function getInputAsInt(string $key, ?int $default = null): ?int
     {
         $data = $this->input($key);
+
         return is_null($data) ? $default : (int) $data;
     }
 
@@ -76,6 +78,7 @@ class BaseRequest extends FormRequest
     public function getInputAsFloat(string $key, ?float $default = null): ?float
     {
         $data = $this->input($key);
+
         return is_null($data) ? $default : (float) $data;
     }
 
@@ -90,6 +93,7 @@ class BaseRequest extends FormRequest
     public function getInputAsBoolean(string $key, ?bool $default = null): ?bool
     {
         $data = $this->input($key);
+
         return is_null($data) ? $default : filter_var($data, FILTER_VALIDATE_BOOLEAN);
     }
 
@@ -104,6 +108,7 @@ class BaseRequest extends FormRequest
     public function getInputAsArray(string $key, ?array $default = null): ?array
     {
         $data = $this->input($key);
+
         return is_null($data) ? $default : (array) $data;
     }
 
@@ -180,6 +185,7 @@ class BaseRequest extends FormRequest
     public function getPageLimit(): int
     {
         $limit = $this->getInputAsInt('limit') ?: AppConstant::DEFAULT_PAGE_LIMIT;
+
         return $limit > AppConstant::MAX_PAGE_LIMIT ? AppConstant::DEFAULT_PAGE_LIMIT : $limit;
     }
 
@@ -191,7 +197,26 @@ class BaseRequest extends FormRequest
     public function getPageOffset(): int
     {
         $offset = $this->getInputAsInt('offset');
+
         return $offset ?: ($this->getPage() - 1) * $this->getPageLimit();
+    }
+
+    /**
+     * Get relations for database query.
+     * @return array
+     */
+    public function getRelations(): array
+    {
+        $value = $this->input('relations');
+        $relations = [];
+
+        if (is_string($value) && !empty($value)) {
+            $relations = explode('|', $value);
+        } elseif (is_array($value) && !empty($value)) {
+            $relations = $value;
+        }
+
+        return $relations;
     }
 
     /**
@@ -203,7 +228,7 @@ class BaseRequest extends FormRequest
     {
         $metaDto = new MetaDto();
         $metaDto->setSearchQuery($this->getInputAsString('search'));
-        $metaDto->setRelations($this->getInputAsArray('relations') ?: []);
+        $metaDto->setRelations($this->getRelations());
         $metaDto->setSortField($this->getInputAsString('sortField') ?: AppConstant::DEFAULT_DB_QUERY_SORT_FIELD);
         $metaDto->setSortDirection($this->getInputAsString('sortDirection') ?: AppConstant::DEFAULT_DB_QUERY_SORT_DIRECTION);
         $metaDto->setPage($this->getPage());
