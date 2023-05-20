@@ -23,7 +23,7 @@ class AuthController extends Controller
     /**
      * Log the user in to the application.
      */
-    public function authenticate(AuthRequest $request): JsonResponse
+    public function signIn(AuthRequest $request): JsonResponse
     {
         $authDto = $request->toDto();
         $identifierField = AppUtil::isValidEmail($authDto->getIdentifier()) ? 'email' : 'username';

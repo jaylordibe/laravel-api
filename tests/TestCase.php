@@ -23,7 +23,7 @@ abstract class TestCase extends BaseTestCase
             'identifier' => $identifier,
             'password' => $password
         ];
-        $response = $this->post('/api/authenticate', $data);
+        $response = $this->post('/api/auth/sign-in', $data);
 
         return $response->json()['token'] ?? '';
     }

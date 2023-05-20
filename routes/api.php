@@ -18,12 +18,12 @@ use Illuminate\Support\Facades\Route;
 */
 
 # Public Routes
-Route::post('authenticate', [AuthController::class, 'authenticate']);
+Route::post('auth/sign-in', [AuthController::class, 'signIn']);
 
 # Authenticated Routes
 Route::middleware('auth:api')->group(function () {
     # Auth
-    Route::post('sign-out', [AuthController::class, 'signOut']);
+    Route::post('auth/sign-out', [AuthController::class, 'signOut']);
 
     # User
     Route::post('users', [UserController::class, 'create']);
