@@ -1,7 +1,7 @@
 version: '3.7'
 services:
   laravel-api:
-    image: jaylordibe/laravel-php:8.1
+    image: jaylordibe/laravel-php
     container_name: laravel-api
     restart: unless-stopped
     tty: true
