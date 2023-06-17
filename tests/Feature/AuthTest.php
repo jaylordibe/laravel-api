@@ -31,10 +31,6 @@ class AuthTest extends TestCase
         $payload = $this->getPayload();
         $response = $this->post("{$this->endpoint}/sign-in", $payload);
 
-        Log::debug('testSignIn', [
-            'response' => $response->json()
-        ]);
-
         $response->assertOk()->assertJsonStructure(['token']);
     }
 
