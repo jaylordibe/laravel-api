@@ -21,9 +21,9 @@ class AddressRepository
      *
      * @return Address|null
      */
-    public function findById(int $id, array $relations = []): ?Address
+    public function findById(int $id, array $relations = [], array $columns = ['*']): ?Address
     {
-        return Address::with($relations)->firstWhere('id', $id);
+        return Address::with($relations)->where('id', $id)->first($columns);
     }
 
     /**

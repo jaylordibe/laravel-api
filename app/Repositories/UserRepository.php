@@ -21,12 +21,13 @@ class UserRepository
      *
      * @param int $id
      * @param array $relations
+     * @param array $columns
      *
      * @return User|null
      */
-    public function findById(int $id, array $relations = []): ?User
+    public function findById(int $id, array $relations = [], array $columns = ['*']): ?User
     {
-        return User::with($relations)->firstWhere('id', $id);
+        return User::with($relations)->where('id', $id)->first($columns);
     }
 
     /**
@@ -90,7 +91,7 @@ class UserRepository
     public function get(UserFilterDto $userFilterDto): LengthAwarePaginator
     {
         $relations = $userFilterDto->getMeta()->getRelations();
-        $sortField = $userFilterDto->getMeta()->getSortField() === AppConstant::DEFAULT_DB_QUERY_SORT_FIELD ? 'first_name' : $userDto->getMeta()->getSortField();
+        $sortField = $userFilterDto->getMeta()->getSortField() === AppConstant::DEFAULT_DB_QUERY_SORT_FIELD ? 'first_name' : $userFilterDto->getMeta()->getSortField();
         $sortDirection = $userFilterDto->getMeta()->getSortDirection();
         $limit = $userFilterDto->getMeta()->getLimit();
         $users = User::with($relations);
