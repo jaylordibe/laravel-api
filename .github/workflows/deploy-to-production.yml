@@ -9,10 +9,21 @@ on:
 
 # Set jobs to be executed in the workflow
 jobs:
-  build:
+  tests:
+    name: Run Tests
     runs-on: ubuntu-latest
     steps:
-      - name: Setup checkout
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Run tests
+        run: |
+          ./start.sh fresh
+          ./test.sh
+  build:
+    name: Build And Deploy To Production
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
         uses: actions/checkout@v2
       - name: Deploy to production
         run: |
