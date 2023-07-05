@@ -2,7 +2,7 @@
 set -a
 
 echo -e "\033[0m \033[1;35m Stopping existing services \033[0m"
-docker-compose down
+docker compose down
 
 TYPE=$1
 
@@ -32,7 +32,7 @@ source .env
 COMMANDS=""
 
 echo -e "\033[0m \033[1;35m Starting services \033[0m"
-docker-compose up -d
+docker compose up -d
 
 # Wait for the containers to initialize
 echo -e "\033[0m \033[1;35m Waiting for the containers to initialize \033[0m"
