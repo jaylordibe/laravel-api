@@ -16,7 +16,7 @@ done
 COMMANDS="
     chmod -R 777 storage
     chmod -R 777 bootstrap/cache
-    composer update
+    composer install --prefer-dist --no-progress --no-interaction
     php artisan migrate:fresh --seed --env=testing
     php artisan passport:install --env=testing
     php artisan passport:keys --env=testing
