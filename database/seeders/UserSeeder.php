@@ -21,8 +21,8 @@ class UserSeeder extends Seeder
     {
         // Create system admin user
         $user = User::create([
-            'first_name' => 'System',
-            'last_name' => 'Admin',
+            'first_name' => 'John',
+            'last_name' => 'Doe',
             'username' => Str::before(config('custom.sysad_email'), '@'),
             'email' => config('custom.sysad_email'),
             'email_verified_at' => Carbon::now(),
@@ -35,8 +35,8 @@ class UserSeeder extends Seeder
 
         // Create app admin user
         $user = User::create([
-            'first_name' => 'App',
-            'last_name' => 'Admin',
+            'first_name' => 'Jane',
+            'last_name' => 'Doe',
             'username' => Str::before(config('custom.appad_email'), '@'),
             'email' => config('custom.appad_email'),
             'email_verified_at' => Carbon::now(),
