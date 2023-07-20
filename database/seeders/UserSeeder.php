@@ -32,6 +32,20 @@ class UserSeeder extends Seeder
         // Assign user role
         $systemAdminRole = Role::findByName(RoleConstant::SYSTEM_ADMIN, 'api');
         $user->assignRole($systemAdminRole);
+
+        // Create app admin user
+        $user = User::create([
+            'first_name' => 'App',
+            'last_name' => 'Admin',
+            'username' => Str::before(config('custom.appad_email'), '@'),
+            'email' => config('custom.appad_email'),
+            'email_verified_at' => Carbon::now(),
+            'password' => Hash::make(config('custom.appad_password'))
+        ]);
+
+        // Assign user role
+        $systemAdminRole = Role::findByName(RoleConstant::APP_ADMIN, 'api');
+        $user->assignRole($systemAdminRole);
     }
 
 }

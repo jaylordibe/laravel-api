@@ -20,4 +20,6 @@
 return [
     'sysad_email' => env('SYSAD_EMAIL'),
     'sysad_password' => env('SYSAD_PASSWORD'),
+    'appad_email' => env('APPAD_EMAIL'),
+    'appad_password' => env('APPAD_PASSWORD')
 ];

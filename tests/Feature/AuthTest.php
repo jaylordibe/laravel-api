@@ -8,7 +8,7 @@ use Tests\TestCase;
 class AuthTest extends TestCase
 {
 
-    private string $endpoint = '/api/auth';
+    private string $resource = '/api/auth';
 
     /**
      * Get address payload.
@@ -29,7 +29,7 @@ class AuthTest extends TestCase
     public function testSignIn(): void
     {
         $payload = $this->getPayload();
-        $response = $this->post("{$this->endpoint}/sign-in", $payload);
+        $response = $this->post("{$this->resource}/sign-in", $payload);
 
         $response->assertOk()->assertJsonStructure(['token']);
     }
@@ -40,7 +40,7 @@ class AuthTest extends TestCase
     public function testSignOut(): void
     {
         $token = $this->loginSystemAdminUser();
-        $response = $this->withToken($token)->post("{$this->endpoint}/sign-out");
+        $response = $this->withToken($token)->post("{$this->resource}/sign-out");
 
         $response->assertOk()->assertJsonStructure(['success']);
     }

@@ -10,7 +10,7 @@ use Tests\TestCase;
 class UserTest extends TestCase
 {
 
-    private string $endpoint = '/api/users';
+    private string $resource = '/api/users';
 
     /**
      * Get user payload.
@@ -35,7 +35,7 @@ class UserTest extends TestCase
     public function testGetAuthUser(): void
     {
         $token = $this->loginSystemAdminUser();
-        $response = $this->withToken($token)->get("{$this->endpoint}/auth");
+        $response = $this->withToken($token)->get("{$this->resource}/auth");
 
         $response->assertOk();
     }
@@ -48,7 +48,7 @@ class UserTest extends TestCase
         $user = User::factory()->create();
         $token = $this->login($user->email);
         $payload = ['username' => fake()->unique()->userName()];
-        $response = $this->withToken($token)->put("{$this->endpoint}/auth/username", $payload);
+        $response = $this->withToken($token)->put("{$this->resource}/auth/username", $payload);
 
         $response->assertOk()->assertJson(['username' => $payload['username']]);
     }
@@ -61,7 +61,7 @@ class UserTest extends TestCase
         $user = User::factory()->create();
         $token = $this->login($user->email);
         $payload = ['email' => fake()->unique()->safeEmail()];
-        $response = $this->withToken($token)->put("{$this->endpoint}/auth/email", $payload);
+        $response = $this->withToken($token)->put("{$this->resource}/auth/email", $payload);
 
         $response->assertOk()->assertJson(['email' => $payload['email']]);
     }
@@ -76,7 +76,7 @@ class UserTest extends TestCase
         $payload['email'] = fake()->unique()->safeEmail();
         $payload['password'] = 'password';
         $payload['passwordConfirmation'] = 'password';
-        $response = $this->withToken($token)->post("{$this->endpoint}", $payload);
+        $response = $this->withToken($token)->post("{$this->resource}", $payload);
 
         // For assertion
         unset($payload['password']);
@@ -92,7 +92,7 @@ class UserTest extends TestCase
     public function testGetPaginatedUsers(): void
     {
         $token = $this->loginSystemAdminUser();
-        $response = $this->withToken($token)->get("{$this->endpoint}");
+        $response = $this->withToken($token)->get("{$this->resource}");
 
         $response->assertOk()->assertJsonStructure(['data', 'links', 'meta']);
     }
@@ -104,7 +104,7 @@ class UserTest extends TestCase
     {
         $token = $this->loginSystemAdminUser();
         $user = User::factory()->create();
-        $response = $this->withToken($token)->get("{$this->endpoint}/{$user->getKey()}");
+        $response = $this->withToken($token)->get("{$this->resource}/{$user->getKey()}");
 
         $response->assertOk()->assertJson(['id' => $response->json()['id']]);
     }
@@ -117,7 +117,7 @@ class UserTest extends TestCase
         $token = $this->loginSystemAdminUser();
         $user = User::factory()->create();
         $payload = $this->getPayload();
-        $response = $this->withToken($token)->put("{$this->endpoint}/{$user->getKey()}", $payload);
+        $response = $this->withToken($token)->put("{$this->resource}/{$user->getKey()}", $payload);
 
         // For assertion
         $payload['id'] = $user->getKey();
@@ -132,7 +132,7 @@ class UserTest extends TestCase
     {
         $token = $this->loginSystemAdminUser();
         $user = User::factory()->create();
-        $response = $this->withToken($token)->delete("{$this->endpoint}/{$user->getKey()}");
+        $response = $this->withToken($token)->delete("{$this->resource}/{$user->getKey()}");
 
         $response->assertOk()->assertJsonStructure(['success']);
     }

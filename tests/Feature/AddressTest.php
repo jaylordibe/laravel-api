@@ -8,7 +8,7 @@ use Tests\TestCase;
 class AddressTest extends TestCase
 {
 
-    private string $endpoint = '/api/addresses';
+    private string $resource = '/api/addresses';
 
     /**
      * Get address payload.
@@ -34,7 +34,7 @@ class AddressTest extends TestCase
     {
         $token = $this->loginSystemAdminUser();
         $payload = $this->getPayload();
-        $response = $this->withToken($token)->post("{$this->endpoint}", $payload);
+        $response = $this->withToken($token)->post("{$this->resource}", $payload);
 
         $response->assertCreated()->assertJson($payload);
     }
@@ -45,7 +45,7 @@ class AddressTest extends TestCase
     public function testGetPaginatedAddresses(): void
     {
         $token = $this->loginSystemAdminUser();
-        $response = $this->withToken($token)->get("{$this->endpoint}");
+        $response = $this->withToken($token)->get("{$this->resource}");
 
         $response->assertOk()->assertJsonStructure(['data', 'links', 'meta']);
     }
@@ -57,7 +57,7 @@ class AddressTest extends TestCase
     {
         $token = $this->loginSystemAdminUser();
         $address = Address::factory()->create();
-        $response = $this->withToken($token)->get("{$this->endpoint}/{$address->getKey()}");
+        $response = $this->withToken($token)->get("{$this->resource}/{$address->getKey()}");
 
         $response->assertOk()->assertJson(['id' => $response->json()['id']]);
     }
@@ -70,7 +70,7 @@ class AddressTest extends TestCase
         $token = $this->loginSystemAdminUser();
         $address = Address::factory()->create();
         $payload = $this->getPayload();
-        $response = $this->withToken($token)->put("{$this->endpoint}/{$address->getKey()}", $payload);
+        $response = $this->withToken($token)->put("{$this->resource}/{$address->getKey()}", $payload);
 
         // For assertion
         $payload['id'] = $address->getKey();
@@ -85,7 +85,7 @@ class AddressTest extends TestCase
     {
         $token = $this->loginSystemAdminUser();
         $address = Address::factory()->create();
-        $response = $this->withToken($token)->delete("{$this->endpoint}/{$address->getKey()}");
+        $response = $this->withToken($token)->delete("{$this->resource}/{$address->getKey()}");
 
         $response->assertOk()->assertJsonStructure(['success']);
     }
