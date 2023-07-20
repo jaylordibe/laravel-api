@@ -1,7 +1,7 @@
 # Set workflow name
 name: Deploy To Production
 
-# Set events that triggers the workflow
+# Set events that trigger the workflow
 on:
   push:
     branches:
@@ -16,10 +16,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
       - name: Run tests
-        run: |
-          ./start.sh fresh
-          ./test.sh
+        run: ./test-pipeline.sh
   build:
+    needs: tests
     name: Build And Deploy To Production
     runs-on: ubuntu-latest
     steps:
