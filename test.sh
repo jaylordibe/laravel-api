@@ -12,10 +12,9 @@ fi
 
 COMMANDS="
 php artisan migrate:fresh --seed --env=testing
-php artisan key:generate --env=testing
 php artisan passport:install --env=testing
 php artisan passport:keys --env=testing
 php artisan test --profile $FILTER
 "
 
-docker exec -it laravel-api bash -c "$COMMANDS"
+docker exec laravel-api bash -c "$COMMANDS"

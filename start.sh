@@ -60,7 +60,7 @@ else
     "
 fi
 
-docker exec -it laravel-api bash -c "$COMMANDS"
+docker exec laravel-api bash -c "$COMMANDS"
 
 echo -e "\033[0m \033[1;35m Application is running at: \033[0m"
 echo -e "\033[0m \033[1;32m \t http://localhost:9000/ \033[0m"
