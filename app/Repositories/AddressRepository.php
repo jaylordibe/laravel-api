@@ -7,7 +7,6 @@ use App\Dtos\AddressFilterDto;
 use App\Models\Address;
 use Exception;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
 class AddressRepository
