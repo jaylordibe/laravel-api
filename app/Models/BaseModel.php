@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
 
 /**
  * @property int $id
@@ -15,11 +16,47 @@ use Illuminate\Support\Carbon;
  * @property int|null $created_by
  * @property int|null $updated_by
  * @property int|null $deleted_by
+ *
+ * Model properties.
+ * @property-read User|null $createdByUser
+ * @property-read User|null $updatedByUser
+ * @property-read User|null $deletedByUser
  */
 class BaseModel extends Model
 {
 
     use SoftDeletes;
+
+    protected static function boot(): void
+    {
+        parent::boot();
+
+        static::creating(function (self $model) {
+            if (Auth::check()) {
+                if (!$model->isDirty('created_by')) {
+                    $model->created_by = Auth::id();
+                }
+
+                if (!$model->isDirty('updated_by')) {
+                    $model->updated_by = Auth::id();
+                }
+            }
+        });
+
+        static::updating(function (self $model) {
+            if (Auth::check() && !$model->isDirty('updated_by')) {
+                $model->updated_by = Auth::id();
+            }
+        });
+
+        static::deleted(function (self $model) {
+            if (Auth::check()) {
+                $model->newQuery()
+                    ->where($model->getKeyName(), $model->getKey())
+                    ->update(['deleted_by' => Auth::id()]);
+            }
+        });
+    }
 
     /**
      * Get the user who created this model.

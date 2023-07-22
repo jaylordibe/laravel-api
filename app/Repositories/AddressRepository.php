@@ -18,6 +18,7 @@ class AddressRepository
      *
      * @param int $id
      * @param array $relations
+     * @param array $columns
      *
      * @return Address|null
      */
@@ -36,13 +37,10 @@ class AddressRepository
      */
     public function save(AddressDto $addressDto, ?Address $address = null): ?Address
     {
-        $create = empty($address);
         $address ??= new Address();
 
-        if ($create) {
-            $address->created_by = $addressDto->getAuthUser()->id;
-        } else {
-            $address->updated_by = $addressDto->getAuthUser()->id;
+        if (!$address->exists) {
+            $address->user_id = $addressDto->getAuthUser()->id;
         }
 
         $address->address = $addressDto->getAddress();
@@ -92,9 +90,6 @@ class AddressRepository
         }
 
         try {
-            $address->deleted_by = Auth::user()->id;
-            $address->save();
-
             return (bool) $address->delete();
         } catch (Exception $exception) {
             Log::error("DeleteAddressException: {$exception->getMessage()}");

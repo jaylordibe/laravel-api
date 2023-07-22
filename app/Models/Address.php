@@ -15,9 +15,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $state_or_province
  * @property string|null $zip_or_postal_code
  * @property string|null $country
+ * @property-read string|null $complete_address
  *
  * Model relationships
- * @property User|null $user
+ * @property-read User|null $user
  */
 class Address extends BaseModel
 {

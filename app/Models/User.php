@@ -39,9 +39,9 @@ use Spatie\Permission\Traits\HasRoles;
  * @property string|null $profile_picture
  *
  * Model relationships
- * @property Collection|Role[]|null $roles
- * @property Collection|Permission[]|null $permissions
- * @property Collection|Address[]|null $addresses
+ * @property-read Collection|Role[]|null $roles
+ * @property-read Collection|Permission[]|null $permissions
+ * @property-read Collection|Address[]|null $addresses
  */
 class User extends Authenticatable
 {

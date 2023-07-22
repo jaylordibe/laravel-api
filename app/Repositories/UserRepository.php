@@ -40,16 +40,12 @@ class UserRepository
      */
     public function save(UserDto $userDto, ?User $user = null): ?User
     {
-        $create = empty($user);
         $user ??= new User();
 
-        if ($create) {
-            $user->created_by = $userDto->getAuthUser()->id;
+        if (!$user->exists) {
             $user->email = $userDto->getEmail();
             $user->username = $userDto->getUsername();
             $user->password = Hash::make($userDto->getPassword());
-        } else {
-            $user->updated_by = $userDto->getAuthUser()->id;
         }
 
         $user->first_name = $userDto->getFirstName();
@@ -127,9 +123,6 @@ class UserRepository
         }
 
         try {
-            $user->deleted_by = Auth::user()->id;
-            $user->save();
-
             return (bool) $user->delete();
         } catch (Exception $exception) {
             Log::error("DeleteUserException: {$exception->getMessage()}");
