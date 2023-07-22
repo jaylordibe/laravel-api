@@ -3,7 +3,6 @@
 namespace App\Repositories;
 
 use App\Constants\AppConstant;
-use App\Constants\RoleConstant;
 use App\Dtos\UserDto;
 use App\Dtos\UserFilterDto;
 use App\Models\User;
