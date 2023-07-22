@@ -18,6 +18,8 @@
 */
 
 return [
+    'app_domain' => env('APP_DOMAIN'),
+    'app_frontend_url' => env('APP_FRONTEND_URL'),
     'sysad_email' => env('SYSAD_EMAIL'),
     'sysad_password' => env('SYSAD_PASSWORD'),
     'appad_email' => env('APPAD_EMAIL'),
