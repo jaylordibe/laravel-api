@@ -28,6 +28,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property string $first_name
  * @property string|null $middle_name
  * @property string $last_name
+ * @property-read string|null $full_name
  * @property string $username
  * @property string $email
  * @property Carbon|null $email_verified_at
