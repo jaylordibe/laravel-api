@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Constants\AppConstant;
+use App\Constants\RoleConstant;
 use App\Dtos\UserDto;
 use App\Dtos\UserFilterDto;
 use App\Models\User;
@@ -90,6 +91,8 @@ class UserRepository
         $sortField = $userFilterDto->getMeta()->getSortField() === AppConstant::DEFAULT_DB_QUERY_SORT_FIELD ? 'first_name' : $userFilterDto->getMeta()->getSortField();
         $sortDirection = $userFilterDto->getMeta()->getSortDirection();
         $limit = $userFilterDto->getMeta()->getLimit();
+        $searchQuery = $userFilterDto->getMeta()->getSearchQuery();
+
         $users = User::with($relations);
 
         if (!empty($userFilterDto->getRoles())) {
@@ -98,9 +101,12 @@ class UserRepository
             });
         }
 
-        if (!empty($userFilterDto->getPermissions())) {
-            $users->whereHas('permissions', function (Builder $roles) use ($userFilterDto) {
-                $roles->whereIn('name', $userFilterDto->getPermissions());
+        if (!empty($searchQuery)) {
+            $users->where(function (Builder $searchBuilder) use ($searchQuery) {
+                $searchBuilder->where('first_name', 'LIKE', "%{$searchQuery}%")
+                    ->orWhere('last_name', 'LIKE', "%{$searchQuery}%")
+                    ->orWhere('username', 'LIKE', "%{$searchQuery}%")
+                    ->orWhere('email', 'LIKE', "%{$searchQuery}%");
             });
         }
 

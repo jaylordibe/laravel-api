@@ -19,6 +19,9 @@ class UserDto extends BaseDto
     private ?string $password = null;
     private ?string $passwordConfirmation = null;
 
+    // Custom fields
+    private ?string $type = null;
+
     public function __construct()
     {
         parent::__construct();
@@ -198,6 +201,22 @@ class UserDto extends BaseDto
     public function setPasswordConfirmation(?string $passwordConfirmation): void
     {
         $this->passwordConfirmation = $passwordConfirmation;
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getType(): ?string
+    {
+        return $this->type;
+    }
+
+    /**
+     * @param string|null $type
+     */
+    public function setType(?string $type): void
+    {
+        $this->type = $type;
     }
 
 }
