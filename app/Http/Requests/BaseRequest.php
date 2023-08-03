@@ -6,6 +6,9 @@ use App\Constants\AppConstant;
 use App\Dtos\MetaDto;
 use App\Models\User;
 use App\Utils\ResponseUtil;
+use Brick\Math\BigDecimal;
+use Brick\Math\BigInteger;
+use Brick\Math\Exception\MathException;
 use Carbon\Exceptions\InvalidFormatException;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
@@ -165,6 +168,42 @@ class BaseRequest extends FormRequest
     public function getInputAsUrl(string $key): string
     {
         return urldecode($this->getInputAsString($key));
+    }
+
+    /**
+     * Transform input value to brick/math BigInteger.
+     *
+     * @param string $key
+     *
+     * @return BigInteger|null
+     */
+    public function getInputAsBigInteger(string $key): ?BigInteger
+    {
+        try {
+            return BigInteger::of($this->getInputAsString($key));
+        } catch (MathException $e) {
+            Log::error('Failed to parse input as BigDecimal: ' . $e->getMessage());
+        }
+
+        return null;
+    }
+
+    /**
+     * Transform input value to brick/math BigDecimal.
+     *
+     * @param string $key
+     *
+     * @return BigDecimal|null
+     */
+    public function getInputAsBigDecimal(string $key): ?BigDecimal
+    {
+        try {
+            return BigDecimal::of($this->getInputAsString($key));
+        } catch (MathException $e) {
+            Log::error('Failed to parse input as BigDecimal: ' . $e->getMessage());
+        }
+
+        return null;
     }
 
     /**
