@@ -175,17 +175,17 @@ class BaseRequest extends FormRequest
      *
      * @param string $key
      *
-     * @return BigInteger|null
+     * @return BigInteger
      */
-    public function getInputAsBigInteger(string $key): ?BigInteger
+    public function getInputAsBigInteger(string $key): BigInteger
     {
         try {
             return BigInteger::of($this->getInputAsString($key));
         } catch (MathException $e) {
-            Log::error('Failed to parse input as BigDecimal: ' . $e->getMessage());
-        }
+            Log::error('Failed to parse input as BigInteger: ' . $e->getMessage());
 
-        return null;
+            return BigInteger::zero();
+        }
     }
 
     /**
@@ -193,17 +193,17 @@ class BaseRequest extends FormRequest
      *
      * @param string $key
      *
-     * @return BigDecimal|null
+     * @return BigDecimal
      */
-    public function getInputAsBigDecimal(string $key): ?BigDecimal
+    public function getInputAsBigDecimal(string $key): BigDecimal
     {
         try {
             return BigDecimal::of($this->getInputAsString($key));
         } catch (MathException $e) {
             Log::error('Failed to parse input as BigDecimal: ' . $e->getMessage());
-        }
 
-        return null;
+            return BigDecimal::zero();
+        }
     }
 
     /**
