@@ -53,6 +53,7 @@ class BaseModel extends Model
         static::deleted(function (self $model) {
             if (Auth::check()) {
                 $model->newQuery()
+                    ->withTrashed()
                     ->where($model->getKeyName(), $model->getKey())
                     ->update(['deleted_by' => Auth::id()]);
             }
