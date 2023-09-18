@@ -219,13 +219,15 @@ class BaseRequest extends FormRequest
     /**
      * For pagination. Get the requested page limit.
      *
+     * @param int $maxPageLimit
+     *
      * @return int
      */
-    public function getPageLimit(): int
+    public function getPageLimit(int $maxPageLimit = AppConstant::MAX_PAGE_LIMIT): int
     {
         $limit = $this->getInputAsInt('limit') ?: AppConstant::DEFAULT_PAGE_LIMIT;
 
-        return $limit > AppConstant::MAX_PAGE_LIMIT ? AppConstant::DEFAULT_PAGE_LIMIT : $limit;
+        return $limit > $maxPageLimit ? AppConstant::DEFAULT_PAGE_LIMIT : $limit;
     }
 
     /**
