@@ -22,6 +22,10 @@ class BigDecimalCast implements CastsAttributes
      */
     public function get(Model $model, string $key, mixed $value, array $attributes): BigDecimal
     {
+        if (is_null($value)) {
+            return BigDecimal::zero();
+        }
+
         try {
             return BigDecimal::of($value);
         } catch (MathException $e) {
@@ -42,6 +46,10 @@ class BigDecimalCast implements CastsAttributes
     public function set(Model $model, string $key, mixed $value, array $attributes): string
     {
         $newValue = 0;
+
+        if (is_null($value)) {
+            return (string) $newValue;
+        }
 
         try {
             $newValue = BigDecimal::of($value);
