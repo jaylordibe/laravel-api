@@ -286,4 +286,16 @@ class FileUtil
         return Storage::disk(self::DISK)->url($path);
     }
 
+    /**
+     * Get the storage path for the file at the given path.
+     *
+     * @param string $path
+     *
+     * @return string
+     */
+    public static function getStoragePath(string $path): string
+    {
+        return Storage::disk(self::DISK)->path($path);
+    }
+
 }
