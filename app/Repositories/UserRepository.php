@@ -2,10 +2,8 @@
 
 namespace App\Repositories;
 
-use App\Constants\AppConstant;
 use App\Data\UserData;
 use App\Data\UserFilterData;
-use App\Dtos\UserFilterDto;
 use App\Models\User;
 use Exception;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;

@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Constants\GateAbilityConstant;
 use App\Http\Requests\AddressRequest;
 use App\Http\Requests\GenericRequest;
 use App\Http\Resources\AddressResource;
@@ -11,7 +10,6 @@ use App\Utils\ResponseUtil;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Routing\Controller;
-use Illuminate\Support\Facades\Gate;
 
 class AddressController extends Controller
 {
@@ -31,11 +29,11 @@ class AddressController extends Controller
     {
         $serviceResponse = $this->addressService->create($request->toData());
 
-        if ($serviceResponse->isError()) {
-            return ResponseUtil::error($serviceResponse->getMessage());
+        if ($serviceResponse->error) {
+            return ResponseUtil::error($serviceResponse->message);
         }
 
-        return ResponseUtil::resource(AddressResource::class, $serviceResponse->getData());
+        return ResponseUtil::resource(AddressResource::class, $serviceResponse->data);
     }
 
     /**
@@ -48,11 +46,11 @@ class AddressController extends Controller
         $addressFilterData = AddressRequest::createFrom($request)->toFilterData();
         $serviceResponse = $this->addressService->get($addressFilterData);
 
-        if ($serviceResponse->isError()) {
-            return ResponseUtil::error($serviceResponse->getMessage());
+        if ($serviceResponse->error) {
+            return ResponseUtil::error($serviceResponse->message);
         }
 
-        return ResponseUtil::resource(AddressResource::class, $serviceResponse->getData());
+        return ResponseUtil::resource(AddressResource::class, $serviceResponse->data);
     }
 
     /**
@@ -65,11 +63,11 @@ class AddressController extends Controller
     {
         $serviceResponse = $this->addressService->getById($id);
 
-        if ($serviceResponse->isError()) {
-            return ResponseUtil::error($serviceResponse->getMessage());
+        if ($serviceResponse->error) {
+            return ResponseUtil::error($serviceResponse->message);
         }
 
-        return ResponseUtil::resource(AddressResource::class, $serviceResponse->getData());
+        return ResponseUtil::resource(AddressResource::class, $serviceResponse->data);
     }
 
     /**
@@ -84,11 +82,11 @@ class AddressController extends Controller
         $addressData->id = $id;
         $serviceResponse = $this->addressService->update($addressData);
 
-        if ($serviceResponse->isError()) {
-            return ResponseUtil::error($serviceResponse->getMessage());
+        if ($serviceResponse->error) {
+            return ResponseUtil::error($serviceResponse->message);
         }
 
-        return ResponseUtil::resource(AddressResource::class, $serviceResponse->getData());
+        return ResponseUtil::resource(AddressResource::class, $serviceResponse->data);
     }
 
     /**
@@ -101,11 +99,11 @@ class AddressController extends Controller
     {
         $serviceResponse = $this->addressService->delete($id);
 
-        if ($serviceResponse->isError()) {
-            return ResponseUtil::error($serviceResponse->getMessage());
+        if ($serviceResponse->error) {
+            return ResponseUtil::error($serviceResponse->message);
         }
 
-        return ResponseUtil::success($serviceResponse->getMessage());
+        return ResponseUtil::success($serviceResponse->message);
     }
 
 }

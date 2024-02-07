@@ -3,11 +3,9 @@
 namespace App\Services;
 
 use App\Data\CreateUserData;
+use App\Data\ServiceResponseData;
 use App\Data\UserData;
 use App\Data\UserFilterData;
-use App\Dtos\ServiceResponseDto;
-use App\Dtos\UserDto;
-use App\Dtos\UserFilterDto;
 use App\Repositories\UserRepository;
 use App\Utils\AppUtil;
 use App\Utils\ServiceResponseUtil;
@@ -25,9 +23,9 @@ class UserService
     /**
      * @param CreateUserData $createUserData
      *
-     * @return ServiceResponseDto
+     * @return ServiceResponseData
      */
-    public function create(CreateUserData $createUserData): ServiceResponseDto
+    public function create(CreateUserData $createUserData): ServiceResponseData
     {
         $userData = new UserData(
             firstName: $createUserData->firstName,
@@ -48,9 +46,9 @@ class UserService
     /**
      * @param UserFilterData $userFilterData
      *
-     * @return ServiceResponseDto
+     * @return ServiceResponseData
      */
-    public function get(UserFilterData $userFilterData): ServiceResponseDto
+    public function get(UserFilterData $userFilterData): ServiceResponseData
     {
         return ServiceResponseUtil::map(
             $this->userRepository->get($userFilterData)
@@ -59,22 +57,23 @@ class UserService
 
     /**
      * @param int $id
+     * @param array $relations
      *
-     * @return ServiceResponseDto
+     * @return ServiceResponseData
      */
-    public function getById(int $id): ServiceResponseDto
+    public function getById(int $id, array $relations = []): ServiceResponseData
     {
         return ServiceResponseUtil::map(
-            $this->userRepository->findById($id)
+            $this->userRepository->findById($id, $relations)
         );
     }
 
     /**
      * @param UserData $userData
      *
-     * @return ServiceResponseDto
+     * @return ServiceResponseData
      */
-    public function update(UserData $userData): ServiceResponseDto
+    public function update(UserData $userData): ServiceResponseData
     {
         $user = $this->userRepository->findById($userData->id);
 
@@ -96,9 +95,9 @@ class UserService
      *
      * @param int $id
      *
-     * @return ServiceResponseDto
+     * @return ServiceResponseData
      */
-    public function delete(int $id): ServiceResponseDto
+    public function delete(int $id): ServiceResponseData
     {
         $isDeleted = $this->userRepository->delete($id);
 
@@ -166,9 +165,9 @@ class UserService
      * @param int $id
      * @param string $username
      *
-     * @return ServiceResponseDto
+     * @return ServiceResponseData
      */
-    public function updateUsername(int $id, string $username): ServiceResponseDto
+    public function updateUsername(int $id, string $username): ServiceResponseData
     {
         $user = $this->userRepository->updateUsername($id, $username);
 
@@ -185,9 +184,9 @@ class UserService
      * @param int $id
      * @param string $email
      *
-     * @return ServiceResponseDto
+     * @return ServiceResponseData
      */
-    public function updateEmail(int $id, string $email): ServiceResponseDto
+    public function updateEmail(int $id, string $email): ServiceResponseData
     {
         $user = $this->userRepository->updateEmail($id, $email);
 

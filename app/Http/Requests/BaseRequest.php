@@ -5,7 +5,6 @@ namespace App\Http\Requests;
 use App\Constants\AppConstant;
 use App\Data\MetaData;
 use App\Data\UserData;
-use App\Dtos\MetaDto;
 use App\Models\User;
 use App\Utils\ResponseUtil;
 use Brick\Math\BigDecimal;
@@ -278,26 +277,6 @@ class BaseRequest extends FormRequest
         }
 
         return $columns;
-    }
-
-    /**
-     * Get request meta.
-     *
-     * @return MetaDto
-     */
-    public function getMeta(): MetaDto
-    {
-        $metaDto = new MetaDto();
-        $metaDto->setSearchQuery($this->getInputAsString('search'));
-        $metaDto->setRelations($this->getRelations());
-        $metaDto->setSortField($this->getInputAsString('sortField') ?: AppConstant::DEFAULT_DB_QUERY_SORT_FIELD);
-        $metaDto->setSortDirection($this->getInputAsString('sortDirection') ?: AppConstant::DEFAULT_DB_QUERY_SORT_DIRECTION);
-        $metaDto->setPage($this->getPage());
-        $metaDto->setLimit($this->getPageLimit());
-        $metaDto->setOffset($this->getPageOffset());
-        $metaDto->setRequestIp($this->ip());
-
-        return $metaDto;
     }
 
     /**

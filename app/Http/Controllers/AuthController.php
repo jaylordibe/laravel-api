@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Constants\AppConstant;
 use App\Http\Requests\AuthRequest;
 use App\Http\Requests\GenericRequest;
 use App\Services\UserService;
@@ -25,14 +24,14 @@ class AuthController extends Controller
      */
     public function signIn(AuthRequest $request): JsonResponse
     {
-        $authDto = $request->toDto();
-        $identifierField = AppUtil::isValidEmail($authDto->getIdentifier()) ? 'email' : 'username';
+        $authData = $request->toData();
+        $identifierField = AppUtil::isValidEmail($authData->identifier) ? 'email' : 'username';
         $credentials = [
-            $identifierField => $authDto->getIdentifier(),
-            'password' => $authDto->getPassword()
+            $identifierField => $authData->identifier,
+            'password' => $authData->password
         ];
 
-        if (!Auth::attempt($credentials, $authDto->isRemember())) {
+        if (!Auth::attempt($credentials, $authData->remember)) {
             return ResponseUtil::error('Invalid username or password');
         }
 
@@ -55,6 +54,7 @@ class AuthController extends Controller
     public function signOut(GenericRequest $request): JsonResponse
     {
         Auth::user()->token()->delete();
+
         return ResponseUtil::success('Logout successful.');
     }
 

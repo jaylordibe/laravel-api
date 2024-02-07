@@ -4,8 +4,6 @@ namespace App\Http\Requests;
 
 use App\Data\UserData;
 use App\Data\UserFilterData;
-use App\Dtos\UserDto;
-use App\Dtos\UserFilterDto;
 
 class UserRequest extends BaseRequest
 {

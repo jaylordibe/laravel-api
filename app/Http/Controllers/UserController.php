@@ -35,11 +35,11 @@ class UserController extends Controller
         $relations = ['roles', 'permissions'];
         $serviceResponse = $this->userService->getById($request->getAuthUser()->id, $relations);
 
-        if ($serviceResponse->isError()) {
-            return ResponseUtil::error($serviceResponse->getMessage());
+        if ($serviceResponse->error) {
+            return ResponseUtil::error($serviceResponse->message);
         }
 
-        return ResponseUtil::resource(UserResource::class, $serviceResponse->getData());
+        return ResponseUtil::resource(UserResource::class, $serviceResponse->data);
     }
 
     /**
@@ -59,11 +59,11 @@ class UserController extends Controller
 
         $serviceResponse = $this->userService->updateUsername($request->getAuthUser()->id, $username);
 
-        if ($serviceResponse->isError()) {
-            return ResponseUtil::error($serviceResponse->getMessage());
+        if ($serviceResponse->error) {
+            return ResponseUtil::error($serviceResponse->message);
         }
 
-        return ResponseUtil::resource(UserResource::class, $serviceResponse->getData());
+        return ResponseUtil::resource(UserResource::class, $serviceResponse->data);
     }
 
     /**
@@ -83,11 +83,11 @@ class UserController extends Controller
 
         $serviceResponse = $this->userService->updateEmail($request->getAuthUser()->id, $email);
 
-        if ($serviceResponse->isError()) {
-            return ResponseUtil::error($serviceResponse->getMessage());
+        if ($serviceResponse->error) {
+            return ResponseUtil::error($serviceResponse->message);
         }
 
-        return ResponseUtil::resource(UserResource::class, $serviceResponse->getData());
+        return ResponseUtil::resource(UserResource::class, $serviceResponse->data);
     }
 
     /**
@@ -102,11 +102,11 @@ class UserController extends Controller
         $createUserData = $request->toData();
         $serviceResponse = $this->userService->create($createUserData);
 
-        if ($serviceResponse->isError()) {
-            return ResponseUtil::error($serviceResponse->getMessage());
+        if ($serviceResponse->error) {
+            return ResponseUtil::error($serviceResponse->message);
         }
 
-        return ResponseUtil::resource(UserResource::class, $serviceResponse->getData());
+        return ResponseUtil::resource(UserResource::class, $serviceResponse->data);
     }
 
     /**
@@ -121,11 +121,11 @@ class UserController extends Controller
         $userFilterData = UserRequest::createFrom($request)->toFilterData();
         $serviceResponse = $this->userService->get($userFilterData);
 
-        if ($serviceResponse->isError()) {
-            return ResponseUtil::error($serviceResponse->getMessage());
+        if ($serviceResponse->error) {
+            return ResponseUtil::error($serviceResponse->message);
         }
 
-        return ResponseUtil::resource(UserResource::class, $serviceResponse->getData());
+        return ResponseUtil::resource(UserResource::class, $serviceResponse->data);
     }
 
     /**
@@ -140,11 +140,11 @@ class UserController extends Controller
 
         $serviceResponse = $this->userService->getById($id);
 
-        if ($serviceResponse->isError()) {
-            return ResponseUtil::error($serviceResponse->getMessage());
+        if ($serviceResponse->error) {
+            return ResponseUtil::error($serviceResponse->message);
         }
 
-        return ResponseUtil::resource(UserResource::class, $serviceResponse->getData());
+        return ResponseUtil::resource(UserResource::class, $serviceResponse->data);
     }
 
     /**
@@ -161,11 +161,11 @@ class UserController extends Controller
         $userData->id = $id;
         $serviceResponse = $this->userService->update($userData);
 
-        if ($serviceResponse->isError()) {
-            return ResponseUtil::error($serviceResponse->getMessage());
+        if ($serviceResponse->error) {
+            return ResponseUtil::error($serviceResponse->message);
         }
 
-        return ResponseUtil::resource(UserResource::class, $serviceResponse->getData());
+        return ResponseUtil::resource(UserResource::class, $serviceResponse->data);
     }
 
     /**
@@ -180,11 +180,11 @@ class UserController extends Controller
 
         $serviceResponse = $this->userService->delete($id);
 
-        if ($serviceResponse->isError()) {
-            return ResponseUtil::error($serviceResponse->getMessage());
+        if ($serviceResponse->error) {
+            return ResponseUtil::error($serviceResponse->message);
         }
 
-        return ResponseUtil::success($serviceResponse->getMessage());
+        return ResponseUtil::success($serviceResponse->message);
     }
 
 }

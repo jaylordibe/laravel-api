@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests;
 
-use App\Dtos\AuthDto;
+use App\Data\AuthData;
 
 class AuthRequest extends BaseRequest
 {
@@ -12,7 +12,7 @@ class AuthRequest extends BaseRequest
      *
      * @return array
      */
-    public function rules()
+    public function rules(): array
     {
         return [
             'identifier' => 'required',
@@ -25,7 +25,7 @@ class AuthRequest extends BaseRequest
      *
      * @return array
      */
-    public function messages()
+    public function messages(): array
     {
         return [
             'identifier.required' => 'Email is required.',
@@ -34,18 +34,17 @@ class AuthRequest extends BaseRequest
     }
 
     /**
-     * Convert request to dto.
+     * Convert request to data.
      *
-     * @return AuthDto
+     * @return AuthData
      */
-    public function toDto(): AuthDto
+    public function toData(): AuthData
     {
-        $authDto = new AuthDto();
-        $authDto->setIdentifier($this->getInputAsString('identifier'));
-        $authDto->setPassword($this->getInputAsString('password'));
-        $authDto->setRemember($this->getInputAsBoolean('remember'));
-
-        return $authDto;
+        return new AuthData(
+            identifier: $this->getInputAsString('identifier'),
+            password: $this->getInputAsString('password'),
+            remember: $this->getInputAsBoolean('remember', false)
+        );
     }
 
 }

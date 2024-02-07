@@ -2,8 +2,6 @@
 
 namespace App\Http\Requests;
 
-use App\Dtos\GenericDto;
-
 class GenericRequest extends BaseRequest
 {
 
@@ -12,7 +10,7 @@ class GenericRequest extends BaseRequest
      *
      * @return array
      */
-    public function rules()
+    public function rules(): array
     {
         return [];
     }
@@ -22,23 +20,9 @@ class GenericRequest extends BaseRequest
      *
      * @return array
      */
-    public function messages()
+    public function messages(): array
     {
         return [];
-    }
-
-    /**
-     * Transform request to data transfer object.
-     *
-     * @return GenericDto
-     */
-    public function toDto(): GenericDto
-    {
-        $genericDto = new GenericDto();
-        $genericDto->setMeta($this->getMeta());
-        $genericDto->setAuthUser($this->getAuthUser());
-
-        return $genericDto;
     }
 
 }

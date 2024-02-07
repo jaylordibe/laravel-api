@@ -2,7 +2,7 @@
 
 namespace App\Utils;
 
-use App\Dtos\ServiceResponseDto;
+use App\Data\ServiceResponseData;
 
 class ServiceResponseUtil
 {
@@ -13,16 +13,15 @@ class ServiceResponseUtil
      * @param string $message
      * @param object|array|null $data
      *
-     * @return ServiceResponseDto
+     * @return ServiceResponseData
      */
-    public static function success(string $message, object|array|null $data = null): ServiceResponseDto
+    public static function success(string $message, object|array|null $data = null): ServiceResponseData
     {
-        $response = new ServiceResponseDto();
-        $response->setSuccess(true);
-        $response->setMessage($message);
-        $response->setData($data);
-
-        return $response;
+        return new ServiceResponseData(
+            success: true,
+            message: $message,
+            data: $data
+        );
     }
 
     /**
@@ -31,16 +30,15 @@ class ServiceResponseUtil
      * @param string $message
      * @param object|array|null $data
      *
-     * @return ServiceResponseDto
+     * @return ServiceResponseData
      */
-    public static function error(string $message, object|array|null $data = null): ServiceResponseDto
+    public static function error(string $message, object|array|null $data = null): ServiceResponseData
     {
-        $response = new ServiceResponseDto();
-        $response->setError(true);
-        $response->setMessage($message);
-        $response->setData($data);
-
-        return $response;
+        return new ServiceResponseData(
+            error: true,
+            message: $message,
+            data: $data
+        );
     }
 
     /**
@@ -48,16 +46,15 @@ class ServiceResponseUtil
      *
      * @param object|array|null $data
      *
-     * @return ServiceResponseDto
+     * @return ServiceResponseData
      */
-    public static function map(object|array|null $data = null): ServiceResponseDto
+    public static function map(object|array|null $data = null): ServiceResponseData
     {
-        $response = new ServiceResponseDto();
-        $response->setSuccess(true);
-        $response->setMessage('Success');
-        $response->setData($data);
-
-        return $response;
+        return new ServiceResponseData(
+            success: true,
+            message: 'Success',
+            data: $data
+        );
     }
 
 }

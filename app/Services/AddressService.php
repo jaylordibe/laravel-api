@@ -4,7 +4,7 @@ namespace App\Services;
 
 use App\Data\AddressData;
 use App\Data\AddressFilterData;
-use App\Dtos\ServiceResponseDto;
+use App\Data\ServiceResponseData;
 use App\Repositories\AddressRepository;
 use App\Utils\ServiceResponseUtil;
 
@@ -20,9 +20,9 @@ class AddressService
     /**
      * @param AddressData $addressData
      *
-     * @return ServiceResponseDto
+     * @return ServiceResponseData
      */
-    public function create(AddressData $addressData): ServiceResponseDto
+    public function create(AddressData $addressData): ServiceResponseData
     {
         $address = $this->addressRepository->save($addressData);
 
@@ -36,9 +36,9 @@ class AddressService
     /**
      * @param AddressFilterData $addressFilterData
      *
-     * @return ServiceResponseDto
+     * @return ServiceResponseData
      */
-    public function get(AddressFilterData $addressFilterData): ServiceResponseDto
+    public function get(AddressFilterData $addressFilterData): ServiceResponseData
     {
         return ServiceResponseUtil::map(
             $this->addressRepository->get($addressFilterData)
@@ -47,22 +47,23 @@ class AddressService
 
     /**
      * @param int $id
+     * @param array $relations
      *
-     * @return ServiceResponseDto
+     * @return ServiceResponseData
      */
-    public function getById(int $id): ServiceResponseDto
+    public function getById(int $id, array $relations = []): ServiceResponseData
     {
         return ServiceResponseUtil::map(
-            $this->addressRepository->findById($id)
+            $this->addressRepository->findById($id, $relations)
         );
     }
 
     /**
      * @param AddressData $addressData
      *
-     * @return ServiceResponseDto
+     * @return ServiceResponseData
      */
-    public function update(AddressData $addressData): ServiceResponseDto
+    public function update(AddressData $addressData): ServiceResponseData
     {
         $address = $this->addressRepository->findById($addressData->id);
 
@@ -84,9 +85,9 @@ class AddressService
      *
      * @param int $id
      *
-     * @return ServiceResponseDto
+     * @return ServiceResponseData
      */
-    public function delete(int $id): ServiceResponseDto
+    public function delete(int $id): ServiceResponseData
     {
         $isDeleted = $this->addressRepository->delete($id);
 
