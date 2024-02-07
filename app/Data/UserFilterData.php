@@ -8,10 +8,10 @@ class UserFilterData extends BaseData
 {
 
     public function __construct(
-        public ?string $firstName,
-        public ?string $lastName,
-        public ?string $username,
-        public ?string $email,
+        public ?string $firstName = null,
+        public ?string $lastName = null,
+        public ?string $username = null,
+        public ?string $email = null,
         public ?string $middleName = null,
         public ?string $timezone = null,
         public ?string $phoneNumber = null,

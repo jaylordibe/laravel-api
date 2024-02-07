@@ -6,13 +6,13 @@ class AddressFilterData extends BaseData
 {
 
     public function __construct(
-        public ?int $userId,
-        public ?string $address,
-        public ?string $villageOrBarangay,
-        public ?string $cityOrMunicipality,
-        public ?string $stateOrProvince,
-        public ?string $zipOrPostalCode,
-        public ?string $country,
+        public ?int $userId = null,
+        public ?string $address = null,
+        public ?string $villageOrBarangay = null,
+        public ?string $cityOrMunicipality = null,
+        public ?string $stateOrProvince = null,
+        public ?string $zipOrPostalCode = null,
+        public ?string $country = null,
         ...$args
     )
     {
