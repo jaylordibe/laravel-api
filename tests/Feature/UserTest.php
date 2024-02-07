@@ -3,9 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\User;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
-use Random\RandomException;
 use Tests\TestCase;
 
 class UserTest extends TestCase
@@ -17,7 +15,6 @@ class UserTest extends TestCase
      * Get user payload.
      *
      * @return array
-     * @throws RandomException
      */
     private function getPayload(): array
     {
@@ -27,7 +24,7 @@ class UserTest extends TestCase
             'lastName' => fake()->lastName(),
             'timezone' => fake()->timezone(),
             'phoneNumber' => fake()->phoneNumber(),
-            'birthday' => now()->subYears(random_int(1, 20))->startOfDay()->toISOString()
+            'birthday' => now()->subYears(25)->startOfDay()->toISOString()
         ];
     }
 
@@ -70,7 +67,6 @@ class UserTest extends TestCase
 
     /**
      * A basic test in creating a user.
-     * @throws RandomException
      */
     public function testCreateUser(): void
     {
@@ -117,7 +113,6 @@ class UserTest extends TestCase
 
     /**
      * A basic test in updating a user.
-     * @throws RandomException
      */
     public function testUpdateUser(): void
     {
