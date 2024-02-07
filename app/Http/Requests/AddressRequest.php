@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests;
 
+use App\Data\AddressData;
+use App\Data\AddressFilterData;
 use App\Dtos\AddressDto;
 use App\Dtos\AddressFilterDto;
 
@@ -13,7 +15,7 @@ class AddressRequest extends BaseRequest
      *
      * @return array
      */
-    public function rules()
+    public function rules(): array
     {
         return [
             'address' => 'required',
@@ -30,7 +32,7 @@ class AddressRequest extends BaseRequest
      *
      * @return array
      */
-    public function messages()
+    public function messages(): array
     {
         return [];
     }
@@ -76,6 +78,47 @@ class AddressRequest extends BaseRequest
         $filterDto = $this->setDtoFields(new AddressFilterDto());
 
         return $filterDto;
+    }
+
+    /**
+     * Convert request to data.
+     *
+     * @return AddressData
+     */
+    public function toData(): AddressData
+    {
+        return new AddressData(
+            userId: $this->getAuthUser()->id,
+            address: $this->getInputAsString('address'),
+            villageOrBarangay: $this->getInputAsString('villageOrBarangay'),
+            cityOrMunicipality: $this->getInputAsString('cityOrMunicipality'),
+            stateOrProvince: $this->getInputAsString('stateOrProvince'),
+            zipOrPostalCode: $this->getInputAsString('zipOrPostalCode'),
+            country: $this->getInputAsString('country'),
+            meta: $this->getMetaData(),
+            authUser: $this->getAuthUserData()
+        );
+    }
+
+    /**
+     * * Convert request to filter data.
+     *
+     * @return AddressFilterData
+     */
+    public function toFilterData(): AddressFilterData
+    {
+        return new AddressFilterData(
+            userId: $this->getAuthUser()->id,
+            address: $this->getInputAsString('address'),
+            villageOrBarangay: $this->getInputAsString('villageOrBarangay'),
+            cityOrMunicipality: $this->getInputAsString('cityOrMunicipality'),
+            stateOrProvince: $this->getInputAsString('stateOrProvince'),
+            zipOrPostalCode: $this->getInputAsString('zipOrPostalCode'),
+            country: $this->getInputAsString('country'),
+            meta: $this->getMetaData(),
+            authUser: $this->getAuthUserData()
+        // Add more filter fields here if needed...
+        );
     }
 
 }

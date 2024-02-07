@@ -29,7 +29,7 @@ class AddressController extends Controller
      */
     public function create(AddressRequest $request): JsonResponse|JsonResource
     {
-        $serviceResponse = $this->addressService->create($request->toDto());
+        $serviceResponse = $this->addressService->create($request->toData());
 
         if ($serviceResponse->isError()) {
             return ResponseUtil::error($serviceResponse->getMessage());
@@ -45,8 +45,8 @@ class AddressController extends Controller
      */
     public function get(GenericRequest $request): JsonResponse|JsonResource
     {
-        $addressFilterDto = AddressRequest::createFrom($request)->toFilterDto();
-        $serviceResponse = $this->addressService->get($addressFilterDto);
+        $addressFilterData = AddressRequest::createFrom($request)->toFilterData();
+        $serviceResponse = $this->addressService->get($addressFilterData);
 
         if ($serviceResponse->isError()) {
             return ResponseUtil::error($serviceResponse->getMessage());
@@ -80,9 +80,9 @@ class AddressController extends Controller
      */
     public function update(AddressRequest $request, int $id): JsonResponse|JsonResource
     {
-        $userDto = $request->toDto();
-        $userDto->setId($id);
-        $serviceResponse = $this->addressService->update($userDto);
+        $addressData = $request->toData();
+        $addressData->id = $id;
+        $serviceResponse = $this->addressService->update($addressData);
 
         if ($serviceResponse->isError()) {
             return ResponseUtil::error($serviceResponse->getMessage());

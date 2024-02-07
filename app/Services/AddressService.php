@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Data\AddressData;
+use App\Data\AddressFilterData;
 use App\Dtos\AddressDto;
 use App\Dtos\AddressFilterDto;
 use App\Dtos\ServiceResponseDto;
@@ -18,13 +20,13 @@ class AddressService
     }
 
     /**
-     * @param AddressDto $addressDto
+     * @param AddressData $addressData
      *
      * @return ServiceResponseDto
      */
-    public function create(AddressDto $addressDto): ServiceResponseDto
+    public function create(AddressData $addressData): ServiceResponseDto
     {
-        $address = $this->addressRepository->save($addressDto);
+        $address = $this->addressRepository->save($addressData);
 
         if (empty($address)) {
             return ServiceResponseUtil::error('Failed to create address.');
@@ -34,14 +36,14 @@ class AddressService
     }
 
     /**
-     * @param AddressFilterDto $addressFilterDto
+     * @param AddressFilterData $addressFilterData
      *
      * @return ServiceResponseDto
      */
-    public function get(AddressFilterDto $addressFilterDto): ServiceResponseDto
+    public function get(AddressFilterData $addressFilterData): ServiceResponseDto
     {
         return ServiceResponseUtil::map(
-            $this->addressRepository->get($addressFilterDto)
+            $this->addressRepository->get($addressFilterData)
         );
     }
 
@@ -58,19 +60,19 @@ class AddressService
     }
 
     /**
-     * @param AddressDto $addressDto
+     * @param AddressData $addressData
      *
      * @return ServiceResponseDto
      */
-    public function update(AddressDto $addressDto): ServiceResponseDto
+    public function update(AddressData $addressData): ServiceResponseDto
     {
-        $address = $this->addressRepository->findById($addressDto->getId());
+        $address = $this->addressRepository->findById($addressData->id);
 
         if (empty($address)) {
             return ServiceResponseUtil::error('Address not found.');
         }
 
-        $address = $this->addressRepository->save($addressDto, $address);
+        $address = $this->addressRepository->save($addressData, $address);
 
         if (empty($address)) {
             return ServiceResponseUtil::error('Failed to update address.');

@@ -10,10 +10,15 @@ if [[ -n "$CLASS_NAME_OR_METHOD_NAME" && -n "$FILE_PATH" ]]; then
     FILTER="--filter $CLASS_NAME_OR_METHOD_NAME $FILE_PATH"
 fi
 
+#COMMANDS="
+#php artisan migrate:fresh --seed --env=testing
+#php artisan passport:install --env=testing
+#php artisan passport:keys --env=testing
+#php artisan test --profile $FILTER
+#"
+
 COMMANDS="
-php artisan migrate:fresh --seed --env=testing
-php artisan passport:install --env=testing
-php artisan passport:keys --env=testing
+php artisan migrate --env=testing
 php artisan test --profile $FILTER
 "
 

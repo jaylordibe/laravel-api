@@ -2,6 +2,8 @@
 
 namespace App\Repositories;
 
+use App\Data\AddressData;
+use App\Data\AddressFilterData;
 use App\Dtos\AddressDto;
 use App\Dtos\AddressFilterDto;
 use App\Models\Address;
@@ -29,48 +31,47 @@ class AddressRepository
     /**
      * Save address.
      *
-     * @param AddressDto $addressDto
+     * @param AddressData $addressData
      * @param Address|null $address
      *
      * @return Address|null
      */
-    public function save(AddressDto $addressDto, ?Address $address = null): ?Address
+    public function save(AddressData $addressData, ?Address $address = null): ?Address
     {
         $address ??= new Address();
 
         if (!$address->exists) {
-            $address->user_id = $addressDto->getAuthUser()->id;
+            $address->user_id = $addressData->userId;
         }
 
-        $address->address = $addressDto->getAddress();
-        $address->village_or_barangay = $addressDto->getVillageOrBarangay();
-        $address->city_or_municipality = $addressDto->getCityOrMunicipality();
-        $address->state_or_province = $addressDto->getStateOrProvince();
-        $address->zip_or_postal_code = $addressDto->getZipOrPostalCode();
-        $address->country = $addressDto->getCountry();
+        $address->address = $addressData->address;
+        $address->village_or_barangay = $addressData->villageOrBarangay;
+        $address->city_or_municipality = $addressData->cityOrMunicipality;
+        $address->state_or_province = $addressData->stateOrProvince;
+        $address->zip_or_postal_code = $addressData->zipOrPostalCode;
+        $address->country = $addressData->country;
         $address->save();
 
         return $address;
     }
 
     /**
-     * @param AddressFilterDto $addressFilterDto
+     * @param AddressFilterData $addressFilterData
      *
      * @return LengthAwarePaginator
      */
-    public function get(AddressFilterDto $addressFilterDto): LengthAwarePaginator
+    public function get(AddressFilterData $addressFilterData): LengthAwarePaginator
     {
-        $relations = $addressFilterDto->getMeta()->getRelations();
-        $sortField = $addressFilterDto->getMeta()->getSortField();
-        $sortDirection = $addressFilterDto->getMeta()->getSortDirection();
-        $limit = $addressFilterDto->getMeta()->getLimit();
-        $addresses = Address::with($relations);
+        $addresses = Address::with($addressFilterData->meta->relations);
 
-        if (!empty($addressFilterDto->getUserId())) {
-            $addresses->where('user_id', $addressFilterDto->getUserId());
+        if (!empty($addressFilterData->userId)) {
+            $addresses->where('user_id', $addressFilterData->userId);
         }
 
-        return $addresses->orderBy($sortField, $sortDirection)->paginate($limit);
+        return $addresses->orderBy(
+            $addressFilterData->meta->sortField,
+            $addressFilterData->meta->sortDirection
+        )->paginate($addressFilterData->meta->limit);
     }
 
     /**

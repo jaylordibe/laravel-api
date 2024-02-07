@@ -3,6 +3,8 @@
 namespace App\Http\Requests;
 
 use App\Constants\AppConstant;
+use App\Data\MetaData;
+use App\Data\UserData;
 use App\Dtos\MetaDto;
 use App\Models\User;
 use App\Utils\ResponseUtil;
@@ -261,6 +263,24 @@ class BaseRequest extends FormRequest
     }
 
     /**
+     * Get columns for database query.
+     * @return array
+     */
+    public function getColumns(): array
+    {
+        $value = $this->input('columns');
+        $columns = [];
+
+        if (is_string($value) && !empty($value)) {
+            $columns = explode(',', $value);
+        } elseif (is_array($value) && !empty($value)) {
+            $columns = $value;
+        }
+
+        return $columns;
+    }
+
+    /**
      * Get request meta.
      *
      * @return MetaDto
@@ -278,6 +298,49 @@ class BaseRequest extends FormRequest
         $metaDto->setRequestIp($this->ip());
 
         return $metaDto;
+    }
+
+    /**
+     * Get request meta data.
+     * @return MetaData
+     */
+    public function getMetaData(): MetaData
+    {
+        return new MetaData(
+            searchQuery: $this->getInputAsString('searchQuery', ''),
+            relations: $this->getRelations() ?? [],
+            columns: $this->getColumns() ?? ['*'],
+            groupBy: $this->getInputAsString('groupBy', ''),
+            sortField: $this->getInputAsString('sortField', 'id'),
+            sortDirection: $this->getInputAsString('sortDirection', 'asc'),
+            page: $this->getPage(),
+            limit: $this->getPageLimit(),
+            offset: $this->getPageOffset(),
+            exact: $this->getInputAsBoolean('exact', false)
+        );
+    }
+
+    /**
+     * Get auth user data.
+     * @return UserData
+     */
+    public function getAuthUserData(): UserData
+    {
+        $authUser = $this->getAuthUser();
+
+        return new UserData(
+            firstName: $authUser->first_name,
+            lastName: $authUser->last_name,
+            username: $authUser->username,
+            email: $authUser->email,
+            middleName: $authUser->middle_name,
+            timezone: $authUser->timezone,
+            phoneNumber: $authUser->phone_number,
+            birthday: $authUser->birthday,
+            profilePicture: $authUser->profile_picture,
+            id: $authUser->id,
+            createdAt: $authUser->created_at
+        );
     }
 
     /**
