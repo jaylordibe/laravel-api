@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Constants\GateAbilityConstant;
+use App\Http\Requests\CreateUserRequest;
 use App\Http\Requests\GenericRequest;
 use App\Http\Requests\UserRequest;
 use App\Http\Resources\UserResource;
@@ -90,19 +91,16 @@ class UserController extends Controller
     }
 
     /**
-     * @param UserRequest $request
+     * @param CreateUserRequest $request
      *
      * @return JsonResponse|JsonResource
      */
-    public function create(UserRequest $request): JsonResponse|JsonResource
+    public function create(CreateUserRequest $request): JsonResponse|JsonResource
     {
         Gate::authorize(GateAbilityConstant::CAN_CREATE_USER);
 
-        $userDto = $request->toDto();
-        $userDto->setEmail($request->getInputAsString('email'));
-        $userDto->setPassword($request->getInputAsString('password'));
-        $userDto->setPasswordConfirmation($request->getInputAsString('passwordConfirmation'));
-        $serviceResponse = $this->userService->create($userDto);
+        $createUserData = $request->toData();
+        $serviceResponse = $this->userService->create($createUserData);
 
         if ($serviceResponse->isError()) {
             return ResponseUtil::error($serviceResponse->getMessage());
@@ -120,8 +118,8 @@ class UserController extends Controller
     {
         Gate::authorize(GateAbilityConstant::CAN_READ_USER);
 
-        $userFilterDto = UserRequest::createFrom($request)->toFilterDto();
-        $serviceResponse = $this->userService->get($userFilterDto);
+        $userFilterData = UserRequest::createFrom($request)->toFilterData();
+        $serviceResponse = $this->userService->get($userFilterData);
 
         if ($serviceResponse->isError()) {
             return ResponseUtil::error($serviceResponse->getMessage());
@@ -159,9 +157,9 @@ class UserController extends Controller
     {
         Gate::authorize(GateAbilityConstant::CAN_UPDATE_USER);
 
-        $userDto = $request->toDto();
-        $userDto->setId($id);
-        $serviceResponse = $this->userService->update($userDto);
+        $userData = $request->toData();
+        $userData->id = $id;
+        $serviceResponse = $this->userService->update($userData);
 
         if ($serviceResponse->isError()) {
             return ResponseUtil::error($serviceResponse->getMessage());

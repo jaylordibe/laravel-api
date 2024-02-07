@@ -3,7 +3,8 @@
 namespace App\Repositories;
 
 use App\Constants\AppConstant;
-use App\Dtos\UserDto;
+use App\Data\UserData;
+use App\Data\UserFilterData;
 use App\Dtos\UserFilterDto;
 use App\Models\User;
 use Exception;
@@ -31,29 +32,44 @@ class UserRepository
     }
 
     /**
+     * Create user.
+     *
+     * @param UserData $userData
+     * @param string $password
+     *
+     * @return User|null
+     */
+    public function create(UserData $userData, string $password): ?User
+    {
+        $user = new User();
+        $user->email = $userData->email;
+        $user->username = $userData->username;
+        $user->password = Hash::make($password);
+        $user->first_name = $userData->firstName;
+        $user->last_name = $userData->lastName;
+        $user->phone_number = $userData->phoneNumber;
+        $user->save();
+
+        return $user;
+    }
+
+    /**
      * Save user.
      *
-     * @param UserDto $userDto
+     * @param UserData $userData
      * @param User|null $user
      *
      * @return User|null
      */
-    public function save(UserDto $userDto, ?User $user = null): ?User
+    public function save(UserData $userData, ?User $user = null): ?User
     {
         $user ??= new User();
-
-        if (!$user->exists) {
-            $user->email = $userDto->getEmail();
-            $user->username = $userDto->getUsername();
-            $user->password = Hash::make($userDto->getPassword());
-        }
-
-        $user->first_name = $userDto->getFirstName();
-        $user->middle_name = $userDto->getMiddleName();
-        $user->last_name = $userDto->getLastName();
-        $user->timezone = $userDto->getTimezone();
-        $user->phone_number = $userDto->getPhoneNumber();
-        $user->birthday = $userDto->getBirthday();
+        $user->first_name = $userData->firstName;
+        $user->middle_name = $userData->middleName;
+        $user->last_name = $userData->lastName;
+        $user->timezone = $userData->timezone;
+        $user->phone_number = $userData->phoneNumber;
+        $user->birthday = $userData->birthday;
         $user->save();
 
         return $user;
@@ -80,23 +96,19 @@ class UserRepository
     }
 
     /**
-     * @param UserFilterDto $userFilterDto
+     * @param UserFilterData $userFilterData
      *
      * @return LengthAwarePaginator
      */
-    public function get(UserFilterDto $userFilterDto): LengthAwarePaginator
+    public function get(UserFilterData $userFilterData): LengthAwarePaginator
     {
-        $relations = $userFilterDto->getMeta()->getRelations();
-        $sortField = $userFilterDto->getMeta()->getSortField() === AppConstant::DEFAULT_DB_QUERY_SORT_FIELD ? 'first_name' : $userFilterDto->getMeta()->getSortField();
-        $sortDirection = $userFilterDto->getMeta()->getSortDirection();
-        $limit = $userFilterDto->getMeta()->getLimit();
-        $searchQuery = $userFilterDto->getMeta()->getSearchQuery();
+        $searchQuery = $userFilterData->meta->searchQuery;
 
-        $users = User::with($relations);
+        $users = User::with($userFilterData->meta->relations);
 
-        if (!empty($userFilterDto->getRoles())) {
-            $users->whereHas('roles', function (Builder $roles) use ($userFilterDto) {
-                $roles->whereIn('name', $userFilterDto->getRoles());
+        if (!empty($userFilterData->roles)) {
+            $users->whereHas('roles', function (Builder $roles) use ($userFilterData) {
+                $roles->whereIn('name', $userFilterData->roles);
             });
         }
 
@@ -109,7 +121,10 @@ class UserRepository
             });
         }
 
-        return $users->orderBy($sortField, $sortDirection)->paginate($limit);
+        return $users->orderBy(
+            $userFilterData->meta->sortField,
+            $userFilterData->meta->sortDirection
+        )->paginate($userFilterData->meta->limit);
     }
 
     /**

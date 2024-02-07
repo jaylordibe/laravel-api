@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests;
 
+use App\Data\UserData;
+use App\Data\UserFilterData;
 use App\Dtos\UserDto;
 use App\Dtos\UserFilterDto;
 
@@ -13,7 +15,7 @@ class UserRequest extends BaseRequest
      *
      * @return array
      */
-    public function rules()
+    public function rules(): array
     {
         return [
             'firstName' => 'required',
@@ -28,54 +30,52 @@ class UserRequest extends BaseRequest
      *
      * @return array
      */
-    public function messages()
+    public function messages(): array
     {
         return [];
     }
 
     /**
-     * Set dto fields.
+     * Convert request to data.
      *
-     * @param UserDto|UserFilterDto $dto
-     *
-     * @return UserDto|UserFilterDto
+     * @return UserData
      */
-    private function setDtoFields(UserDto|UserFilterDto $dto): UserDto|UserFilterDto
+    public function toData(): UserData
     {
-        $dto->setMeta($this->getMeta());
-        $dto->setAuthUser($this->getAuthUser());
-        $dto->setFirstName($this->getInputAsString('firstName'));
-        $dto->setMiddleName($this->getInputAsString('middleName'));
-        $dto->setLastName($this->getInputAsString('lastName'));
-        $dto->setTimezone($this->getInputAsString('timezone'));
-        $dto->setPhoneNumber($this->getInputAsString('phoneNumber'));
-        $dto->setBirthday($this->getInputAsCarbon('birthday'));
-
-        return $dto;
+        return new UserData(
+            firstName: $this->getInputAsString('firstName'),
+            lastName: $this->getInputAsString('lastName'),
+            username: $this->getInputAsString('username', ''),
+            email: $this->getInputAsString('email', ''),
+            middleName: $this->getInputAsString('middleName'),
+            timezone: $this->getInputAsString('timezone'),
+            phoneNumber: $this->getInputAsString('phoneNumber'),
+            birthday: $this->getInputAsCarbon('birthday'),
+            meta: $this->getMetaData(),
+            authUser: $this->getAuthUserData()
+        );
     }
 
     /**
-     * Convert request to dto.
+     * * Convert request to filter data.
      *
-     * @return UserDto
+     * @return UserFilterData
      */
-    public function toDto(): UserDto
+    public function toFilterData(): UserFilterData
     {
-        return $this->setDtoFields(new UserDto());
-    }
-
-    /**
-     * * Convert request to filter dto.
-     *
-     * @return UserFilterDto
-     */
-    public function toFilterDto(): UserFilterDto
-    {
-        $filterDto = $this->setDtoFields(new UserFilterDto());
-        $filterDto->setRoles($this->getInputAsArray('roles'));
-        $filterDto->setPermissions($this->getInputAsArray('permissions'));
-
-        return $filterDto;
+        return new UserFilterData(
+            firstName: $this->getInputAsString('firstName'),
+            lastName: $this->getInputAsString('lastName'),
+            username: $this->getInputAsString('username', ''),
+            email: $this->getInputAsString('email', ''),
+            middleName: $this->getInputAsString('middleName'),
+            timezone: $this->getInputAsString('timezone'),
+            phoneNumber: $this->getInputAsString('phoneNumber'),
+            birthday: $this->getInputAsCarbon('birthday'),
+            meta: $this->getMetaData(),
+            authUser: $this->getAuthUserData()
+        // Add more filter fields here if needed...
+        );
     }
 
 }

@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\User;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Random\RandomException;
 use Tests\TestCase;
 
 class UserTest extends TestCase
@@ -16,6 +17,7 @@ class UserTest extends TestCase
      * Get user payload.
      *
      * @return array
+     * @throws RandomException
      */
     private function getPayload(): array
     {
@@ -68,11 +70,15 @@ class UserTest extends TestCase
 
     /**
      * A basic test in creating a user.
+     * @throws RandomException
      */
     public function testCreateUser(): void
     {
         $token = $this->loginSystemAdminUser();
         $payload = $this->getPayload();
+        unset($payload['middleName']); // unsetting this because the Create User endpoint does not expect this field
+        unset($payload['timezone']); // unsetting this because the Create User endpoint does not expect this field
+        unset($payload['birthday']); // unsetting this because the Create User endpoint does not expect this field
         $payload['email'] = fake()->unique()->safeEmail();
         $payload['password'] = 'password';
         $payload['passwordConfirmation'] = 'password';
@@ -111,6 +117,7 @@ class UserTest extends TestCase
 
     /**
      * A basic test in updating a user.
+     * @throws RandomException
      */
     public function testUpdateUser(): void
     {

@@ -2,6 +2,9 @@
 
 namespace App\Services;
 
+use App\Data\CreateUserData;
+use App\Data\UserData;
+use App\Data\UserFilterData;
 use App\Dtos\ServiceResponseDto;
 use App\Dtos\UserDto;
 use App\Dtos\UserFilterDto;
@@ -20,30 +23,20 @@ class UserService
     }
 
     /**
-     * @param UserDto $userDto
+     * @param CreateUserData $createUserData
      *
      * @return ServiceResponseDto
      */
-    public function create(UserDto $userDto): ServiceResponseDto
+    public function create(CreateUserData $createUserData): ServiceResponseDto
     {
-        if (empty($userDto->getEmail())) {
-            return ServiceResponseUtil::error('Email is required.');
-        }
-
-        if (empty($userDto->getPassword())) {
-            return ServiceResponseUtil::error('Password is required.');
-        }
-
-        if (empty($userDto->getPasswordConfirmation())) {
-            return ServiceResponseUtil::error('Please confirm your password.');
-        }
-
-        if ($userDto->getPassword() !== $userDto->getPasswordConfirmation()) {
-            return ServiceResponseUtil::error('Passwords does not match.');
-        }
-
-        $userDto->setUsername($this->generateUsername($userDto->getEmail()));
-        $user = $this->userRepository->save($userDto);
+        $userData = new UserData(
+            firstName: $createUserData->firstName,
+            lastName: $createUserData->lastName,
+            username: $this->generateUsername($createUserData->email),
+            email: $createUserData->email,
+            phoneNumber: $createUserData->phoneNumber
+        );
+        $user = $this->userRepository->create($userData, $createUserData->rawPassword);
 
         if (empty($user)) {
             return ServiceResponseUtil::error('Failed to create user.');
@@ -53,14 +46,14 @@ class UserService
     }
 
     /**
-     * @param UserFilterDto $userFilterDto
+     * @param UserFilterData $userFilterData
      *
      * @return ServiceResponseDto
      */
-    public function get(UserFilterDto $userFilterDto): ServiceResponseDto
+    public function get(UserFilterData $userFilterData): ServiceResponseDto
     {
         return ServiceResponseUtil::map(
-            $this->userRepository->get($userFilterDto)
+            $this->userRepository->get($userFilterData)
         );
     }
 
@@ -77,19 +70,19 @@ class UserService
     }
 
     /**
-     * @param UserDto $userDto
+     * @param UserData $userData
      *
      * @return ServiceResponseDto
      */
-    public function update(UserDto $userDto): ServiceResponseDto
+    public function update(UserData $userData): ServiceResponseDto
     {
-        $user = $this->userRepository->findById($userDto->getId());
+        $user = $this->userRepository->findById($userData->id);
 
         if (empty($user)) {
             return ServiceResponseUtil::error('User not found.');
         }
 
-        $user = $this->userRepository->save($userDto, $user);
+        $user = $this->userRepository->save($userData, $user);
 
         if (empty($user)) {
             return ServiceResponseUtil::error('Failed to update user.');
