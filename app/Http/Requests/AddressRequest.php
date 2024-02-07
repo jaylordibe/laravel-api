@@ -4,8 +4,6 @@ namespace App\Http\Requests;
 
 use App\Data\AddressData;
 use App\Data\AddressFilterData;
-use App\Dtos\AddressDto;
-use App\Dtos\AddressFilterDto;
 
 class AddressRequest extends BaseRequest
 {
@@ -35,49 +33,6 @@ class AddressRequest extends BaseRequest
     public function messages(): array
     {
         return [];
-    }
-
-    /**
-     * Set dto fields.
-     *
-     * @param AddressDto|AddressFilterDto $dto
-     *
-     * @return AddressDto|AddressFilterDto
-     */
-    private function setDtoFields(AddressDto|AddressFilterDto $dto): AddressDto|AddressFilterDto
-    {
-        $dto->setMeta($this->getMeta());
-        $dto->setAuthUser($this->getAuthUser());
-        $dto->setAddress($this->getInputAsString('address'));
-        $dto->setVillageOrBarangay($this->getInputAsString('villageOrBarangay'));
-        $dto->setCityOrMunicipality($this->getInputAsString('cityOrMunicipality'));
-        $dto->setStateOrProvince($this->getInputAsString('stateOrProvince'));
-        $dto->setZipOrPostalCode($this->getInputAsString('zipOrPostalCode'));
-        $dto->setCountry($this->getInputAsString('country'));
-
-        return $dto;
-    }
-
-    /**
-     * Convert request to dto.
-     *
-     * @return AddressDto
-     */
-    public function toDto(): AddressDto
-    {
-        return $this->setDtoFields(new AddressDto());
-    }
-
-    /**
-     * * Convert request to filter dto.
-     *
-     * @return AddressFilterDto
-     */
-    public function toFilterDto(): AddressFilterDto
-    {
-        $filterDto = $this->setDtoFields(new AddressFilterDto());
-
-        return $filterDto;
     }
 
     /**

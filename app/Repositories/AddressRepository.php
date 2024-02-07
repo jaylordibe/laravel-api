@@ -4,8 +4,6 @@ namespace App\Repositories;
 
 use App\Data\AddressData;
 use App\Data\AddressFilterData;
-use App\Dtos\AddressDto;
-use App\Dtos\AddressFilterDto;
 use App\Models\Address;
 use Exception;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;

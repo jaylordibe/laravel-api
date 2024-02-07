@@ -4,8 +4,6 @@ namespace App\Services;
 
 use App\Data\AddressData;
 use App\Data\AddressFilterData;
-use App\Dtos\AddressDto;
-use App\Dtos\AddressFilterDto;
 use App\Dtos\ServiceResponseDto;
 use App\Repositories\AddressRepository;
 use App\Utils\ServiceResponseUtil;
