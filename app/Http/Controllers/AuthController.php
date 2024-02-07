@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Auth;
 class AuthController extends Controller
 {
 
-    public function __construct(UserService $userService)
+    public function __construct()
     {
         $this->middleware('guest')->except('signOut');
     }
