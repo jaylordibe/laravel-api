@@ -57,7 +57,7 @@ class AddressTest extends TestCase
     {
         $token = $this->loginSystemAdminUser();
         $address = Address::factory()->create();
-        $response = $this->withToken($token)->get("{$this->resource}/{$address->getKey()}");
+        $response = $this->withToken($token)->get("{$this->resource}/{$address->id}");
 
         $response->assertOk()->assertJson(['id' => $response->json()['id']]);
     }
@@ -70,10 +70,10 @@ class AddressTest extends TestCase
         $token = $this->loginSystemAdminUser();
         $address = Address::factory()->create();
         $payload = $this->getPayload();
-        $response = $this->withToken($token)->put("{$this->resource}/{$address->getKey()}", $payload);
+        $response = $this->withToken($token)->put("{$this->resource}/{$address->id}", $payload);
 
         // For assertion
-        $payload['id'] = $address->getKey();
+        $payload['id'] = $address->id;
 
         $response->assertOk()->assertJson($payload);
     }
@@ -85,7 +85,7 @@ class AddressTest extends TestCase
     {
         $token = $this->loginSystemAdminUser();
         $address = Address::factory()->create();
-        $response = $this->withToken($token)->delete("{$this->resource}/{$address->getKey()}");
+        $response = $this->withToken($token)->delete("{$this->resource}/{$address->id}");
 
         $response->assertOk()->assertJsonStructure(['success']);
     }

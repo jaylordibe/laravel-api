@@ -106,7 +106,7 @@ class UserTest extends TestCase
     {
         $token = $this->loginSystemAdminUser();
         $user = User::factory()->create();
-        $response = $this->withToken($token)->get("{$this->resource}/{$user->getKey()}");
+        $response = $this->withToken($token)->get("{$this->resource}/{$user->id}");
 
         $response->assertOk()->assertJson(['id' => $response->json()['id']]);
     }
@@ -119,10 +119,10 @@ class UserTest extends TestCase
         $token = $this->loginSystemAdminUser();
         $user = User::factory()->create();
         $payload = $this->getPayload();
-        $response = $this->withToken($token)->put("{$this->resource}/{$user->getKey()}", $payload);
+        $response = $this->withToken($token)->put("{$this->resource}/{$user->id}", $payload);
 
         // For assertion
-        $payload['id'] = $user->getKey();
+        $payload['id'] = $user->id;
 
         $response->assertOk()->assertJson($payload);
     }
@@ -134,7 +134,7 @@ class UserTest extends TestCase
     {
         $token = $this->loginSystemAdminUser();
         $user = User::factory()->create();
-        $response = $this->withToken($token)->delete("{$this->resource}/{$user->getKey()}");
+        $response = $this->withToken($token)->delete("{$this->resource}/{$user->id}");
 
         $response->assertOk()->assertJsonStructure(['success']);
     }
