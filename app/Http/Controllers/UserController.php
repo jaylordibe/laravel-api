@@ -114,12 +114,12 @@ class UserController extends Controller
      *
      * @return JsonResponse|JsonResource
      */
-    public function get(GenericRequest $request): JsonResponse|JsonResource
+    public function getPaginated(GenericRequest $request): JsonResponse|JsonResource
     {
         Gate::authorize(GateAbilityConstant::CAN_READ_USER);
 
         $userFilterData = UserRequest::createFrom($request)->toFilterData();
-        $serviceResponse = $this->userService->get($userFilterData);
+        $serviceResponse = $this->userService->getPaginated($userFilterData);
 
         if ($serviceResponse->error) {
             return ResponseUtil::error($serviceResponse->message);

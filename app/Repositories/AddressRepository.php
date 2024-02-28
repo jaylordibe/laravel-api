@@ -58,7 +58,7 @@ class AddressRepository
      *
      * @return LengthAwarePaginator
      */
-    public function get(AddressFilterData $addressFilterData): LengthAwarePaginator
+    public function getPaginated(AddressFilterData $addressFilterData): LengthAwarePaginator
     {
         $addresses = Address::with($addressFilterData->meta->relations);
 

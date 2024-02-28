@@ -38,10 +38,10 @@ class AddressService
      *
      * @return ServiceResponseData
      */
-    public function get(AddressFilterData $addressFilterData): ServiceResponseData
+    public function getPaginated(AddressFilterData $addressFilterData): ServiceResponseData
     {
         return ServiceResponseUtil::map(
-            $this->addressRepository->get($addressFilterData)
+            $this->addressRepository->getPaginated($addressFilterData)
         );
     }
 

@@ -98,7 +98,7 @@ class UserRepository
      *
      * @return LengthAwarePaginator
      */
-    public function get(UserFilterData $userFilterData): LengthAwarePaginator
+    public function getPaginated(UserFilterData $userFilterData): LengthAwarePaginator
     {
         $searchQuery = $userFilterData->meta->searchQuery;
 

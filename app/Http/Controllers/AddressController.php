@@ -41,10 +41,10 @@ class AddressController extends Controller
      *
      * @return JsonResponse|JsonResource
      */
-    public function get(GenericRequest $request): JsonResponse|JsonResource
+    public function getPaginated(GenericRequest $request): JsonResponse|JsonResource
     {
         $addressFilterData = AddressRequest::createFrom($request)->toFilterData();
-        $serviceResponse = $this->addressService->get($addressFilterData);
+        $serviceResponse = $this->addressService->getPaginated($addressFilterData);
 
         if ($serviceResponse->error) {
             return ResponseUtil::error($serviceResponse->message);

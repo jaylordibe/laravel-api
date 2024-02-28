@@ -48,10 +48,10 @@ class UserService
      *
      * @return ServiceResponseData
      */
-    public function get(UserFilterData $userFilterData): ServiceResponseData
+    public function getPaginated(UserFilterData $userFilterData): ServiceResponseData
     {
         return ServiceResponseUtil::map(
-            $this->userRepository->get($userFilterData)
+            $this->userRepository->getPaginated($userFilterData)
         );
     }
 

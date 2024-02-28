@@ -27,7 +27,7 @@ Route::middleware('auth:api')->group(function () {
 
     # User
     Route::post('users', [UserController::class, 'create']);
-    Route::get('users', [UserController::class, 'get']);
+    Route::get('users', [UserController::class, 'getPaginated']);
     Route::get('users/auth', [UserController::class, 'getAuthUser']);
     Route::put('users/auth/username', [UserController::class, 'updateAuthUserName']);
     Route::put('users/auth/email', [UserController::class, 'updateAuthUserEmail']);
@@ -37,7 +37,7 @@ Route::middleware('auth:api')->group(function () {
 
     # Address
     Route::post('addresses', [AddressController::class, 'create']);
-    Route::get('addresses', [AddressController::class, 'get']);
+    Route::get('addresses', [AddressController::class, 'getPaginated']);
     Route::get('addresses/{addressId}', [AddressController::class, 'getById'])->where('addressId', RoutePatternConstant::NUMERIC);
     Route::put('addresses/{addressId}', [AddressController::class, 'update'])->where('addressId', RoutePatternConstant::NUMERIC);
     Route::delete('addresses/{addressId}', [AddressController::class, 'delete'])->where('addressId', RoutePatternConstant::NUMERIC);
