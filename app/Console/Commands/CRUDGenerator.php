@@ -92,9 +92,10 @@ class CRUDGenerator extends Command
 
     private function createTestFile(string $modelName): void
     {
-        $stubName = 'UnitTest';
-        $file = $this->getStubFile($modelName, $stubName);
-        file_put_contents(base_path("tests/Feature/{$modelName}{$stubName}.php"), $file);
+        // Uncomment the following lines if you want to generate unit tests
+//        $stubName = 'UnitTest';
+//        $file = $this->getStubFile($modelName, $stubName);
+//        file_put_contents(base_path("tests/Feature/{$modelName}{$stubName}.php"), $file);
 
         $stubName = 'FeatureTest';
         $file = $this->getStubFile($modelName, $stubName);
@@ -129,7 +130,7 @@ class CRUDGenerator extends Command
         $controllerClassWithNamespace = "{$controllerClass}::class";
 
         $routeTemplate = <<<ROUTES
-        \t// CRUD routes for $modelName
+        \n\t// CRUD routes for $modelName
         \tRoute::post('{$modelName}s', [{$controllerClassWithNamespace}, 'create']);
         \tRoute::get('{$modelName}s', [{$controllerClassWithNamespace}, 'getPaginated']);
         \tRoute::get('{$modelName}s/{addressId}', [{$controllerClassWithNamespace}, 'getById'])->where('addressId', RoutePatternConstant::NUMERIC);

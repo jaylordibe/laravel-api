@@ -9,7 +9,7 @@ use Tests\BaseTest;
 class {{modelName}}Test extends BaseTest
 {
 
-    private string $endpoint = '/v2/api/{{route}}/{{routeModule}}/{{modelNameLowerCaseDashPlural}}';
+    private string $endpoint = '/api/{{modelNameLowerCaseDashPlural}}';
 
     /**
      * Get {{modelNameSpacesLowerCase}} payload.
