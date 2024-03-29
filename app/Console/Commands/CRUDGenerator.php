@@ -226,15 +226,16 @@ class CRUDGenerator extends Command
     {
         $controllerClass = "{$modelName}Controller";
         $useStatement = "use App\Http\Controllers\\{$controllerClass};\n";
+        $resource = Str::plural(strtolower($this->camelToDashed($modelName)));
         $controllerClassWithNamespace = "{$controllerClass}::class";
 
         $routeTemplate = <<<ROUTES
         \n\t// CRUD routes for $modelName
-        \tRoute::post('{$modelName}s', [{$controllerClassWithNamespace}, 'create']);
-        \tRoute::get('{$modelName}s', [{$controllerClassWithNamespace}, 'getPaginated']);
-        \tRoute::get('{$modelName}s/{addressId}', [{$controllerClassWithNamespace}, 'getById'])->where('addressId', RoutePatternConstant::NUMERIC);
-        \tRoute::put('{$modelName}s/{addressId}', [{$controllerClassWithNamespace}, 'update'])->where('addressId', RoutePatternConstant::NUMERIC);
-        \tRoute::delete('{$modelName}s/{addressId}', [{$controllerClassWithNamespace}, 'delete'])->where('addressId', RoutePatternConstant::NUMERIC);
+        \tRoute::post('{$resource}', [{$controllerClassWithNamespace}, 'create']);
+        \tRoute::get('{$resource}', [{$controllerClassWithNamespace}, 'getPaginated']);
+        \tRoute::get('{$resource}/{id}', [{$controllerClassWithNamespace}, 'getById'])->where('id', RoutePatternConstant::NUMERIC);
+        \tRoute::put('{$resource}/{id}', [{$controllerClassWithNamespace}, 'update'])->where('id', RoutePatternConstant::NUMERIC);
+        \tRoute::delete('{$resource}/{id}', [{$controllerClassWithNamespace}, 'delete'])->where('id', RoutePatternConstant::NUMERIC);
         ROUTES;
 
         $routeFilePath = base_path('routes/api.php');

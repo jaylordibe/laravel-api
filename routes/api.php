@@ -31,14 +31,14 @@ Route::middleware('auth:api')->group(function () {
     Route::get('users/auth', [UserController::class, 'getAuthUser']);
     Route::put('users/auth/username', [UserController::class, 'updateAuthUserName']);
     Route::put('users/auth/email', [UserController::class, 'updateAuthUserEmail']);
-    Route::get('users/{userId}', [UserController::class, 'getById'])->where('userId', RoutePatternConstant::NUMERIC);
-    Route::put('users/{userId}', [UserController::class, 'update'])->where('userId', RoutePatternConstant::NUMERIC);
-    Route::delete('users/{userId}', [UserController::class, 'delete'])->where('userId', RoutePatternConstant::NUMERIC);
+    Route::get('users/{id}', [UserController::class, 'getById'])->where('id', RoutePatternConstant::NUMERIC);
+    Route::put('users/{id}', [UserController::class, 'update'])->where('id', RoutePatternConstant::NUMERIC);
+    Route::delete('users/{id}', [UserController::class, 'delete'])->where('id', RoutePatternConstant::NUMERIC);
 
     // Address
     Route::post('addresses', [AddressController::class, 'create']);
     Route::get('addresses', [AddressController::class, 'getPaginated']);
-    Route::get('addresses/{addressId}', [AddressController::class, 'getById'])->where('addressId', RoutePatternConstant::NUMERIC);
-    Route::put('addresses/{addressId}', [AddressController::class, 'update'])->where('addressId', RoutePatternConstant::NUMERIC);
-    Route::delete('addresses/{addressId}', [AddressController::class, 'delete'])->where('addressId', RoutePatternConstant::NUMERIC);
+    Route::get('addresses/{id}', [AddressController::class, 'getById'])->where('id', RoutePatternConstant::NUMERIC);
+    Route::put('addresses/{id}', [AddressController::class, 'update'])->where('id', RoutePatternConstant::NUMERIC);
+    Route::delete('addresses/{id}', [AddressController::class, 'delete'])->where('id', RoutePatternConstant::NUMERIC);
 });

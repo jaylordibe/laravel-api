@@ -65,13 +65,13 @@ class {{modelName}}Controller extends Controller
      * Get {{modelNameSpacesLowerCase}} by id.
      *
      * @param GenericRequest $request
-     * @param int ${{modelNameLowerCaseFirstLetter}}Id
+     * @param int $id
      * @return JsonResponse|JsonResource
      */
-    public function getById(GenericRequest $request, int ${{modelNameLowerCaseFirstLetter}}Id): JsonResponse|JsonResource
+    public function getById(GenericRequest $request, int $id): JsonResponse|JsonResource
     {
-        $relations = $request->getRelations() ?? [];
-        $serviceResponse = $this->{{modelNameLowerCaseFirstLetter}}Service->getById(${{modelNameLowerCaseFirstLetter}}Id, $relations);
+        $relations = $request->getRelations();
+        $serviceResponse = $this->{{modelNameLowerCaseFirstLetter}}Service->getById($id, $relations);
 
         if ($serviceResponse->isError()) {
             return ResponseUtil::error($serviceResponse->getMessage());
@@ -84,10 +84,10 @@ class {{modelName}}Controller extends Controller
      * Update {{modelNameSpacesLowerCase}}.
      *
      * @param {{modelName}}Request $request
-     * @param int ${{modelNameLowerCaseFirstLetter}}Id
+     * @param int $id
      * @return JsonResponse|JsonResource
      */
-    public function update({{modelName}}Request $request, int ${{modelNameLowerCaseFirstLetter}}Id): JsonResponse|JsonResource
+    public function update({{modelName}}Request $request, int $id): JsonResponse|JsonResource
     {
         $serviceResponse = $this->{{modelNameLowerCaseFirstLetter}}Service->update($request->toData());
 
@@ -102,12 +102,12 @@ class {{modelName}}Controller extends Controller
      * Delete {{modelNameSpacesLowerCase}}.
      *
      * @param GenericRequest $request
-     * @param int ${{modelNameLowerCaseFirstLetter}}Id
+     * @param int $id
      * @return JsonResponse
      */
-    public function delete(GenericRequest $request, int ${{modelNameLowerCaseFirstLetter}}Id): JsonResponse
+    public function delete(GenericRequest $request, int $id): JsonResponse
     {
-        $serviceResponse = $this->{{modelNameLowerCaseFirstLetter}}Service->delete(${{modelNameLowerCaseFirstLetter}}Id);
+        $serviceResponse = $this->{{modelNameLowerCaseFirstLetter}}Service->delete($id);
 
         if ($serviceResponse->isError()) {
             return ResponseUtil::error($serviceResponse->getMessage());
