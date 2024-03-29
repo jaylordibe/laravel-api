@@ -38,6 +38,7 @@ class {{modelName}}Request extends BaseRequest
     public function toData(): {{modelName}}Data
     {
         return new {{modelName}}Data(
+            // Add {{modelName}}Data properties here
             authUser: $this->getAuthenticatedUserData(),
             meta: $this->getMetaData(),
             id: $this->route('id') ?? $this->getInputAsInt('id')
@@ -53,6 +54,7 @@ class {{modelName}}Request extends BaseRequest
     public function toFilterData(): {{modelName}}FilterData
     {
         return new {{modelName}}FilterData(
+            // Add {{modelName}}FilterData properties here
             authUser: $this->getAuthenticatedUserData(),
             meta: $this->getMetaData(),
             id: $this->getInputAsInt('id', null)
