@@ -4,7 +4,7 @@ namespace App\Repositories;
 
 use App\Data\{{modelName}}Data;
 use App\Data\{{modelName}}FilterData;
-use App\Models\{{moduleName}}\{{modelName}};
+use App\Models\{{modelName}};
 use Exception;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;

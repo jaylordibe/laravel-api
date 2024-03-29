@@ -33,15 +33,14 @@ class {{modelName}}Request extends BaseRequest
      * Transform request to data object.
      *
      * @return {{modelName}}Data
-     * @throws UnknownProperties
      */
     public function toData(): {{modelName}}Data
     {
         return new {{modelName}}Data(
             // Add {{modelName}}Data properties here
+            id: $this->route('id') ?? $this->getInputAsInt('id'),
             authUser: $this->getAuthenticatedUserData(),
-            meta: $this->getMetaData(),
-            id: $this->route('id') ?? $this->getInputAsInt('id')
+            meta: $this->getMetaData()
         );
     }
 
@@ -49,15 +48,14 @@ class {{modelName}}Request extends BaseRequest
      * Transform request to filter data object.
      *
      * @return {{modelName}}FilterData
-     * @throws UnknownProperties
      */
     public function toFilterData(): {{modelName}}FilterData
     {
         return new {{modelName}}FilterData(
             // Add {{modelName}}FilterData properties here
+            id: $this->getInputAsInt('id', null),
             authUser: $this->getAuthenticatedUserData(),
-            meta: $this->getMetaData(),
-            id: $this->getInputAsInt('id', null)
+            meta: $this->getMetaData()
         );
     }
 

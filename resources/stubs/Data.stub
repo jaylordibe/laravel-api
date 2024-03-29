@@ -2,13 +2,15 @@
 
 namespace App\Data;
 
-use Spatie\DataTransferObject\DataTransferObject;
-
-class {{modelName}}Data extends DataTransferObject
+class {{modelName}}Data extends BaseData
 {
 
-    public UserData $authUser;
-    public MetaData $meta;
-    public int $id;
+    public function __construct(
+        // Add {{modelName}}Data properties here
+        ...$args
+    )
+    {
+        parent::__construct(...$args);
+    }
 
 }

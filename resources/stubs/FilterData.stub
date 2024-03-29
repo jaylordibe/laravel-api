@@ -2,13 +2,15 @@
 
 namespace App\Data;
 
-use Spatie\DataTransferObject\DataTransferObject;
-
-class {{modelName}}FilterData extends DataTransferObject
+class {{modelName}}FilterData extends BaseData
 {
 
-    public ?UserData $authUser = null;
-    public ?MetaData $meta = null;
-    public ?int $id = null;
+    public function __construct(
+        // Add {{modelName}}FilterData properties here
+        ...$args
+    )
+    {
+        parent::__construct(...$args);
+    }
 
 }

@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Feature\{{moduleName}};
+namespace Tests\Feature;
 
 use App\Constants\StatusConstant;
 use Illuminate\Support\Facades\Log;

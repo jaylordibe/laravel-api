@@ -11,6 +11,8 @@ class AddressResource extends JsonResource
     /**
      * Transform the resource into an array.
      *
+     * @param Request $request
+     *
      * @return array<string, mixed>
      */
     public function toArray(Request $request): array

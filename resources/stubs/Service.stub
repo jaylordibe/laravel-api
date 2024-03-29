@@ -4,7 +4,7 @@ namespace App\Services;
 
 use App\Data\{{modelName}}Data;
 use App\Data\{{modelName}}FilterData;
-use App\Models\{{moduleName}}\{{modelName}};
+use App\Models\{{modelName}};
 use App\Repositories\{{modelName}}Repository;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use App\Models\Custom\ServiceResponse;
