@@ -17,10 +17,13 @@ class Create{{modelNameSingularToPlural}}Table extends Migration
     public function up(): void
     {
         Schema::create(DatabaseTableConstant::{{modelNameDecamelizeUpperCaseSingularToPlural}}, function (Blueprint $table) {
-            $table->bigIncrements('id');
+            $table->id();
             $table->dateTime('created_at')->useCurrent();
             $table->dateTime('updated_at')->default(DB::raw('CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP'));
             $table->dateTime('deleted_at')->nullable();
+            $table->foreignId('created_by')->nullable()->constrained(DatabaseTableConstant::USERS);
+            $table->foreignId('updated_by')->nullable()->constrained(DatabaseTableConstant::USERS);
+            $table->foreignId('deleted_by')->nullable()->constrained(DatabaseTableConstant::USERS);
         });
     }
 
