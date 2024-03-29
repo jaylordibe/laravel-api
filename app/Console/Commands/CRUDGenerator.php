@@ -70,7 +70,7 @@ class CRUDGenerator extends Command
     private function createMigrationFile(string $modelName): void
     {
         $stubName = 'Migration';
-        $migrationFileName = date('Y_m_d_His') . '_create_' . Str::plural(strtolower($this->convertCamelCaseToSnakeCase($modelName)));
+        $migrationFileName = date('Y_m_d_His') . '_create_' . Str::plural(strtolower(Str::snake($modelName)));
         $path = database_path("/migrations/{$migrationFileName}_table.php");
 
         if (File::exists($path)) {
@@ -242,7 +242,7 @@ class CRUDGenerator extends Command
     {
         $controllerClass = "{$modelName}Controller";
         $useStatement = "use App\Http\Controllers\\{$controllerClass};\n";
-        $resource = Str::plural(strtolower($this->convertCamelCaseToDashed($modelName)));
+        $resource = Str::plural(strtolower(Str::kebab($modelName)));
         $controllerClassWithNamespace = "{$controllerClass}::class";
 
         $routeTemplate = <<<ROUTES
@@ -297,16 +297,16 @@ class CRUDGenerator extends Command
         ];
 
         $modelNameLowerCaseFirstLetter = lcfirst($modelName);
-        $modelNameLowerCaseDash = strtolower($this->convertCamelCaseToDashed($modelName));
-        $modelNameLowerCaseDashPlural = Str::plural(strtolower($this->convertCamelCaseToDashed($modelName)));
+        $modelNameLowerCaseDash = Str::kebab($modelName);
+        $modelNameLowerCaseDashPlural = Str::plural(Str::kebab($modelName));
         $modelNameLowerCaseFirstLetterPlural = Str::plural(lcfirst($modelName));
-        $modelNameDecamelizeLowerCaseSingularToPlural = Str::plural(strtolower($this->convertCamelCaseToSnakeCase($modelName)));
-        $modelNameDecamelizeUpperCaseSingularToPlural = Str::plural(strtoupper($this->convertCamelCaseToSnakeCase($modelName)));
+        $modelNameDecamelizeLowerCaseSingularToPlural = Str::plural(Str::snake($modelName));
+        $modelNameDecamelizeUpperCaseSingularToPlural = Str::plural(Str::upper(Str::snake($modelName)));
         $modelNameSingularToPlural = Str::plural($modelName);
-        $modelNameSpacesLowerCase = trim(strtolower($this->convertCamelCaseToSpaceSeparated($modelName)));
-        $modelNameSpacesLowerCasePlural = Str::plural(trim(strtolower($this->convertCamelCaseToSpaceSeparated($modelName))));
-        $modelNameSpacesUpperCaseWord = trim(ucwords($this->convertCamelCaseToSpaceSeparated($modelName)));
-        $modelNameSpacesUpperCaseFirstLetter = ucfirst(trim(strtolower($this->convertCamelCaseToSpaceSeparated($modelName))));
+        $modelNameSpacesLowerCase = trim(str_replace('_', ' ', Str::snake($modelName)));
+        $modelNameSpacesLowerCasePlural = Str::plural(trim(str_replace('_', ' ', Str::snake($modelName))));
+        $modelNameSpacesUpperCaseWord = ucwords(trim(str_replace('_', ' ', Str::snake($modelName))));
+        $modelNameSpacesUpperCaseFirstLetter = ucfirst(trim(str_replace('_', ' ', Str::snake($modelName))));
 
         $replace = [
             $modelName,

@@ -39,7 +39,7 @@ class {{modelName}}Request extends BaseRequest
         return new {{modelName}}Data(
             // Add {{modelName}}Data properties here
             id: $this->route('id') ?? $this->getInputAsInt('id'),
-            authUser: $this->getAuthenticatedUserData(),
+            authUser: $this->getAuthUserData()
             meta: $this->getMetaData()
         );
     }
@@ -54,7 +54,7 @@ class {{modelName}}Request extends BaseRequest
         return new {{modelName}}FilterData(
             // Add {{modelName}}FilterData properties here
             id: $this->getInputAsInt('id', null),
-            authUser: $this->getAuthenticatedUserData(),
+            authUser: $this->getAuthUserData()
             meta: $this->getMetaData()
         );
     }
