@@ -46,6 +46,8 @@ class CRUDGenerator extends Command
         $this->createServiceFile($modelName);
         $this->createRepositoryFile($modelName);
         $this->addRoute($modelName);
+
+        echo PHP_EOL . "Done generating CRUD files for {$modelName}" . PHP_EOL . PHP_EOL;
     }
 
     private function createModelFile(string $modelName): void
@@ -122,17 +124,37 @@ class CRUDGenerator extends Command
 
     private function addRoute(string $modelName): void
     {
-        $routeTemplate = <<<ROUTE
-            // CRUD routes for $modelName
-            Route::apiResource('{$modelName}', '{$modelName}Controller');
-            ROUTE;
+        $controllerClass = "{$modelName}Controller::class";
+
+        $routeTemplate = <<<ROUTES
+        // CRUD routes for $modelName
+        Route::post('{$modelName}s', [{$controllerClass}, 'create']);
+        Route::get('{$modelName}s', [{$controllerClass}, 'getPaginated']);
+        Route::get('{$modelName}s/{{$modelName}Id}', [{$controllerClass}, 'getById'])->where('{$modelName}Id', RoutePatternConstant::NUMERIC);
+        Route::put('{$modelName}s/{{$modelName}Id}', [{$controllerClass}, 'update'])->where('{$modelName}Id', RoutePatternConstant::NUMERIC);
+        Route::delete('{$modelName}s/{{$modelName}Id}', [{$controllerClass}, 'delete'])->where('{$modelName}Id', RoutePatternConstant::NUMERIC);
+        ROUTES;
 
         $routeFilePath = base_path('routes/api.php');
+        $fileContents = File::get($routeFilePath);
 
-        if (File::append($routeFilePath, "\n\n" . $routeTemplate)) {
-            $this->info("CRUD routes for {$modelName} have been added to {$routeFilePath}");
+        // Find the position of the closing tag of the auth:api middleware group
+        $closingMiddlewareTagPosition = strrpos($fileContents, "});");
+
+        if ($closingMiddlewareTagPosition !== false) {
+            // Insert the new routes before the closing tag
+            $partOne = substr($fileContents, 0, $closingMiddlewareTagPosition);
+            $partTwo = substr($fileContents, $closingMiddlewareTagPosition);
+
+            // Combine everything together with new routes inserted
+            $newFileContents = $partOne . "\n" . $routeTemplate . "\n" . $partTwo;
+
+            // Write the new content back into the file
+            File::put($routeFilePath, $newFileContents);
         } else {
-            $this->error("Failed to write CRUD routes to {$routeFilePath}");
+            // Optionally handle the case where the closing tag isn't found
+            // For example, append at the end or log an error
+            File::append($routeFilePath, "\n\n" . $routeTemplate);
         }
     }
 

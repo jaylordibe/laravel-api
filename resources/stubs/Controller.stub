@@ -2,15 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\GenericRequest;
 use App\Http\Requests\{{modelName}}Request;
 use App\Http\Resources\{{modelName}}Resource;
-use Illuminate\Routing\Controller;
-use App\Helpers\ResponseHelper;
 use App\Services\{{modelName}}Service;
-use App\Http\Requests\V2\GenericRequest;
+use App\Utils\ResponseUtil;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Spatie\DataTransferObject\Exceptions\UnknownProperties;
+use Illuminate\Routing\Controller;
 
 class {{modelName}}Controller extends Controller
 {
@@ -32,17 +31,16 @@ class {{modelName}}Controller extends Controller
      *
      * @param {{modelName}}Request $request
      * @return JsonResponse|JsonResource
-     * @throws UnknownProperties
      */
     public function create({{modelName}}Request $request): JsonResponse|JsonResource
     {
         $serviceResponse = $this->{{modelNameLowerCaseFirstLetter}}Service->create($request->toData());
 
         if ($serviceResponse->isError()) {
-            return ResponseHelper::error($serviceResponse->getMessage());
+            return ResponseUtil::error($serviceResponse->getMessage());
         }
 
-        return ResponseHelper::resource({{modelName}}Resource::class, $serviceResponse->getData());
+        return ResponseUtil::resource({{modelName}}Resource::class, $serviceResponse->getData());
     }
 
     /**
@@ -50,7 +48,6 @@ class {{modelName}}Controller extends Controller
      *
      * @param GenericRequest $request
      * @return JsonResponse|JsonResource
-     * @throws UnknownProperties
      */
     public function getAll(GenericRequest $request): JsonResponse|JsonResource
     {
@@ -58,10 +55,10 @@ class {{modelName}}Controller extends Controller
         $serviceResponse = $this->{{modelNameLowerCaseFirstLetter}}Service->getPaginated(${{modelNameLowerCaseFirstLetter}}Data);
 
         if ($serviceResponse->isError()) {
-            return ResponseHelper::error($serviceResponse->getMessage());
+            return ResponseUtil::error($serviceResponse->getMessage());
         }
 
-        return ResponseHelper::resource({{modelName}}Resource::class, $serviceResponse->getData());
+        return ResponseUtil::resource({{modelName}}Resource::class, $serviceResponse->getData());
     }
 
     /**
@@ -77,10 +74,10 @@ class {{modelName}}Controller extends Controller
         $serviceResponse = $this->{{modelNameLowerCaseFirstLetter}}Service->getById(${{modelNameLowerCaseFirstLetter}}Id, $relations);
 
         if ($serviceResponse->isError()) {
-            return ResponseHelper::error($serviceResponse->getMessage());
+            return ResponseUtil::error($serviceResponse->getMessage());
         }
 
-        return ResponseHelper::resource({{modelName}}Resource::class, $serviceResponse->getData());
+        return ResponseUtil::resource({{modelName}}Resource::class, $serviceResponse->getData());
     }
 
     /**
@@ -89,17 +86,16 @@ class {{modelName}}Controller extends Controller
      * @param {{modelName}}Request $request
      * @param int ${{modelNameLowerCaseFirstLetter}}Id
      * @return JsonResponse|JsonResource
-     * @throws UnknownProperties
      */
     public function update({{modelName}}Request $request, int ${{modelNameLowerCaseFirstLetter}}Id): JsonResponse|JsonResource
     {
         $serviceResponse = $this->{{modelNameLowerCaseFirstLetter}}Service->update($request->toData());
 
         if ($serviceResponse->isError()) {
-            return ResponseHelper::error($serviceResponse->getMessage());
+            return ResponseUtil::error($serviceResponse->getMessage());
         }
 
-        return ResponseHelper::resource({{modelName}}Resource::class, $serviceResponse->getData());
+        return ResponseUtil::resource({{modelName}}Resource::class, $serviceResponse->getData());
     }
 
     /**
@@ -114,10 +110,10 @@ class {{modelName}}Controller extends Controller
         $serviceResponse = $this->{{modelNameLowerCaseFirstLetter}}Service->delete(${{modelNameLowerCaseFirstLetter}}Id);
 
         if ($serviceResponse->isError()) {
-            return ResponseHelper::error($serviceResponse->getMessage());
+            return ResponseUtil::error($serviceResponse->getMessage());
         }
 
-        return ResponseHelper::success($serviceResponse->getMessage());
+        return ResponseUtil::success($serviceResponse->getMessage());
     }
 
 }

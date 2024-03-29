@@ -17,15 +17,15 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-# Public Routes
+// Public Routes
 Route::post('auth/sign-in', [AuthController::class, 'signIn']);
 
-# Authenticated Routes
+// Authenticated Routes
 Route::middleware('auth:api')->group(function () {
-    # Auth
+    // Auth
     Route::post('auth/sign-out', [AuthController::class, 'signOut']);
 
-    # User
+    // User
     Route::post('users', [UserController::class, 'create']);
     Route::get('users', [UserController::class, 'getPaginated']);
     Route::get('users/auth', [UserController::class, 'getAuthUser']);
@@ -35,7 +35,7 @@ Route::middleware('auth:api')->group(function () {
     Route::put('users/{userId}', [UserController::class, 'update'])->where('userId', RoutePatternConstant::NUMERIC);
     Route::delete('users/{userId}', [UserController::class, 'delete'])->where('userId', RoutePatternConstant::NUMERIC);
 
-    # Address
+    // Address
     Route::post('addresses', [AddressController::class, 'create']);
     Route::get('addresses', [AddressController::class, 'getPaginated']);
     Route::get('addresses/{addressId}', [AddressController::class, 'getById'])->where('addressId', RoutePatternConstant::NUMERIC);
