@@ -2,25 +2,15 @@
 
 namespace Tests\Unit;
 
-use Illuminate\Support\Facades\Log;
-use Tests\BaseTest;
+use Tests\TestCase;
 
-class {{modelName}}Test extends BaseTest
+class {{modelName}}UnitTest extends TestCase
 {
 
-    public function setUp(): void
-    {
-        parent::setUp();
-    }
-
     /**
-     * @test
-     *
-     * A basic unit test.
-     *
-     * @return void
+     * A basic test example.
      */
-    public function testExample()
+    public function testUnit(): void
     {
         $this->assertTrue(true);
     }

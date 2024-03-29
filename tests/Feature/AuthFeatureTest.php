@@ -5,7 +5,7 @@ namespace Tests\Feature;
 use Illuminate\Support\Facades\Log;
 use Tests\TestCase;
 
-class AuthTest extends TestCase
+class AuthFeatureTest extends TestCase
 {
 
     private string $resource = '/api/auth';

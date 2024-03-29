@@ -5,7 +5,7 @@ namespace Tests\Feature;
 use App\Models\Address;
 use Tests\TestCase;
 
-class AddressTest extends TestCase
+class AddressFeatureTest extends TestCase
 {
 
     private string $resource = '/api/addresses';

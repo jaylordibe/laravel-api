@@ -6,7 +6,7 @@ use App\Constants\StatusConstant;
 use Illuminate\Support\Facades\Log;
 use Tests\BaseTest;
 
-class {{modelName}}Test extends BaseTest
+class {{modelName}}FeatureTest extends BaseTest
 {
 
     private string $endpoint = '/api/{{modelNameLowerCaseDashPlural}}';
@@ -16,24 +16,9 @@ class {{modelName}}Test extends BaseTest
      *
      * @return array
      */
-    private function get{{modelName}}Payload(): array
+    private function getPayload(): array
     {
         return [];
-    }
-
-    /**
-     * Create {{modelNameSpacesLowerCase}} and get the id.
-     *
-     * @param array $payload
-     * @return int|null
-     */
-    private function create{{modelName}}AndGetId(array $payload): ?int
-    {
-        $auth = $this->loginAdminUser();
-        $createResponse = $this->withHeaders($auth->getAuthorizationHeader())->postJson($this->endpoint, $payload);
-        ${{modelNameLowerCaseFirstLetter}} = $createResponse->json();
-
-        return ${{modelNameLowerCaseFirstLetter}}['id'] ?? null;
     }
 
     /**
@@ -45,11 +30,11 @@ class {{modelName}}Test extends BaseTest
      */
     public function testCreate{{modelName}}()
     {
-        $auth = $this->loginAdminUser();
-        $payload = $this->get{{modelName}}Payload();
+        $token = $this->loginSystemAdminUser();
+        $payload = $this->getPayload();
+        $response = $this->withToken($token)->post("{$this->resource}", $payload);
 
-        $response = $this->withHeaders($auth->getAuthorizationHeader())->postJson($this->endpoint, $payload);
-        $response->assertOk()->assertJson($payload);
+        $response->assertCreated()->assertJson($payload);
     }
 
     /**
@@ -61,11 +46,10 @@ class {{modelName}}Test extends BaseTest
      */
     public function testGetPaginated{{modelNameSingularToPlural}}()
     {
-        $auth = $this->loginAdminUser();
-        $expectedJsonStructure = ['data', 'links', 'meta'];
+        $token = $this->loginSystemAdminUser();
+        $response = $this->withToken($token)->get("{$this->resource}");
 
-        $response = $this->withHeaders($auth->getAuthorizationHeader())->getJson($this->endpoint);
-        $response->assertOk()->assertJsonStructure($expectedJsonStructure);
+        $response->assertOk()->assertJsonStructure(['data', 'links', 'meta']);
     }
 
     /**
@@ -75,14 +59,13 @@ class {{modelName}}Test extends BaseTest
      *
      * @return void
      */
-    public function testGetById{{modelName}}ById()
+    public function testGet{{modelName}}ById()
     {
-        $auth = $this->loginAdminUser();
-        $payload = $this->get{{modelName}}Payload();
-        ${{modelNameLowerCaseFirstLetter}}Id = $this->create{{modelName}}AndGetId($payload);
+        $token = $this->loginSystemAdminUser();
+        ${{modelNameLowerCaseFirstLetter}} = {{modelName}}::factory()->create();
+        $response = $this->withToken($token)->get("{$this->resource}/{${{modelNameLowerCaseFirstLetter}}->id}");
 
-        $response = $this->withHeaders($auth->getAuthorizationHeader())->getJson("$this->endpoint/${{modelNameLowerCaseFirstLetter}}Id");
-        $response->assertOk()->assertJson($payload);
+        $response->assertOk()->assertJson(['id' => $response->json()['id']]);
     }
 
     /**
@@ -94,12 +77,14 @@ class {{modelName}}Test extends BaseTest
      */
     public function testUpdate{{modelName}}()
     {
-        $auth = $this->loginAdminUser();
-        $payload = $this->get{{modelName}}Payload();
-        ${{modelNameLowerCaseFirstLetter}}Id = $this->create{{modelName}}AndGetId($payload);
-        $payload['status'] = StatusConstant::ACTIVE;
+        $token = $this->loginSystemAdminUser();
+        ${{modelNameLowerCaseFirstLetter}} = {{modelName}}::factory()->create();
+        $payload = $this->getPayload();
+        $response = $this->withToken($token)->put("{$this->resource}/{${{modelNameLowerCaseFirstLetter}}->id}", $payload);
 
-        $response = $this->withHeaders($auth->getAuthorizationHeader())->putJson("$this->endpoint/${{modelNameLowerCaseFirstLetter}}Id", $payload);
+        // For assertion
+        $payload['id'] = ${{modelNameLowerCaseFirstLetter}}->id;
+
         $response->assertOk()->assertJson($payload);
     }
 
@@ -112,13 +97,11 @@ class {{modelName}}Test extends BaseTest
      */
     public function testDelete{{modelName}}()
     {
-        $auth = $this->loginAdminUser();
-        $payload = $this->get{{modelName}}Payload();
-        ${{modelNameLowerCaseFirstLetter}}Id = $this->create{{modelName}}AndGetId($payload);
-        $expectedJsonStructure = ['success'];
+        $token = $this->loginSystemAdminUser();
+        ${{modelNameLowerCaseFirstLetter}} = {{modelName}}::factory()->create();
+        $response = $this->withToken($token)->delete("{$this->resource}/{${{modelNameLowerCaseFirstLetter}}->id}");
 
-        $response = $this->withHeaders($auth->getAuthorizationHeader())->deleteJson("$this->endpoint/${{modelNameLowerCaseFirstLetter}}Id");
-        $response->assertOk()->assertJsonStructure($expectedJsonStructure);
+        $response->assertOk()->assertJsonStructure(['success']);
     }
 
 }

@@ -146,19 +146,18 @@ class CRUDGenerator extends Command
 
     private function createTestFile(string $modelName): void
     {
-        // Uncomment the following lines if you want to generate unit tests
-//        $stubName = 'UnitTest';
-//        $path = base_path("tests/Unit/{$modelName}{$stubName}.php");
-//
-//        if (File::exists($path)) {
-//            $this->error("Test file for {$modelName} model already exists. Skipping...");
-//
-//            return;
-//        }
-//
-//        $file = $this->getStubFile($modelName, $stubName);
-//        file_put_contents($path, $file);
-//        echo "{$path} successfully created" . PHP_EOL;
+        $stubName = 'UnitTest';
+        $path = base_path("tests/Unit/{$modelName}{$stubName}.php");
+
+        if (File::exists($path)) {
+            $this->error("Test file for {$modelName} model already exists. Skipping...");
+
+            return;
+        }
+
+        $file = $this->getStubFile($modelName, $stubName);
+        file_put_contents($path, $file);
+        echo "{$path} successfully created" . PHP_EOL;
 
         $stubName = 'FeatureTest';
         $path = base_path("tests/Feature/{$modelName}{$stubName}.php");

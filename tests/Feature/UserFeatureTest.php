@@ -6,7 +6,7 @@ use App\Models\User;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
-class UserTest extends TestCase
+class UserFeatureTest extends TestCase
 {
 
     private string $resource = '/api/users';
