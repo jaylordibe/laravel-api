@@ -68,13 +68,11 @@ class CRUDGenerator extends Command
 
         if (File::exists($path)) {
             $this->error("{$path} already exists. Skipping...");
-
-            return;
+        } else {
+            $file = $this->getStubFile($modelName, $stubName);
+            file_put_contents($path, $file);
+            $this->info("{$path} successfully created" . PHP_EOL);
         }
-
-        $file = $this->getStubFile($modelName, $stubName);
-        file_put_contents($path, $file);
-        $this->info("{$path} successfully created" . PHP_EOL);
     }
 
     /**
@@ -92,13 +90,11 @@ class CRUDGenerator extends Command
 
         if (File::exists($path)) {
             $this->error("{$path} already exists. Skipping...");
-
-            return;
+        } else {
+            $file = $this->getStubFile($modelName, $stubName);
+            file_put_contents($path, $file);
+            $this->info("{$path} successfully created" . PHP_EOL);
         }
-
-        $file = $this->getStubFile($modelName, $stubName);
-        file_put_contents($path, $file);
-        $this->info("{$path} successfully created" . PHP_EOL);
     }
 
     /**
@@ -115,13 +111,11 @@ class CRUDGenerator extends Command
 
         if (File::exists($path)) {
             $this->error("{$path} already exists. Skipping...");
-
-            return;
+        } else {
+            $file = $this->getStubFile($modelName, $stubName);
+            file_put_contents($path, $file);
+            $this->info("{$path} successfully created" . PHP_EOL);
         }
-
-        $file = $this->getStubFile($modelName, $stubName);
-        file_put_contents($path, $file);
-        $this->info("{$path} successfully created" . PHP_EOL);
     }
 
     /**
@@ -138,13 +132,11 @@ class CRUDGenerator extends Command
 
         if (File::exists($path)) {
             $this->error("{$path} already exists. Skipping...");
-
-            return;
+        } else {
+            $file = $this->getStubFile($modelName, $stubName);
+            file_put_contents($path, $file);
+            $this->info("{$path} successfully created" . PHP_EOL);
         }
-
-        $file = $this->getStubFile($modelName, $stubName);
-        file_put_contents($path, $file);
-        $this->info("{$path} successfully created" . PHP_EOL);
     }
 
     /**
@@ -161,13 +153,11 @@ class CRUDGenerator extends Command
 
         if (File::exists($path)) {
             $this->error("{$path} already exists. Skipping...");
-
-            return;
+        } else {
+            $file = $this->getStubFile($modelName, $stubName);
+            file_put_contents($path, $file);
+            $this->info("{$path} successfully created" . PHP_EOL);
         }
-
-        $file = $this->getStubFile($modelName, $stubName);
-        file_put_contents($path, $file);
-        $this->info("{$path} successfully created" . PHP_EOL);
     }
 
     /**
@@ -184,26 +174,22 @@ class CRUDGenerator extends Command
 
         if (File::exists($path)) {
             $this->error("{$path} already exists. Skipping...");
-
-            return;
+        } else {
+            $file = $this->getStubFile($modelName, $stubName);
+            file_put_contents($path, $file);
+            $this->info("{$path} successfully created" . PHP_EOL);
         }
-
-        $file = $this->getStubFile($modelName, $stubName);
-        file_put_contents($path, $file);
-        $this->info("{$path} successfully created" . PHP_EOL);
 
         $stubName = 'FilterData';
         $path = app_path("Data/{$modelName}{$stubName}.php");
 
         if (File::exists($path)) {
             $this->error("{$path} already exists. Skipping...");
-
-            return;
+        } else {
+            $file = $this->getStubFile($modelName, $stubName);
+            file_put_contents($path, $file);
+            $this->info("{$path} successfully created" . PHP_EOL);
         }
-
-        $file = $this->getStubFile($modelName, $stubName);
-        file_put_contents($path, $file);
-        $this->info("{$path} successfully created" . PHP_EOL);
     }
 
     /**
@@ -220,26 +206,22 @@ class CRUDGenerator extends Command
 
         if (File::exists($path)) {
             $this->error("{$path} already exists. Skipping...");
-
-            return;
+        } else {
+            $file = $this->getStubFile($modelName, $stubName);
+            file_put_contents($path, $file);
+            $this->info("{$path} successfully created" . PHP_EOL);
         }
-
-        $file = $this->getStubFile($modelName, $stubName);
-        file_put_contents($path, $file);
-        $this->info("{$path} successfully created" . PHP_EOL);
 
         $stubName = 'FeatureTest';
         $path = base_path("tests/Feature/{$modelName}{$stubName}.php");
 
         if (File::exists($path)) {
             $this->error("{$path} already exists. Skipping...");
-
-            return;
+        } else {
+            $file = $this->getStubFile($modelName, $stubName);
+            file_put_contents($path, $file);
+            $this->info("{$path} successfully created" . PHP_EOL);
         }
-
-        $file = $this->getStubFile($modelName, $stubName);
-        file_put_contents($path, $file);
-        $this->info("{$path} successfully created" . PHP_EOL);
     }
 
     /**
@@ -256,13 +238,11 @@ class CRUDGenerator extends Command
 
         if (File::exists($path)) {
             $this->error("{$path} already exists. Skipping...");
-
-            return;
+        } else {
+            $file = $this->getStubFile($modelName, $stubName);
+            file_put_contents($path, $file);
+            $this->info("{$path} successfully created" . PHP_EOL);
         }
-
-        $file = $this->getStubFile($modelName, $stubName);
-        file_put_contents($path, $file);
-        $this->info("{$path} successfully created" . PHP_EOL);
     }
 
     /**
@@ -279,13 +259,11 @@ class CRUDGenerator extends Command
 
         if (File::exists($path)) {
             $this->error("{$path} already exists. Skipping...");
-
-            return;
+        } else {
+            $file = $this->getStubFile($modelName, $stubName);
+            file_put_contents($path, $file);
+            $this->info("{$path} successfully created" . PHP_EOL);
         }
-
-        $file = $this->getStubFile($modelName, $stubName);
-        file_put_contents($path, $file);
-        $this->info("{$path} successfully created" . PHP_EOL);
     }
 
     /**
@@ -302,13 +280,11 @@ class CRUDGenerator extends Command
 
         if (File::exists($path)) {
             $this->error("{$path} already exists. Skipping...");
-
-            return;
+        } else {
+            $file = $this->getStubFile($modelName, $stubName);
+            file_put_contents($path, $file);
+            $this->info("{$path} successfully created" . PHP_EOL);
         }
-
-        $file = $this->getStubFile($modelName, $stubName);
-        file_put_contents($path, $file);
-        $this->info("{$path} successfully created" . PHP_EOL);
     }
 
     /**
@@ -363,8 +339,9 @@ class CRUDGenerator extends Command
      * Get stub file.
      *
      * @param string $modelName
+     * @param string $stubName
      *
-     * @return void
+     * @return string
      */
     private function getStubFile(string $modelName, string $stubName): string
     {
