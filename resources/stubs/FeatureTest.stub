@@ -29,7 +29,7 @@ class {{modelName}}FeatureTest extends TestCase
      *
      * @return void
      */
-    public function testCreate{{modelName}}()
+    public function testCreate{{modelName}}(): void
     {
         $token = $this->loginSystemAdminUser();
         $payload = $this->getPayload();
@@ -45,7 +45,7 @@ class {{modelName}}FeatureTest extends TestCase
      *
      * @return void
      */
-    public function testGetPaginated{{modelNameSingularToPlural}}()
+    public function testGetPaginated{{modelNameSingularToPlural}}(): void
     {
         $token = $this->loginSystemAdminUser();
         $response = $this->withToken($token)->get($this->resource);
@@ -60,7 +60,7 @@ class {{modelName}}FeatureTest extends TestCase
      *
      * @return void
      */
-    public function testGet{{modelName}}ById()
+    public function testGet{{modelName}}ById(): void
     {
         $token = $this->loginSystemAdminUser();
         ${{modelNameLowerCaseFirstLetter}} = {{modelName}}::factory()->create();
@@ -76,7 +76,7 @@ class {{modelName}}FeatureTest extends TestCase
      *
      * @return void
      */
-    public function testUpdate{{modelName}}()
+    public function testUpdate{{modelName}}(): void
     {
         $token = $this->loginSystemAdminUser();
         ${{modelNameLowerCaseFirstLetter}} = {{modelName}}::factory()->create();
@@ -96,7 +96,7 @@ class {{modelName}}FeatureTest extends TestCase
      *
      * @return void
      */
-    public function testDelete{{modelName}}()
+    public function testDelete{{modelName}}(): void
     {
         $token = $this->loginSystemAdminUser();
         ${{modelNameLowerCaseFirstLetter}} = {{modelName}}::factory()->create();
