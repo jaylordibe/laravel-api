@@ -70,7 +70,7 @@ class CRUDGenerator extends Command
     private function createMigrationFile(string $modelName): void
     {
         $stubName = 'Migration';
-        $migrationFileName = $this->getDatePrefix() . '_' . 'create_' . Str::plural(strtolower($this->decamelize($modelName)));
+        $migrationFileName = date('Y_m_d_His') . '_create_' . Str::plural(strtolower($this->convertCamelCaseToSnakeCase($modelName)));
         $path = database_path("/migrations/{$migrationFileName}_table.php");
 
         if (File::exists($path)) {
@@ -242,7 +242,7 @@ class CRUDGenerator extends Command
     {
         $controllerClass = "{$modelName}Controller";
         $useStatement = "use App\Http\Controllers\\{$controllerClass};\n";
-        $resource = Str::plural(strtolower($this->camelToDashed($modelName)));
+        $resource = Str::plural(strtolower($this->convertCamelCaseToDashed($modelName)));
         $controllerClassWithNamespace = "{$controllerClass}::class";
 
         $routeTemplate = <<<ROUTES
@@ -297,16 +297,16 @@ class CRUDGenerator extends Command
         ];
 
         $modelNameLowerCaseFirstLetter = lcfirst($modelName);
-        $modelNameLowerCaseDash = strtolower($this->camelToDashed($modelName));
-        $modelNameLowerCaseDashPlural = Str::plural(strtolower($this->camelToDashed($modelName)));
+        $modelNameLowerCaseDash = strtolower($this->convertCamelCaseToDashed($modelName));
+        $modelNameLowerCaseDashPlural = Str::plural(strtolower($this->convertCamelCaseToDashed($modelName)));
         $modelNameLowerCaseFirstLetterPlural = Str::plural(lcfirst($modelName));
-        $modelNameDecamelizeLowerCaseSingularToPlural = Str::plural(strtolower($this->decamelize($modelName)));
-        $modelNameDecamelizeUpperCaseSingularToPlural = Str::plural(strtoupper($this->decamelize($modelName)));
+        $modelNameDecamelizeLowerCaseSingularToPlural = Str::plural(strtolower($this->convertCamelCaseToSnakeCase($modelName)));
+        $modelNameDecamelizeUpperCaseSingularToPlural = Str::plural(strtoupper($this->convertCamelCaseToSnakeCase($modelName)));
         $modelNameSingularToPlural = Str::plural($modelName);
-        $modelNameSpacesLowerCase = trim(strtolower($this->camelToSpace($modelName)));
-        $modelNameSpacesLowerCasePlural = Str::plural(trim(strtolower($this->camelToSpace($modelName))));
-        $modelNameSpacesUpperCaseWord = trim(ucwords($this->camelToSpace($modelName)));
-        $modelNameSpacesUpperCaseFirstLetter = ucfirst(trim(strtolower($this->camelToSpace($modelName))));
+        $modelNameSpacesLowerCase = trim(strtolower($this->convertCamelCaseToSpaceSeparated($modelName)));
+        $modelNameSpacesLowerCasePlural = Str::plural(trim(strtolower($this->convertCamelCaseToSpaceSeparated($modelName))));
+        $modelNameSpacesUpperCaseWord = trim(ucwords($this->convertCamelCaseToSpaceSeparated($modelName)));
+        $modelNameSpacesUpperCaseFirstLetter = ucfirst(trim(strtolower($this->convertCamelCaseToSpaceSeparated($modelName))));
 
         $replace = [
             $modelName,
@@ -328,26 +328,19 @@ class CRUDGenerator extends Command
         return str_replace($search, $replace, $subject);
     }
 
-    private function camelToSpace($string): string
+    private function convertCamelCaseToSpaceSeparated(string $string): string
     {
-        $pieces = preg_split('/(?=[A-Z])/', $string);
-
-        return implode(" ", $pieces);
+        return implode(" ", preg_split('/(?=[A-Z])/', $string));
     }
 
-    private function camelToDashed($string): string
+    private function convertCamelCaseToDashed(string $string): string
     {
         return strtolower(preg_replace('/([a-zA-Z])(?=[A-Z])/', '$1-', $string));
     }
 
-    private function decamelize($string): string
+    private function convertCamelCaseToSnakeCase(string $string): string
     {
         return strtolower(preg_replace(['/([a-z\d])([A-Z])/', '/([^_])([A-Z][a-z])/'], '$1_$2', $string));
-    }
-
-    private function getDatePrefix(): string
-    {
-        return date('Y_m_d_His');
     }
 
 }
