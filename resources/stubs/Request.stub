@@ -53,7 +53,7 @@ class {{modelName}}Request extends BaseRequest
     {
         return new {{modelName}}FilterData(
             // Add {{modelName}}FilterData properties here
-            id: $this->getInputAsInt('id', null),
+            id: $this->getInputAsInt('id'),
             authUser: $this->getAuthUserData(),
             meta: $this->getMetaData()
         );
