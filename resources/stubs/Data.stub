@@ -1,0 +1,14 @@
+<?php
+
+namespace App\Data;
+
+use Spatie\DataTransferObject\DataTransferObject;
+
+class {{modelName}}Data extends DataTransferObject
+{
+
+    public UserData $authUser;
+    public MetaData $meta;
+    public int $id;
+
+}

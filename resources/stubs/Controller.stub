@@ -1,0 +1,123 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Http\Requests\{{modelName}}Request;
+use App\Http\Resources\{{modelName}}Resource;
+use Illuminate\Routing\Controller;
+use App\Helpers\ResponseHelper;
+use App\Services\{{modelName}}Service;
+use App\Http\Requests\V2\GenericRequest;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Resources\Json\JsonResource;
+use Spatie\DataTransferObject\Exceptions\UnknownProperties;
+
+class {{modelName}}Controller extends Controller
+{
+
+    private {{modelName}}Service ${{modelNameLowerCaseFirstLetter}}Service;
+
+    /**
+     * {{modelName}}Controller constructor.
+     *
+     * @param {{modelName}}Service ${{modelNameLowerCaseFirstLetter}}Service
+     */
+    public function __construct({{modelName}}Service ${{modelNameLowerCaseFirstLetter}}Service)
+    {
+        $this->{{modelNameLowerCaseFirstLetter}}Service = ${{modelNameLowerCaseFirstLetter}}Service;
+    }
+
+    /**
+     * Create {{modelNameSpacesLowerCase}}.
+     *
+     * @param {{modelName}}Request $request
+     * @return JsonResponse|JsonResource
+     * @throws UnknownProperties
+     */
+    public function create({{modelName}}Request $request): JsonResponse|JsonResource
+    {
+        $serviceResponse = $this->{{modelNameLowerCaseFirstLetter}}Service->create($request->toData());
+
+        if ($serviceResponse->isError()) {
+            return ResponseHelper::error($serviceResponse->getMessage());
+        }
+
+        return ResponseHelper::resource({{modelName}}Resource::class, $serviceResponse->getData());
+    }
+
+    /**
+     * Get paginated {{modelNameSpacesLowerCase}}s.
+     *
+     * @param GenericRequest $request
+     * @return JsonResponse|JsonResource
+     * @throws UnknownProperties
+     */
+    public function getAll(GenericRequest $request): JsonResponse|JsonResource
+    {
+        ${{modelNameLowerCaseFirstLetter}}Data = {{modelName}}Request::createFrom($request)->toFilterData();
+        $serviceResponse = $this->{{modelNameLowerCaseFirstLetter}}Service->getPaginated(${{modelNameLowerCaseFirstLetter}}Data);
+
+        if ($serviceResponse->isError()) {
+            return ResponseHelper::error($serviceResponse->getMessage());
+        }
+
+        return ResponseHelper::resource({{modelName}}Resource::class, $serviceResponse->getData());
+    }
+
+    /**
+     * Get {{modelNameSpacesLowerCase}} by id.
+     *
+     * @param GenericRequest $request
+     * @param int ${{modelNameLowerCaseFirstLetter}}Id
+     * @return JsonResponse|JsonResource
+     */
+    public function getById(GenericRequest $request, int ${{modelNameLowerCaseFirstLetter}}Id): JsonResponse|JsonResource
+    {
+        $relations = $request->getRelations() ?? [];
+        $serviceResponse = $this->{{modelNameLowerCaseFirstLetter}}Service->getById(${{modelNameLowerCaseFirstLetter}}Id, $relations);
+
+        if ($serviceResponse->isError()) {
+            return ResponseHelper::error($serviceResponse->getMessage());
+        }
+
+        return ResponseHelper::resource({{modelName}}Resource::class, $serviceResponse->getData());
+    }
+
+    /**
+     * Update {{modelNameSpacesLowerCase}}.
+     *
+     * @param {{modelName}}Request $request
+     * @param int ${{modelNameLowerCaseFirstLetter}}Id
+     * @return JsonResponse|JsonResource
+     * @throws UnknownProperties
+     */
+    public function update({{modelName}}Request $request, int ${{modelNameLowerCaseFirstLetter}}Id): JsonResponse|JsonResource
+    {
+        $serviceResponse = $this->{{modelNameLowerCaseFirstLetter}}Service->update($request->toData());
+
+        if ($serviceResponse->isError()) {
+            return ResponseHelper::error($serviceResponse->getMessage());
+        }
+
+        return ResponseHelper::resource({{modelName}}Resource::class, $serviceResponse->getData());
+    }
+
+    /**
+     * Delete {{modelNameSpacesLowerCase}}.
+     *
+     * @param GenericRequest $request
+     * @param int ${{modelNameLowerCaseFirstLetter}}Id
+     * @return JsonResponse
+     */
+    public function delete(GenericRequest $request, int ${{modelNameLowerCaseFirstLetter}}Id): JsonResponse
+    {
+        $serviceResponse = $this->{{modelNameLowerCaseFirstLetter}}Service->delete(${{modelNameLowerCaseFirstLetter}}Id);
+
+        if ($serviceResponse->isError()) {
+            return ResponseHelper::error($serviceResponse->getMessage());
+        }
+
+        return ResponseHelper::success($serviceResponse->getMessage());
+    }
+
+}

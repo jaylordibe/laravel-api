@@ -1,0 +1,14 @@
+<?php
+
+namespace App\Data;
+
+use Spatie\DataTransferObject\DataTransferObject;
+
+class {{modelName}}FilterData extends DataTransferObject
+{
+
+    public ?UserData $authUser = null;
+    public ?MetaData $meta = null;
+    public ?int $id = null;
+
+}

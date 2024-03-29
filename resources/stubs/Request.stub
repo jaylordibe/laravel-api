@@ -1,0 +1,63 @@
+<?php
+
+namespace App\Http\Requests;
+
+use App\Data\{{modelName}}Data;
+use App\Data\{{modelName}}FilterData;
+use App\Http\Requests\V2\BaseRequest;
+use Spatie\DataTransferObject\Exceptions\UnknownProperties;
+
+class {{modelName}}Request extends BaseRequest
+{
+
+    /**
+     * Get the validation rules that apply to the request.
+     *
+     * @return array
+     */
+    public function rules(): array
+    {
+        return [];
+    }
+
+    /**
+     * Get the error messages for the defined validation rules.
+     *
+     * @return array
+     */
+    public function messages(): array
+    {
+        return [];
+    }
+
+    /**
+     * Transform request to data object.
+     *
+     * @return {{modelName}}Data
+     * @throws UnknownProperties
+     */
+    public function toData(): {{modelName}}Data
+    {
+        return new {{modelName}}Data(
+            authUser: $this->getAuthenticatedUserData(),
+            meta: $this->getMetaData(),
+            id: $this->route('id') ?? $this->getInputAsInt('id')
+        );
+    }
+
+    /**
+     * Transform request to filter data object.
+     *
+     * @return {{modelName}}FilterData
+     * @throws UnknownProperties
+     */
+    public function toFilterData(): {{modelName}}FilterData
+    {
+        return new {{modelName}}FilterData(
+            authUser: $this->getAuthenticatedUserData(),
+            meta: $this->getMetaData(),
+            id: $this->getInputAsInt('id', null)
+        );
+    }
+
+}

@@ -1,0 +1,28 @@
+<?php
+
+namespace Tests\Unit;
+
+use Illuminate\Support\Facades\Log;
+use Tests\BaseTest;
+
+class {{modelName}}Test extends BaseTest
+{
+
+    public function setUp(): void
+    {
+        parent::setUp();
+    }
+
+    /**
+     * @test
+     *
+     * A basic unit test.
+     *
+     * @return void
+     */
+    public function testExample()
+    {
+        $this->assertTrue(true);
+    }
+
+}

@@ -1,0 +1,124 @@
+<?php
+
+namespace Tests\Feature\{{moduleName}};
+
+use App\Constants\StatusConstant;
+use Illuminate\Support\Facades\Log;
+use Tests\BaseTest;
+
+class {{modelName}}Test extends BaseTest
+{
+
+    private string $endpoint = '/v2/api/{{route}}/{{routeModule}}/{{modelNameLowerCaseDashPlural}}';
+
+    /**
+     * Get {{modelNameSpacesLowerCase}} payload.
+     *
+     * @return array
+     */
+    private function get{{modelName}}Payload(): array
+    {
+        return [];
+    }
+
+    /**
+     * Create {{modelNameSpacesLowerCase}} and get the id.
+     *
+     * @param array $payload
+     * @return int|null
+     */
+    private function create{{modelName}}AndGetId(array $payload): ?int
+    {
+        $auth = $this->loginAdminUser();
+        $createResponse = $this->withHeaders($auth->getAuthorizationHeader())->postJson($this->endpoint, $payload);
+        ${{modelNameLowerCaseFirstLetter}} = $createResponse->json();
+
+        return ${{modelNameLowerCaseFirstLetter}}['id'] ?? null;
+    }
+
+    /**
+     * @test
+     *
+     * A basic unit test in creating {{modelNameSpacesLowerCase}}.
+     *
+     * @return void
+     */
+    public function testCreate{{modelName}}()
+    {
+        $auth = $this->loginAdminUser();
+        $payload = $this->get{{modelName}}Payload();
+
+        $response = $this->withHeaders($auth->getAuthorizationHeader())->postJson($this->endpoint, $payload);
+        $response->assertOk()->assertJson($payload);
+    }
+
+    /**
+     * @test
+     *
+     * A basic unit test in getting paginated {{modelNameSpacesLowerCase}}s.
+     *
+     * @return void
+     */
+    public function testGetPaginated{{modelNameSingularToPlural}}()
+    {
+        $auth = $this->loginAdminUser();
+        $expectedJsonStructure = ['data', 'links', 'meta'];
+
+        $response = $this->withHeaders($auth->getAuthorizationHeader())->getJson($this->endpoint);
+        $response->assertOk()->assertJsonStructure($expectedJsonStructure);
+    }
+
+    /**
+     * @test
+     *
+     * A basic unit test in getting {{modelNameSpacesLowerCase}} by id.
+     *
+     * @return void
+     */
+    public function testGetById{{modelName}}ById()
+    {
+        $auth = $this->loginAdminUser();
+        $payload = $this->get{{modelName}}Payload();
+        ${{modelNameLowerCaseFirstLetter}}Id = $this->create{{modelName}}AndGetId($payload);
+
+        $response = $this->withHeaders($auth->getAuthorizationHeader())->getJson("$this->endpoint/${{modelNameLowerCaseFirstLetter}}Id");
+        $response->assertOk()->assertJson($payload);
+    }
+
+    /**
+     * @test
+     *
+     * A basic unit test in updating {{modelNameSpacesLowerCase}}.
+     *
+     * @return void
+     */
+    public function testUpdate{{modelName}}()
+    {
+        $auth = $this->loginAdminUser();
+        $payload = $this->get{{modelName}}Payload();
+        ${{modelNameLowerCaseFirstLetter}}Id = $this->create{{modelName}}AndGetId($payload);
+        $payload['status'] = StatusConstant::ACTIVE;
+
+        $response = $this->withHeaders($auth->getAuthorizationHeader())->putJson("$this->endpoint/${{modelNameLowerCaseFirstLetter}}Id", $payload);
+        $response->assertOk()->assertJson($payload);
+    }
+
+    /**
+     * @test
+     *
+     * A basic unit test in deleting {{modelNameSpacesLowerCase}}.
+     *
+     * @return void
+     */
+    public function testDelete{{modelName}}()
+    {
+        $auth = $this->loginAdminUser();
+        $payload = $this->get{{modelName}}Payload();
+        ${{modelNameLowerCaseFirstLetter}}Id = $this->create{{modelName}}AndGetId($payload);
+        $expectedJsonStructure = ['success'];
+
+        $response = $this->withHeaders($auth->getAuthorizationHeader())->deleteJson("$this->endpoint/${{modelNameLowerCaseFirstLetter}}Id");
+        $response->assertOk()->assertJsonStructure($expectedJsonStructure);
+    }
+
+}

@@ -1,0 +1,92 @@
+<?php
+
+namespace App\Repositories;
+
+use App\Data\{{modelName}}Data;
+use App\Data\{{modelName}}FilterData;
+use App\Models\{{moduleName}}\{{modelName}};
+use Exception;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Log;
+
+class {{modelName}}Repository
+{
+
+    /**
+     * Save {{modelNameSpacesLowerCase}}.
+     *
+     * @param {{modelName}}Data ${{modelNameLowerCaseFirstLetter}}Data
+     * @param {{modelName}}|null ${{modelNameLowerCaseFirstLetter}}
+     * @return {{modelName}}|null
+     */
+    public function save({{modelName}}Data ${{modelNameLowerCaseFirstLetter}}Data, ?{{modelName}} ${{modelNameLowerCaseFirstLetter}} = null): ?{{modelName}}
+    {
+        ${{modelNameLowerCaseFirstLetter}} ??= new {{modelName}}();
+        ${{modelNameLowerCaseFirstLetter}}->save();
+
+        return $this->findById(${{modelNameLowerCaseFirstLetter}}->getModelId());
+    }
+
+    /**
+     * Find {{modelNameSpacesLowerCase}} by id.
+     *
+     * @param int $id
+     * @param array $relations
+     * @return {{modelName}}|null
+     */
+    public function findById(int $id, array $relations = []): ?{{modelName}}
+    {
+        return {{modelName}}::with($relations)->firstWhere('id', $id);
+    }
+
+    /**
+     * Checks if the {{modelNameSpacesLowerCase}} exists.
+     *
+     * @param int $id
+     * @return bool
+     */
+    public function exists(int $id): bool
+    {
+        return {{modelName}}::where('id', $id)->exists();
+    }
+
+    /**
+     * Get paginated {{modelNameSpacesLowerCase}}s.
+     *
+     * @param {{modelName}}FilterData ${{modelNameLowerCaseFirstLetter}}FilterData
+     * @return LengthAwarePaginator
+     */
+    public function getPaginated({{modelName}}FilterData ${{modelNameLowerCaseFirstLetter}}FilterData): LengthAwarePaginator
+    {
+        ${{modelNameLowerCaseFirstLetterPlural}} = {{modelName}}::with(${{modelNameLowerCaseFirstLetter}}FilterData->meta->relations);
+
+        return ${{modelNameLowerCaseFirstLetterPlural}}->orderBy(
+            ${{modelNameLowerCaseFirstLetter}}FilterData->meta->sortField,
+            ${{modelNameLowerCaseFirstLetter}}FilterData->meta->sortDirection
+        )->paginate(${{modelNameLowerCaseFirstLetter}}FilterData->meta->limit);
+    }
+
+    /**
+     * Delete {{modelNameSpacesLowerCase}}.
+     *
+     * @param int $id
+     * @return bool
+     */
+    public function delete(int $id): bool
+    {
+        $isDeleted = false;
+
+        try {
+            ${{modelNameLowerCaseFirstLetter}} = $this->findById($id);
+            ${{modelNameLowerCaseFirstLetter}}->save();
+            $isDeleted = (bool) ${{modelNameLowerCaseFirstLetter}}->delete();
+        } catch (Exception $e) {
+            $isDeleted = false;
+            Log::error('Delete {{modelNameSpacesUpperCaseWord}} Exception: ' . $e->getMessage());
+        }
+
+        return $isDeleted;
+    }
+
+}
