@@ -18,7 +18,7 @@ class {{modelName}}FeatureTest extends TestCase
     private function getPayload(): array
     {
         return [
-            // Add the database fields here
+            // Add the request payload here
         ];
     }
 
