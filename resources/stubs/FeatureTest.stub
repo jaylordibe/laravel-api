@@ -2,14 +2,13 @@
 
 namespace Tests\Feature;
 
-use App\Constants\StatusConstant;
-use Illuminate\Support\Facades\Log;
-use Tests\BaseTest;
+use App\Models\{{modelName}};
+use Tests\TestCase;
 
-class {{modelName}}FeatureTest extends BaseTest
+class {{modelName}}FeatureTest extends TestCase
 {
 
-    private string $endpoint = '/api/{{modelNameLowerCaseDashPlural}}';
+    private string $resource = '/api/{{modelNameLowerCaseDashPlural}}';
 
     /**
      * Get {{modelNameSpacesLowerCase}} payload.
@@ -18,7 +17,9 @@ class {{modelName}}FeatureTest extends BaseTest
      */
     private function getPayload(): array
     {
-        return [];
+        return [
+            // Add the database fields here
+        ];
     }
 
     /**
@@ -32,7 +33,7 @@ class {{modelName}}FeatureTest extends BaseTest
     {
         $token = $this->loginSystemAdminUser();
         $payload = $this->getPayload();
-        $response = $this->withToken($token)->post("{$this->resource}", $payload);
+        $response = $this->withToken($token)->post($this->resource, $payload);
 
         $response->assertCreated()->assertJson($payload);
     }
@@ -40,14 +41,14 @@ class {{modelName}}FeatureTest extends BaseTest
     /**
      * @test
      *
-     * A basic unit test in getting paginated {{modelNameSpacesLowerCase}}s.
+     * A basic unit test in getting paginated {{modelNameSpacesLowerCasePlural}}.
      *
      * @return void
      */
     public function testGetPaginated{{modelNameSingularToPlural}}()
     {
         $token = $this->loginSystemAdminUser();
-        $response = $this->withToken($token)->get("{$this->resource}");
+        $response = $this->withToken($token)->get($this->resource);
 
         $response->assertOk()->assertJsonStructure(['data', 'links', 'meta']);
     }
