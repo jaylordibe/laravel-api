@@ -36,8 +36,12 @@ class CRUDGenerator extends Command
             return;
         }
 
-        $this->createModelFile($modelName);
-        $this->createMigrationFile($modelName);
+        if (!File::exists(app_path("Models/{$modelName}.php"))) {
+            $this->createModelFile($modelName);
+            $this->createMigrationFile($modelName);
+            $this->addRoute($modelName);
+        }
+
         $this->createFactoryFile($modelName);
         $this->createRequestFile($modelName);
         $this->createResourceFile($modelName);
@@ -46,11 +50,17 @@ class CRUDGenerator extends Command
         $this->createControllerFile($modelName);
         $this->createServiceFile($modelName);
         $this->createRepositoryFile($modelName);
-        $this->addRoute($modelName);
 
         $this->info(PHP_EOL . "Done generating CRUD files for {$modelName} model" . PHP_EOL . PHP_EOL);
     }
 
+    /**
+     * Create model file.
+     *
+     * @param string $modelName
+     *
+     * @return void
+     */
     private function createModelFile(string $modelName): void
     {
         $stubName = 'Model';
@@ -67,6 +77,13 @@ class CRUDGenerator extends Command
         $this->info("{$path} successfully created" . PHP_EOL);
     }
 
+    /**
+     * Create migration file.
+     *
+     * @param string $modelName
+     *
+     * @return void
+     */
     private function createMigrationFile(string $modelName): void
     {
         $stubName = 'Migration';
@@ -84,6 +101,13 @@ class CRUDGenerator extends Command
         $this->info("{$path} successfully created" . PHP_EOL);
     }
 
+    /**
+     * Create factory file.
+     *
+     * @param string $modelName
+     *
+     * @return void
+     */
     private function createFactoryFile(string $modelName): void
     {
         $stubName = 'Factory';
@@ -100,6 +124,13 @@ class CRUDGenerator extends Command
         $this->info("{$path} successfully created" . PHP_EOL);
     }
 
+    /**
+     * Create request file.
+     *
+     * @param string $modelName
+     *
+     * @return void
+     */
     private function createRequestFile(string $modelName): void
     {
         $stubName = 'Request';
@@ -116,6 +147,13 @@ class CRUDGenerator extends Command
         $this->info("{$path} successfully created" . PHP_EOL);
     }
 
+    /**
+     * Create resource file.
+     *
+     * @param string $modelName
+     *
+     * @return void
+     */
     private function createResourceFile(string $modelName): void
     {
         $stubName = 'Resource';
@@ -132,6 +170,13 @@ class CRUDGenerator extends Command
         $this->info("{$path} successfully created" . PHP_EOL);
     }
 
+    /**
+     * Create data file.
+     *
+     * @param string $modelName
+     *
+     * @return void
+     */
     private function createDataFile(string $modelName): void
     {
         $stubName = 'Data';
@@ -161,6 +206,13 @@ class CRUDGenerator extends Command
         $this->info("{$path} successfully created" . PHP_EOL);
     }
 
+    /**
+     * Create test file.
+     *
+     * @param string $modelName
+     *
+     * @return void
+     */
     private function createTestFile(string $modelName): void
     {
         $stubName = 'UnitTest';
@@ -190,6 +242,13 @@ class CRUDGenerator extends Command
         $this->info("{$path} successfully created" . PHP_EOL);
     }
 
+    /**
+     * Create controller file.
+     *
+     * @param string $modelName
+     *
+     * @return void
+     */
     private function createControllerFile(string $modelName): void
     {
         $stubName = 'Controller';
@@ -206,6 +265,13 @@ class CRUDGenerator extends Command
         $this->info("{$path} successfully created" . PHP_EOL);
     }
 
+    /**
+     * Create service file.
+     *
+     * @param string $modelName
+     *
+     * @return void
+     */
     private function createServiceFile(string $modelName): void
     {
         $stubName = 'Service';
@@ -222,6 +288,13 @@ class CRUDGenerator extends Command
         $this->info("{$path} successfully created" . PHP_EOL);
     }
 
+    /**
+     * Create repository file.
+     *
+     * @param string $modelName
+     *
+     * @return void
+     */
     private function createRepositoryFile(string $modelName): void
     {
         $stubName = 'Repository';
@@ -238,6 +311,13 @@ class CRUDGenerator extends Command
         $this->info("{$path} successfully created" . PHP_EOL);
     }
 
+    /**
+     * Add route.
+     *
+     * @param string $modelName
+     *
+     * @return void
+     */
     private function addRoute(string $modelName): void
     {
         $controllerClass = "{$modelName}Controller";
@@ -279,6 +359,13 @@ class CRUDGenerator extends Command
         }
     }
 
+    /**
+     * Get stub file.
+     *
+     * @param string $modelName
+     *
+     * @return void
+     */
     private function getStubFile(string $modelName, string $stubName): string
     {
         $search = [
@@ -326,21 +413,6 @@ class CRUDGenerator extends Command
         $subject = file_get_contents(resource_path("stubs/{$stubName}.stub"));
 
         return str_replace($search, $replace, $subject);
-    }
-
-    private function convertCamelCaseToSpaceSeparated(string $string): string
-    {
-        return implode(" ", preg_split('/(?=[A-Z])/', $string));
-    }
-
-    private function convertCamelCaseToDashed(string $string): string
-    {
-        return strtolower(preg_replace('/([a-zA-Z])(?=[A-Z])/', '$1-', $string));
-    }
-
-    private function convertCamelCaseToSnakeCase(string $string): string
-    {
-        return strtolower(preg_replace(['/([a-z\d])([A-Z])/', '/([^_])([A-Z][a-z])/'], '$1_$2', $string));
     }
 
 }
