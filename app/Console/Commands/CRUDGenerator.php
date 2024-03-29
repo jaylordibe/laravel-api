@@ -124,37 +124,42 @@ class CRUDGenerator extends Command
 
     private function addRoute(string $modelName): void
     {
-        $controllerClass = "{$modelName}Controller::class";
+        $controllerClass = "{$modelName}Controller";
+        $useStatement = "use App\Http\Controllers\\{$controllerClass};\n";
+        $controllerClassWithNamespace = "{$controllerClass}::class";
 
         $routeTemplate = <<<ROUTES
-        // CRUD routes for $modelName
-        Route::post('{$modelName}s', [{$controllerClass}, 'create']);
-        Route::get('{$modelName}s', [{$controllerClass}, 'getPaginated']);
-        Route::get('{$modelName}s/{{$modelName}Id}', [{$controllerClass}, 'getById'])->where('{$modelName}Id', RoutePatternConstant::NUMERIC);
-        Route::put('{$modelName}s/{{$modelName}Id}', [{$controllerClass}, 'update'])->where('{$modelName}Id', RoutePatternConstant::NUMERIC);
-        Route::delete('{$modelName}s/{{$modelName}Id}', [{$controllerClass}, 'delete'])->where('{$modelName}Id', RoutePatternConstant::NUMERIC);
+        \t// CRUD routes for $modelName
+        \tRoute::post('{$modelName}s', [{$controllerClassWithNamespace}, 'create']);
+        \tRoute::get('{$modelName}s', [{$controllerClassWithNamespace}, 'getPaginated']);
+        \tRoute::get('{$modelName}s/{addressId}', [{$controllerClassWithNamespace}, 'getById'])->where('addressId', RoutePatternConstant::NUMERIC);
+        \tRoute::put('{$modelName}s/{addressId}', [{$controllerClassWithNamespace}, 'update'])->where('addressId', RoutePatternConstant::NUMERIC);
+        \tRoute::delete('{$modelName}s/{addressId}', [{$controllerClassWithNamespace}, 'delete'])->where('addressId', RoutePatternConstant::NUMERIC);
         ROUTES;
 
         $routeFilePath = base_path('routes/api.php');
-        $fileContents = File::get($routeFilePath);
+        $fileContents = file_get_contents($routeFilePath);
+
+        // Check if the use statement for the controller is already there, if not, add it
+        if (!str_contains($fileContents, $useStatement)) {
+            $lastUsePosition = strrpos($fileContents, "use ");
+            $insertPositionUseStatement = strpos($fileContents, "\n", $lastUsePosition) + 1;
+            $fileContents = substr_replace($fileContents, $useStatement, $insertPositionUseStatement, 0);
+        }
 
         // Find the position of the closing tag of the auth:api middleware group
         $closingMiddlewareTagPosition = strrpos($fileContents, "});");
 
         if ($closingMiddlewareTagPosition !== false) {
             // Insert the new routes before the closing tag
-            $partOne = substr($fileContents, 0, $closingMiddlewareTagPosition);
-            $partTwo = substr($fileContents, $closingMiddlewareTagPosition);
-
-            // Combine everything together with new routes inserted
-            $newFileContents = $partOne . "\n" . $routeTemplate . "\n" . $partTwo;
+            $newFileContents = substr_replace($fileContents, $routeTemplate . "\n", $closingMiddlewareTagPosition, 0);
 
             // Write the new content back into the file
-            File::put($routeFilePath, $newFileContents);
+            file_put_contents($routeFilePath, $newFileContents);
+
+            echo "CRUD routes for {$modelName} have been added successfully.";
         } else {
-            // Optionally handle the case where the closing tag isn't found
-            // For example, append at the end or log an error
-            File::append($routeFilePath, "\n\n" . $routeTemplate);
+            echo "The position to insert the new routes was not found.";
         }
     }
 

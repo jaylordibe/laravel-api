@@ -4,8 +4,7 @@ namespace App\Http\Requests;
 
 use App\Data\{{modelName}}Data;
 use App\Data\{{modelName}}FilterData;
-use App\Http\Requests\V2\BaseRequest;
-use Spatie\DataTransferObject\Exceptions\UnknownProperties;
+use App\Http\Requests\BaseRequest;
 
 class {{modelName}}Request extends BaseRequest
 {
