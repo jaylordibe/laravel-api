@@ -148,7 +148,7 @@ class CRUDGenerator extends Command
     {
         // Uncomment the following lines if you want to generate unit tests
 //        $stubName = 'UnitTest';
-//        $path = base_path("tests/Feature/{$modelName}{$stubName}.php");
+//        $path = base_path("tests/Unit/{$modelName}{$stubName}.php");
 //
 //        if (File::exists($path)) {
 //            $this->error("Test file for {$modelName} model already exists. Skipping...");
@@ -161,7 +161,7 @@ class CRUDGenerator extends Command
 //        echo "{$path} successfully created" . PHP_EOL;
 
         $stubName = 'FeatureTest';
-        $path = base_path("tests/Unit/{$modelName}{$stubName}.php");
+        $path = base_path("tests/Feature/{$modelName}{$stubName}.php");
 
         if (File::exists($path)) {
             $this->error("Feature test file for {$modelName} model already exists. Skipping...");
