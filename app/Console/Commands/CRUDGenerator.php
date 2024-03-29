@@ -273,7 +273,7 @@ class CRUDGenerator extends Command
 
             // Write the new content back into the file
             file_put_contents($routeFilePath, $newFileContents);
-            echo "{$routeFilePath} successfully updated" . PHP_EOL;
+            $this->info("{$routeFilePath} successfully updated" . PHP_EOL);
         } else {
             echo "The position to insert the new routes was not found.";
         }
