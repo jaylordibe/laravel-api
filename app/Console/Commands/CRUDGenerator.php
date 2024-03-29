@@ -47,80 +47,179 @@ class CRUDGenerator extends Command
         $this->createRepositoryFile($modelName);
         $this->addRoute($modelName);
 
-        echo PHP_EOL . "Done generating CRUD files for {$modelName}" . PHP_EOL . PHP_EOL;
+        echo PHP_EOL . "Done generating CRUD files for {$modelName} model" . PHP_EOL . PHP_EOL;
     }
 
     private function createModelFile(string $modelName): void
     {
         $stubName = 'Model';
+        $path = app_path("Models/{$modelName}.php");
+
+        if (File::exists($path)) {
+            $this->error("Model {$modelName} already exists. Skipping...");
+
+            return;
+        }
+
         $file = $this->getStubFile($modelName, $stubName);
-        file_put_contents(app_path("Models/{$modelName}.php"), $file);
+        file_put_contents($path, $file);
+        echo "{$path} successfully created" . PHP_EOL;
     }
 
     private function createMigrationFile(string $modelName): void
     {
         $stubName = 'Migration';
-        $file = $this->getStubFile($modelName, $stubName);
         $migrationFileName = $this->getDatePrefix() . '_' . 'create_' . Str::plural(strtolower($this->decamelize($modelName)));
-        file_put_contents(database_path("/migrations/{$migrationFileName}_table.php"), $file);
+        $path = database_path("/migrations/{$migrationFileName}_table.php");
+
+        if (File::exists($path)) {
+            $this->error("Migration file for {$modelName} model already exists. Skipping...");
+
+            return;
+        }
+
+        $file = $this->getStubFile($modelName, $stubName);
+        file_put_contents($path, $file);
+        echo "{$path} successfully created" . PHP_EOL;
     }
 
     private function createRequestFile(string $modelName): void
     {
         $stubName = 'Request';
+        $path = app_path("Http/Requests/{$modelName}{$stubName}.php");
+
+        if (File::exists($path)) {
+            $this->error("Request file for {$modelName} model already exists. Skipping...");
+
+            return;
+        }
+
         $file = $this->getStubFile($modelName, $stubName);
-        file_put_contents(app_path("Http/Requests/{$modelName}{$stubName}.php"), $file);
+        file_put_contents($path, $file);
+        echo "{$path} successfully created" . PHP_EOL;
     }
 
     private function createResourceFile(string $modelName): void
     {
         $stubName = 'Resource';
+        $path = app_path("Http/Resources/{$modelName}{$stubName}.php");
+
+        if (File::exists($path)) {
+            $this->error("Resource file for {$modelName} model already exists. Skipping...");
+
+            return;
+        }
+
         $file = $this->getStubFile($modelName, $stubName);
-        file_put_contents(app_path("Http/Resources/{$modelName}{$stubName}.php"), $file);
+        file_put_contents($path, $file);
+        echo "{$path} successfully created" . PHP_EOL;
     }
 
     private function createDataFile(string $modelName): void
     {
         $stubName = 'Data';
+        $path = app_path("Data/{$modelName}{$stubName}.php");
+
+        if (File::exists($path)) {
+            $this->error("Data file for {$modelName} model already exists. Skipping...");
+
+            return;
+        }
+
         $file = $this->getStubFile($modelName, $stubName);
-        file_put_contents(app_path("Data/{$modelName}{$stubName}.php"), $file);
+        file_put_contents($path, $file);
+        echo "{$path} successfully created" . PHP_EOL;
 
         $stubName = 'FilterData';
+        $path = app_path("Data/{$modelName}{$stubName}.php");
+
+        if (File::exists($path)) {
+            $this->error("FilterData file for {$modelName} model already exists. Skipping...");
+
+            return;
+        }
+
         $file = $this->getStubFile($modelName, $stubName);
-        file_put_contents(app_path("Data/{$modelName}{$stubName}.php"), $file);
+        file_put_contents($path, $file);
+        echo "{$path} successfully created" . PHP_EOL;
     }
 
     private function createTestFile(string $modelName): void
     {
         // Uncomment the following lines if you want to generate unit tests
 //        $stubName = 'UnitTest';
+//        $path = base_path("tests/Feature/{$modelName}{$stubName}.php");
+//
+//        if (File::exists($path)) {
+//            $this->error("Test file for {$modelName} model already exists. Skipping...");
+//
+//            return;
+//        }
+//
 //        $file = $this->getStubFile($modelName, $stubName);
-//        file_put_contents(base_path("tests/Feature/{$modelName}{$stubName}.php"), $file);
+//        file_put_contents($path, $file);
+//        echo "{$path} successfully created" . PHP_EOL;
 
         $stubName = 'FeatureTest';
+        $path = base_path("tests/Unit/{$modelName}{$stubName}.php");
+
+        if (File::exists($path)) {
+            $this->error("Feature test file for {$modelName} model already exists. Skipping...");
+
+            return;
+        }
+
         $file = $this->getStubFile($modelName, $stubName);
-        file_put_contents(base_path("tests/Unit/{$modelName}{$stubName}.php"), $file);
+        file_put_contents($path, $file);
+        echo "{$path} successfully created" . PHP_EOL;
     }
 
     private function createControllerFile(string $modelName): void
     {
         $stubName = 'Controller';
+        $path = app_path("Http/Controllers/{$modelName}{$stubName}.php");
+
+        if (File::exists($path)) {
+            $this->error("Controller file for {$modelName} model already exists. Skipping...");
+
+            return;
+        }
+
         $file = $this->getStubFile($modelName, $stubName);
-        file_put_contents(app_path("Http/Controllers/{$modelName}{$stubName}.php"), $file);
+        file_put_contents($path, $file);
+        echo "{$path} successfully created" . PHP_EOL;
     }
 
     private function createServiceFile(string $modelName): void
     {
         $stubName = 'Service';
+        $path = app_path("Services/{$modelName}{$stubName}.php");
+
+        if (File::exists($path)) {
+            $this->error("Service file for {$modelName} model already exists. Skipping...");
+
+            return;
+        }
+
         $file = $this->getStubFile($modelName, $stubName);
-        file_put_contents(app_path("Services/{$modelName}{$stubName}.php"), $file);
+        file_put_contents($path, $file);
+        echo "{$path} successfully created" . PHP_EOL;
     }
 
     private function createRepositoryFile(string $modelName): void
     {
         $stubName = 'Repository';
+        $path = app_path("Repositories/{$modelName}{$stubName}.php");
+
+        if (File::exists($path)) {
+            $this->error("Repository file for {$modelName} model already exists. Skipping...");
+
+            return;
+        }
+
         $file = $this->getStubFile($modelName, $stubName);
-        file_put_contents(app_path("Repositories/{$modelName}{$stubName}.php"), $file);
+        file_put_contents($path, $file);
+        echo "{$path} successfully created" . PHP_EOL;
     }
 
     private function addRoute(string $modelName): void
@@ -157,8 +256,7 @@ class CRUDGenerator extends Command
 
             // Write the new content back into the file
             file_put_contents($routeFilePath, $newFileContents);
-
-            echo "CRUD routes for {$modelName} have been added successfully.";
+            echo "{$routeFilePath} successfully updated" . PHP_EOL;
         } else {
             echo "The position to insert the new routes was not found.";
         }
