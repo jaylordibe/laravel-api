@@ -14,22 +14,22 @@ class {{modelName}}Repository
 {
 
     /**
-     * Save {{modelNameSpacesLowerCase}}.
+     * Save {{modelNameSpaceCase}}.
      *
-     * @param {{modelName}}Data ${{modelNameLowerCaseFirstLetter}}Data
-     * @param {{modelName}}|null ${{modelNameLowerCaseFirstLetter}}
+     * @param {{modelName}}Data ${{modelNameCamelCase}}Data
+     * @param {{modelName}}|null ${{modelNameCamelCase}}
      * @return {{modelName}}|null
      */
-    public function save({{modelName}}Data ${{modelNameLowerCaseFirstLetter}}Data, ?{{modelName}} ${{modelNameLowerCaseFirstLetter}} = null): ?{{modelName}}
+    public function save({{modelName}}Data ${{modelNameCamelCase}}Data, ?{{modelName}} ${{modelNameCamelCase}} = null): ?{{modelName}}
     {
-        ${{modelNameLowerCaseFirstLetter}} ??= new {{modelName}}();
-        ${{modelNameLowerCaseFirstLetter}}->save();
+        ${{modelNameCamelCase}} ??= new {{modelName}}();
+        ${{modelNameCamelCase}}->save();
 
-        return $this->findById(${{modelNameLowerCaseFirstLetter}}->id);
+        return $this->findById(${{modelNameCamelCase}}->id);
     }
 
     /**
-     * Find {{modelNameSpacesLowerCase}} by id.
+     * Find {{modelNameSpaceCase}} by id.
      *
      * @param int $id
      * @param array $relations
@@ -41,7 +41,7 @@ class {{modelName}}Repository
     }
 
     /**
-     * Checks if the {{modelNameSpacesLowerCase}} exists.
+     * Checks if the {{modelNameSpaceCase}} exists.
      *
      * @param int $id
      * @return bool
@@ -52,41 +52,37 @@ class {{modelName}}Repository
     }
 
     /**
-     * Get paginated {{modelNameSpacesLowerCase}}s.
+     * Get paginated {{modelNameSpaceCase}}s.
      *
-     * @param {{modelName}}FilterData ${{modelNameLowerCaseFirstLetter}}FilterData
+     * @param {{modelName}}FilterData ${{modelNameCamelCase}}FilterData
      * @return LengthAwarePaginator
      */
-    public function getPaginated({{modelName}}FilterData ${{modelNameLowerCaseFirstLetter}}FilterData): LengthAwarePaginator
+    public function getPaginated({{modelName}}FilterData ${{modelNameCamelCase}}FilterData): LengthAwarePaginator
     {
-        ${{modelNameLowerCaseFirstLetterPlural}} = {{modelName}}::with(${{modelNameLowerCaseFirstLetter}}FilterData->meta->relations);
+        ${{modelNameCamelCasePlural}} = {{modelName}}::with(${{modelNameCamelCase}}FilterData->meta->relations);
 
-        return ${{modelNameLowerCaseFirstLetterPlural}}->orderBy(
-            ${{modelNameLowerCaseFirstLetter}}FilterData->meta->sortField,
-            ${{modelNameLowerCaseFirstLetter}}FilterData->meta->sortDirection
-        )->paginate(${{modelNameLowerCaseFirstLetter}}FilterData->meta->limit);
+        return ${{modelNameCamelCasePlural}}->orderBy(
+            ${{modelNameCamelCase}}FilterData->meta->sortField,
+            ${{modelNameCamelCase}}FilterData->meta->sortDirection
+        )->paginate(${{modelNameCamelCase}}FilterData->meta->limit);
     }
 
     /**
-     * Delete {{modelNameSpacesLowerCase}}.
+     * Delete {{modelNameSpaceCase}}.
      *
      * @param int $id
      * @return bool
      */
     public function delete(int $id): bool
     {
-        $isDeleted = false;
-
         try {
-            ${{modelNameLowerCaseFirstLetter}} = $this->findById($id);
-            ${{modelNameLowerCaseFirstLetter}}->save();
-            $isDeleted = (bool) ${{modelNameLowerCaseFirstLetter}}->delete();
+            ${{modelNameCamelCase}} = $this->findById($id);
+            ${{modelNameCamelCase}}->save();
+            return (bool) ${{modelNameCamelCase}}->delete();
         } catch (Exception $e) {
-            $isDeleted = false;
-            Log::error('Delete {{modelNameSpacesUpperCaseWord}} Exception: ' . $e->getMessage());
+            Log::error('Delete {{modelNameUpperWordSpaceCase}} Exception: ' . $e->getMessage());
+            return false;
         }
-
-        return $isDeleted;
     }
 
 }

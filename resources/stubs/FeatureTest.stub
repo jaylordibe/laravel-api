@@ -8,10 +8,10 @@ use Tests\TestCase;
 class {{modelName}}FeatureTest extends TestCase
 {
 
-    private string $resource = '/api/{{modelNameLowerCaseDashPlural}}';
+    private string $resource = '/api/{{modelNameKebabCasePlural}}';
 
     /**
-     * Get {{modelNameSpacesLowerCase}} payload.
+     * Get {{modelNameSpaceCase}} payload.
      *
      * @return array
      */
@@ -25,7 +25,7 @@ class {{modelName}}FeatureTest extends TestCase
     /**
      * @test
      *
-     * A basic unit test in creating {{modelNameSpacesLowerCase}}.
+     * A basic unit test in creating {{modelNameSpaceCase}}.
      *
      * @return void
      */
@@ -41,11 +41,11 @@ class {{modelName}}FeatureTest extends TestCase
     /**
      * @test
      *
-     * A basic unit test in getting paginated {{modelNameSpacesLowerCasePlural}}.
+     * A basic unit test in getting paginated {{modelNameSpaceCasePlural}}.
      *
      * @return void
      */
-    public function testGetPaginated{{modelNameSingularToPlural}}(): void
+    public function testGetPaginated{{modelNamePlural}}(): void
     {
         $token = $this->loginSystemAdminUser();
         $response = $this->withToken($token)->get($this->resource);
@@ -56,15 +56,15 @@ class {{modelName}}FeatureTest extends TestCase
     /**
      * @test
      *
-     * A basic unit test in getting {{modelNameSpacesLowerCase}} by id.
+     * A basic unit test in getting {{modelNameSpaceCase}} by id.
      *
      * @return void
      */
     public function testGet{{modelName}}ById(): void
     {
         $token = $this->loginSystemAdminUser();
-        ${{modelNameLowerCaseFirstLetter}} = {{modelName}}::factory()->create();
-        $response = $this->withToken($token)->get("{$this->resource}/{${{modelNameLowerCaseFirstLetter}}->id}");
+        ${{modelNameCamelCase}} = {{modelName}}::factory()->create();
+        $response = $this->withToken($token)->get("{$this->resource}/{${{modelNameCamelCase}}->id}");
 
         $response->assertOk()->assertJson(['id' => $response->json()['id']]);
     }
@@ -72,19 +72,19 @@ class {{modelName}}FeatureTest extends TestCase
     /**
      * @test
      *
-     * A basic unit test in updating {{modelNameSpacesLowerCase}}.
+     * A basic unit test in updating {{modelNameSpaceCase}}.
      *
      * @return void
      */
     public function testUpdate{{modelName}}(): void
     {
         $token = $this->loginSystemAdminUser();
-        ${{modelNameLowerCaseFirstLetter}} = {{modelName}}::factory()->create();
+        ${{modelNameCamelCase}} = {{modelName}}::factory()->create();
         $payload = $this->getPayload();
-        $response = $this->withToken($token)->put("{$this->resource}/{${{modelNameLowerCaseFirstLetter}}->id}", $payload);
+        $response = $this->withToken($token)->put("{$this->resource}/{${{modelNameCamelCase}}->id}", $payload);
 
         // For assertion
-        $payload['id'] = ${{modelNameLowerCaseFirstLetter}}->id;
+        $payload['id'] = ${{modelNameCamelCase}}->id;
 
         $response->assertOk()->assertJson($payload);
     }
@@ -92,15 +92,15 @@ class {{modelName}}FeatureTest extends TestCase
     /**
      * @test
      *
-     * A basic unit test in deleting {{modelNameSpacesLowerCase}}.
+     * A basic unit test in deleting {{modelNameSpaceCase}}.
      *
      * @return void
      */
     public function testDelete{{modelName}}(): void
     {
         $token = $this->loginSystemAdminUser();
-        ${{modelNameLowerCaseFirstLetter}} = {{modelName}}::factory()->create();
-        $response = $this->withToken($token)->delete("{$this->resource}/{${{modelNameLowerCaseFirstLetter}}->id}");
+        ${{modelNameCamelCase}} = {{modelName}}::factory()->create();
+        $response = $this->withToken($token)->delete("{$this->resource}/{${{modelNameCamelCase}}->id}");
 
         $response->assertOk()->assertJsonStructure(['success']);
     }

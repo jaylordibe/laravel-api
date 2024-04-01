@@ -85,7 +85,7 @@ class CRUDGenerator extends Command
     private function createMigrationFile(string $modelName): void
     {
         $stubName = 'Migration';
-        $migrationFileName = date('Y_m_d_His') . '_create_' . Str::plural(strtolower(Str::snake($modelName)));
+        $migrationFileName = date('Y_m_d_His') . '_create_' . Str::lower(Str::snake(Str::plural($modelName)));
         $path = database_path("/migrations/{$migrationFileName}_table.php");
 
         if (File::exists($path)) {
@@ -94,6 +94,29 @@ class CRUDGenerator extends Command
             $file = $this->getStubFile($modelName, $stubName);
             file_put_contents($path, $file);
             $this->info("{$path} successfully created" . PHP_EOL);
+        }
+
+        $databaseTableConstantName = Str::upper(Str::snake(Str::plural($modelName)));
+        $databaseTableConstantValue = Str::lower(Str::snake(Str::plural($modelName)));
+        $databaseTableConstantTemplate = <<<DATABASETABLECONSTANTS
+        \tconst {$databaseTableConstantName} = '{$databaseTableConstantValue}';
+        DATABASETABLECONSTANTS;
+
+        $databaseTableConstantFilePath = app_path('Constants/DatabaseTableConstant.php');
+        $fileContents = file_get_contents($databaseTableConstantFilePath);
+
+        // Find the position of the closing tag of the auth:api middleware group
+        $closingMiddlewareTagPosition = strrpos($fileContents, "}");
+
+        if ($closingMiddlewareTagPosition !== false) {
+            // Insert the new routes before the closing tag
+            $newFileContents = substr_replace($fileContents, $databaseTableConstantTemplate . "\n", $closingMiddlewareTagPosition - 1, 0);
+
+            // Write the new content back into the file
+            file_put_contents($databaseTableConstantFilePath, $newFileContents);
+            $this->info("{$databaseTableConstantFilePath} successfully updated" . PHP_EOL);
+        } else {
+            echo "The position to insert the new database table constant value was not found.";
         }
     }
 
@@ -298,16 +321,19 @@ class CRUDGenerator extends Command
     {
         $controllerClass = "{$modelName}Controller";
         $useStatement = "use App\Http\Controllers\\{$controllerClass};\n";
-        $resource = Str::plural(strtolower(Str::kebab($modelName)));
-        $controllerClassWithNamespace = "{$controllerClass}::class";
+        $resourceName = Str::lower(Str::kebab(Str::plural($modelName)));
+        $modelIdName = lcfirst($modelName) . 'Id';
+        $controllerClassName = "{$controllerClass}::class";
 
         $routeTemplate = <<<ROUTES
-        \n\t// CRUD routes for $modelName
-        \tRoute::post('{$resource}', [{$controllerClassWithNamespace}, 'create']);
-        \tRoute::get('{$resource}', [{$controllerClassWithNamespace}, 'getPaginated']);
-        \tRoute::get('{$resource}/{id}', [{$controllerClassWithNamespace}, 'getById'])->where('id', RoutePatternConstant::NUMERIC);
-        \tRoute::put('{$resource}/{id}', [{$controllerClassWithNamespace}, 'update'])->where('id', RoutePatternConstant::NUMERIC);
-        \tRoute::delete('{$resource}/{id}', [{$controllerClassWithNamespace}, 'delete'])->where('id', RoutePatternConstant::NUMERIC);
+        \n\t// CRUD routes for {$modelName}
+        \tRoute::prefix('{$resourceName}')->group(function () {
+            \t\tRoute::post('/', [{$controllerClassName}, 'create']);
+            \t\tRoute::get('/', [{$controllerClassName}, 'getPaginated']);
+            \t\tRoute::get('/{{$modelIdName}}', [{$controllerClassName}, 'getById'])->where('{$modelIdName}', RoutePatternConstant::NUMERIC);
+            \t\tRoute::put('/{{$modelIdName}}', [{$controllerClassName}, 'update'])->where('{$modelIdName}', RoutePatternConstant::NUMERIC);
+            \t\tRoute::delete('/{{$modelIdName}}', [{$controllerClassName}, 'delete'])->where('{$modelIdName}', RoutePatternConstant::NUMERIC);
+        \t});
         ROUTES;
 
         $routeFilePath = base_path('routes/api.php');
@@ -347,44 +373,53 @@ class CRUDGenerator extends Command
     {
         $search = [
             '{{modelName}}',
-            '{{modelNameLowerCaseFirstLetter}}',
-            '{{modelNameLowerCaseDash}}',
-            '{{modelNameLowerCaseDashPlural}}',
-            '{{modelNameLowerCaseFirstLetterPlural}}',
-            '{{modelNameDecamelizeLowerCaseSingularToPlural}}',
-            '{{modelNameDecamelizeUpperCaseSingularToPlural}}',
-            '{{modelNameSingularToPlural}}',
-            '{{modelNameSpacesLowerCase}}',
-            '{{modelNameSpacesLowerCasePlural}}',
-            '{{modelNameSpacesUpperCaseWord}}',
-            '{{modelNameSpacesUpperCaseFirstLetter}}'
+            '{{modelNamePlural}}',
+            '{{modelNameCamelCase}}',
+            '{{modelNameCamelCasePlural}}',
+            '{{modelNameKebabCase}}',
+            '{{modelNameKebabCasePlural}}',
+            '{{modelNameUpperKebabCasePlural}}',
+            '{{modelNameSnakeCase}}',
+            '{{modelNameSnakeCasePlural}}',
+            '{{modelNameUpperSnakeCasePlural}}',
+            '{{modelNameSpaceCase}}',
+            '{{modelNameSpaceCasePlural}}',
+            '{{modelNameUpperWordSpaceCase}}',
+            '{{modelNameUpperFirstSpaceCase}}',
+            '{{modelNameId}}'
         ];
 
-        $modelNameLowerCaseFirstLetter = lcfirst($modelName);
-        $modelNameLowerCaseDash = Str::kebab($modelName);
-        $modelNameLowerCaseDashPlural = Str::plural(Str::kebab($modelName));
-        $modelNameLowerCaseFirstLetterPlural = Str::plural(lcfirst($modelName));
-        $modelNameDecamelizeLowerCaseSingularToPlural = Str::plural(Str::snake($modelName));
-        $modelNameDecamelizeUpperCaseSingularToPlural = Str::plural(Str::upper(Str::snake($modelName)));
-        $modelNameSingularToPlural = Str::plural($modelName);
-        $modelNameSpacesLowerCase = trim(str_replace('_', ' ', Str::snake($modelName)));
-        $modelNameSpacesLowerCasePlural = Str::plural(trim(str_replace('_', ' ', Str::snake($modelName))));
-        $modelNameSpacesUpperCaseWord = ucwords(trim(str_replace('_', ' ', Str::snake($modelName))));
-        $modelNameSpacesUpperCaseFirstLetter = ucfirst(trim(str_replace('_', ' ', Str::snake($modelName))));
+        $modelNamePlural = Str::plural($modelName);
+        $modelNameCamelCase = Str::camel($modelName);
+        $modelNameCamelCasePlural = Str::camel($modelNamePlural);
+        $modelNameKebabCase = Str::kebab($modelName);
+        $modelNameKebabCasePlural = Str::kebab($modelNamePlural);
+        $modelNameUpperKebabCasePlural = Str::upper($modelNameKebabCasePlural);
+        $modelNameSnakeCase = Str::snake($modelName);
+        $modelNameSnakeCasePlural = Str::snake($modelNamePlural);
+        $modelNameUpperSnakeCasePlural = Str::upper($modelNameSnakeCasePlural);
+        $modelNameSpaceCase = Str::replace('_', ' ', $modelNameSnakeCase);
+        $modelNameSpaceCasePlural = Str::replace('_', ' ', $modelNameSnakeCasePlural);
+        $modelNameUpperWordSpaceCase = ucwords($modelNameSpaceCase);
+        $modelNameUpperFirstSpaceCase = ucfirst($modelNameSpaceCase);
+        $modelNameId = "{$modelNameCamelCase}Id";
 
         $replace = [
             $modelName,
-            $modelNameLowerCaseFirstLetter,
-            $modelNameLowerCaseDash,
-            $modelNameLowerCaseDashPlural,
-            $modelNameLowerCaseFirstLetterPlural,
-            $modelNameDecamelizeLowerCaseSingularToPlural,
-            $modelNameDecamelizeUpperCaseSingularToPlural,
-            $modelNameSingularToPlural,
-            $modelNameSpacesLowerCase,
-            $modelNameSpacesLowerCasePlural,
-            $modelNameSpacesUpperCaseWord,
-            $modelNameSpacesUpperCaseFirstLetter
+            $modelNamePlural,
+            $modelNameCamelCase,
+            $modelNameCamelCasePlural,
+            $modelNameKebabCase,
+            $modelNameKebabCasePlural,
+            $modelNameUpperKebabCasePlural,
+            $modelNameSnakeCase,
+            $modelNameSnakeCasePlural,
+            $modelNameUpperSnakeCasePlural,
+            $modelNameSpaceCase,
+            $modelNameSpaceCasePlural,
+            $modelNameUpperWordSpaceCase,
+            $modelNameUpperFirstSpaceCase,
+            $modelNameId
         ];
 
         $subject = file_get_contents(resource_path("stubs/{$stubName}.stub"));

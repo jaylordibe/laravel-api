@@ -4,7 +4,6 @@ namespace App\Http\Requests;
 
 use App\Data\{{modelName}}Data;
 use App\Data\{{modelName}}FilterData;
-use App\Http\Requests\BaseRequest;
 
 class {{modelName}}Request extends BaseRequest
 {
@@ -38,7 +37,7 @@ class {{modelName}}Request extends BaseRequest
     {
         return new {{modelName}}Data(
             // Add {{modelName}}Data properties here
-            id: $this->route('id') ?? $this->getInputAsInt('id'),
+            id: $this->route('{{modelNameId}}'),
             authUser: $this->getAuthUserData(),
             meta: $this->getMetaData()
         );
@@ -53,7 +52,7 @@ class {{modelName}}Request extends BaseRequest
     {
         return new {{modelName}}FilterData(
             // Add {{modelName}}FilterData properties here
-            id: $this->getInputAsInt('id'),
+            id: $this->route('{{modelNameId}}'),
             authUser: $this->getAuthUserData(),
             meta: $this->getMetaData()
         );

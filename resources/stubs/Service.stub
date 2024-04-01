@@ -5,58 +5,56 @@ namespace App\Services;
 use App\Data\{{modelName}}Data;
 use App\Data\{{modelName}}FilterData;
 use App\Data\ServiceResponseData;
-use App\Models\{{modelName}};
 use App\Repositories\{{modelName}}Repository;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use App\Utils\ServiceResponseUtil;
 
 class {{modelName}}Service
 {
 
-    private {{modelName}}Repository ${{modelNameLowerCaseFirstLetter}}Repository;
+    private {{modelName}}Repository ${{modelNameCamelCase}}Repository;
 
     /**
      * {{modelName}}Service constructor.
      *
-     * @param {{modelName}}Repository ${{modelNameLowerCaseFirstLetter}}Repository
+     * @param {{modelName}}Repository ${{modelNameCamelCase}}Repository
      */
-    public function __construct({{modelName}}Repository ${{modelNameLowerCaseFirstLetter}}Repository)
+    public function __construct({{modelName}}Repository ${{modelNameCamelCase}}Repository)
     {
-        $this->{{modelNameLowerCaseFirstLetter}}Repository = ${{modelNameLowerCaseFirstLetter}}Repository;
+        $this->{{modelNameCamelCase}}Repository = ${{modelNameCamelCase}}Repository;
     }
 
     /**
-     * Create {{modelNameSpacesLowerCase}}.
+     * Create {{modelNameSpaceCase}}.
      *
-     * @param {{modelName}}Data ${{modelNameLowerCaseFirstLetter}}Data
+     * @param {{modelName}}Data ${{modelNameCamelCase}}Data
      * @return ServiceResponseData
      */
-    public function create({{modelName}}Data ${{modelNameLowerCaseFirstLetter}}Data): ServiceResponseData
+    public function create({{modelName}}Data ${{modelNameCamelCase}}Data): ServiceResponseData
     {
-        ${{modelNameLowerCaseFirstLetter}} = $this->{{modelNameLowerCaseFirstLetter}}Repository->save(${{modelNameLowerCaseFirstLetter}}Data);
+        ${{modelNameCamelCase}} = $this->{{modelNameCamelCase}}Repository->save(${{modelNameCamelCase}}Data);
 
-        if (empty(${{modelNameLowerCaseFirstLetter}})) {
-            return ServiceResponseUtil::error('Failed to create {{modelNameSpacesLowerCase}}.');
+        if (empty(${{modelNameCamelCase}})) {
+            return ServiceResponseUtil::error('Failed to create {{modelNameSpaceCase}}.');
         }
 
-        return ServiceResponseUtil::success('{{modelNameSpacesUpperCaseFirstLetter}} successfully added.', ${{modelNameLowerCaseFirstLetter}});
+        return ServiceResponseUtil::success('{{modelNameUpperFirstSpaceCase}} successfully added.', ${{modelNameCamelCase}});
     }
 
     /**
-     * Get paginated {{modelNameSpacesLowerCase}}s.
+     * Get paginated {{modelNameSpaceCase}}s.
      *
-     * @param {{modelName}}FilterData ${{modelNameLowerCaseFirstLetter}}FilterData
+     * @param {{modelName}}FilterData ${{modelNameCamelCase}}FilterData
      * @return ServiceResponseData
      */
-    public function getPaginated({{modelName}}FilterData ${{modelNameLowerCaseFirstLetter}}FilterData): ServiceResponseData
+    public function getPaginated({{modelName}}FilterData ${{modelNameCamelCase}}FilterData): ServiceResponseData
     {
         return ServiceResponseUtil::map(
-            $this->{{modelNameLowerCaseFirstLetter}}Repository->getPaginated(${{modelNameLowerCaseFirstLetter}}FilterData)
+            $this->{{modelNameCamelCase}}Repository->getPaginated(${{modelNameCamelCase}}FilterData)
         );
     }
 
     /**
-     * Get {{modelNameSpacesLowerCase}} by id.
+     * Get {{modelNameSpaceCase}} by id.
      *
      * @param int $id
      * @param array $relations
@@ -65,54 +63,54 @@ class {{modelName}}Service
     public function getById(int $id, array $relations = []): ServiceResponseData
     {
         return ServiceResponseUtil::map(
-            $this->{{modelNameLowerCaseFirstLetter}}Repository->findById($id, $relations)
+            $this->{{modelNameCamelCase}}Repository->findById($id, $relations)
         );
     }
 
     /**
-     * Update {{modelNameSpacesLowerCase}}.
+     * Update {{modelNameSpaceCase}}.
      *
-     * @param {{modelName}}Data ${{modelNameLowerCaseFirstLetter}}Data
+     * @param {{modelName}}Data ${{modelNameCamelCase}}Data
      * @return ServiceResponseData
      */
-    public function update({{modelName}}Data ${{modelNameLowerCaseFirstLetter}}Data): ServiceResponseData
+    public function update({{modelName}}Data ${{modelNameCamelCase}}Data): ServiceResponseData
     {
-        ${{modelNameLowerCaseFirstLetter}} = $this->{{modelNameLowerCaseFirstLetter}}Repository->findById(${{modelNameLowerCaseFirstLetter}}Data->id);
+        ${{modelNameCamelCase}} = $this->{{modelNameCamelCase}}Repository->findById(${{modelNameCamelCase}}Data->id);
 
-        if (empty(${{modelNameLowerCaseFirstLetter}})) {
-            return ServiceResponseUtil::error('Failed to update {{modelNameSpacesLowerCase}}.');
+        if (empty(${{modelNameCamelCase}})) {
+            return ServiceResponseUtil::error('Failed to update {{modelNameSpaceCase}}.');
         }
 
-        ${{modelNameLowerCaseFirstLetter}} = $this->{{modelNameLowerCaseFirstLetter}}Repository->save(${{modelNameLowerCaseFirstLetter}}Data, ${{modelNameLowerCaseFirstLetter}});
+        ${{modelNameCamelCase}} = $this->{{modelNameCamelCase}}Repository->save(${{modelNameCamelCase}}Data, ${{modelNameCamelCase}});
 
-        if (empty(${{modelNameLowerCaseFirstLetter}})) {
-            return ServiceResponseUtil::error('Failed to update {{modelNameSpacesLowerCase}}.');
+        if (empty(${{modelNameCamelCase}})) {
+            return ServiceResponseUtil::error('Failed to update {{modelNameSpaceCase}}.');
         }
 
-        return ServiceResponseUtil::success('{{modelNameSpacesUpperCaseFirstLetter}} successfully updated.', ${{modelNameLowerCaseFirstLetter}});
+        return ServiceResponseUtil::success('{{modelNameUpperFirstSpaceCase}} successfully updated.', ${{modelNameCamelCase}});
     }
 
     /**
-     * Delete {{modelNameSpacesLowerCase}}.
+     * Delete {{modelNameSpaceCase}}.
      *
      * @param int $id
      * @return ServiceResponseData
      */
     public function delete(int $id): ServiceResponseData
     {
-        ${{modelNameLowerCaseFirstLetter}} = $this->{{modelNameLowerCaseFirstLetter}}Repository->findById($id);
+        ${{modelNameCamelCase}} = $this->{{modelNameCamelCase}}Repository->findById($id);
 
-        if (empty(${{modelNameLowerCaseFirstLetter}})) {
-            return ServiceResponseUtil::error('Failed to delete {{modelNameSpacesLowerCase}}.');
+        if (empty(${{modelNameCamelCase}})) {
+            return ServiceResponseUtil::error('Failed to delete {{modelNameSpaceCase}}.');
         }
 
-        $isDeleted = $this->{{modelNameLowerCaseFirstLetter}}Repository->delete($id);
+        $isDeleted = $this->{{modelNameCamelCase}}Repository->delete($id);
 
         if (!$isDeleted) {
-            return ServiceResponseUtil::error('Failed to delete {{modelNameSpacesLowerCase}}.');
+            return ServiceResponseUtil::error('Failed to delete {{modelNameSpaceCase}}.');
         }
 
-        return ServiceResponseUtil::success('{{modelNameSpacesUpperCaseFirstLetter}} successfully deleted.');
+        return ServiceResponseUtil::success('{{modelNameUpperFirstSpaceCase}} successfully deleted.');
     }
 
 }

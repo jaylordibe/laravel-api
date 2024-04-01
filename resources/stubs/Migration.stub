@@ -6,7 +6,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
-class Create{{modelNameSingularToPlural}}Table extends Migration
+class Create{{modelNamePlural}}Table extends Migration
 {
 
     /**
@@ -16,7 +16,7 @@ class Create{{modelNameSingularToPlural}}Table extends Migration
      */
     public function up(): void
     {
-        Schema::create(DatabaseTableConstant::{{modelNameDecamelizeUpperCaseSingularToPlural}}, function (Blueprint $table) {
+        Schema::create(DatabaseTableConstant::{{modelNameUpperSnakeCasePlural}}, function (Blueprint $table) {
             $table->id();
             $table->dateTime('created_at')->useCurrent();
             $table->dateTime('updated_at')->default(DB::raw('CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP'));
@@ -34,7 +34,7 @@ class Create{{modelNameSingularToPlural}}Table extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists(DatabaseTableConstant::{{modelNameDecamelizeUpperCaseSingularToPlural}});
+        Schema::dropIfExists(DatabaseTableConstant::{{modelNameUpperSnakeCasePlural}});
     }
 
 }
