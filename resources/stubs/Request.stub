@@ -52,7 +52,7 @@ class {{modelName}}Request extends BaseRequest
     {
         return new {{modelName}}FilterData(
             // Add {{modelName}}FilterData properties here
-            id: $this->route('{{modelNameId}}'),
+            id: $this->getInputAsInt('id'),
             authUser: $this->getAuthUserData(),
             meta: $this->getMetaData()
         );
