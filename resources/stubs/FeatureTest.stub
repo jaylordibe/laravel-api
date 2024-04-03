@@ -52,6 +52,18 @@ class {{modelName}}FeatureTest extends TestCase
         $response = $this->withToken($token)->get($this->resource);
 
         $response->assertOk()->assertJsonStructure(['data', 'links', 'meta']);
+
+        $data = $response->json('data');
+        $this->assertIsArray($data);
+        $this->assertNotEmpty($data);
+
+        $links = $response->json('links');
+        $this->assertIsArray($links);
+        $this->assertNotEmpty($links);
+
+        $meta = $response->json('meta');
+        $this->assertIsArray($meta);
+        $this->assertNotEmpty($meta);
     }
 
     /**
