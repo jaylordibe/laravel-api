@@ -55,13 +55,13 @@ class AddressController extends Controller
 
     /**
      * @param GenericRequest $request
-     * @param int $id
+     * @param int $addressId
      *
      * @return JsonResponse|JsonResource
      */
-    public function getById(GenericRequest $request, int $id): JsonResponse|JsonResource
+    public function getById(GenericRequest $request, int $addressId): JsonResponse|JsonResource
     {
-        $serviceResponse = $this->addressService->getById($id);
+        $serviceResponse = $this->addressService->getById($addressId);
 
         if ($serviceResponse->error) {
             return ResponseUtil::error($serviceResponse->message);
@@ -72,15 +72,13 @@ class AddressController extends Controller
 
     /**
      * @param AddressRequest $request
-     * @param int $id
+     * @param int $addressId
      *
      * @return JsonResponse|JsonResource
      */
-    public function update(AddressRequest $request, int $id): JsonResponse|JsonResource
+    public function update(AddressRequest $request, int $addressId): JsonResponse|JsonResource
     {
-        $addressData = $request->toData();
-        $addressData->id = $id;
-        $serviceResponse = $this->addressService->update($addressData);
+        $serviceResponse = $this->addressService->update($request->toData());
 
         if ($serviceResponse->error) {
             return ResponseUtil::error($serviceResponse->message);
@@ -91,13 +89,13 @@ class AddressController extends Controller
 
     /**
      * @param GenericRequest $request
-     * @param int $id
+     * @param int $addressId
      *
      * @return JsonResponse
      */
-    public function delete(GenericRequest $request, int $id): JsonResponse
+    public function delete(GenericRequest $request, int $addressId): JsonResponse
     {
-        $serviceResponse = $this->addressService->delete($id);
+        $serviceResponse = $this->addressService->delete($addressId);
 
         if ($serviceResponse->error) {
             return ResponseUtil::error($serviceResponse->message);

@@ -49,6 +49,7 @@ class UserRequest extends BaseRequest
             timezone: $this->getInputAsString('timezone'),
             phoneNumber: $this->getInputAsString('phoneNumber'),
             birthday: $this->getInputAsCarbon('birthday'),
+            id: $this->route('userId'),
             meta: $this->getMetaData(),
             authUser: $this->getAuthUserData()
         );
@@ -70,6 +71,7 @@ class UserRequest extends BaseRequest
             timezone: $this->getInputAsString('timezone'),
             phoneNumber: $this->getInputAsString('phoneNumber'),
             birthday: $this->getInputAsCarbon('birthday'),
+            id: $this->getInputAsInt('id'),
             meta: $this->getMetaData(),
             authUser: $this->getAuthUserData()
         // Add more filter fields here if needed...

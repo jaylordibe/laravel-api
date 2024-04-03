@@ -50,6 +50,7 @@ class AddressRequest extends BaseRequest
             stateOrProvince: $this->getInputAsString('stateOrProvince'),
             zipOrPostalCode: $this->getInputAsString('zipOrPostalCode'),
             country: $this->getInputAsString('country'),
+            id: $this->route('addressId'),
             meta: $this->getMetaData(),
             authUser: $this->getAuthUserData()
         );
@@ -70,6 +71,7 @@ class AddressRequest extends BaseRequest
             stateOrProvince: $this->getInputAsString('stateOrProvince'),
             zipOrPostalCode: $this->getInputAsString('zipOrPostalCode'),
             country: $this->getInputAsString('country'),
+            id: $this->getInputAsInt('id'),
             meta: $this->getMetaData(),
             authUser: $this->getAuthUserData()
         // Add more filter fields here if needed...

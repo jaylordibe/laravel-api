@@ -99,8 +99,7 @@ class UserController extends Controller
     {
         Gate::authorize(GateAbilityConstant::CAN_CREATE_USER);
 
-        $createUserData = $request->toData();
-        $serviceResponse = $this->userService->create($createUserData);
+        $serviceResponse = $this->userService->create($request->toData());
 
         if ($serviceResponse->error) {
             return ResponseUtil::error($serviceResponse->message);
@@ -130,15 +129,15 @@ class UserController extends Controller
 
     /**
      * @param GenericRequest $request
-     * @param int $id
+     * @param int $userId
      *
      * @return JsonResponse|JsonResource
      */
-    public function getById(GenericRequest $request, int $id): JsonResponse|JsonResource
+    public function getById(GenericRequest $request, int $userId): JsonResponse|JsonResource
     {
         Gate::authorize(GateAbilityConstant::CAN_READ_USER);
 
-        $serviceResponse = $this->userService->getById($id);
+        $serviceResponse = $this->userService->getById($userId);
 
         if ($serviceResponse->error) {
             return ResponseUtil::error($serviceResponse->message);
@@ -149,17 +148,15 @@ class UserController extends Controller
 
     /**
      * @param UserRequest $request
-     * @param int $id
+     * @param int $userId
      *
      * @return JsonResponse|JsonResource
      */
-    public function update(UserRequest $request, int $id): JsonResponse|JsonResource
+    public function update(UserRequest $request, int $userId): JsonResponse|JsonResource
     {
         Gate::authorize(GateAbilityConstant::CAN_UPDATE_USER);
 
-        $userData = $request->toData();
-        $userData->id = $id;
-        $serviceResponse = $this->userService->update($userData);
+        $serviceResponse = $this->userService->update($request->toData());
 
         if ($serviceResponse->error) {
             return ResponseUtil::error($serviceResponse->message);
@@ -170,15 +167,15 @@ class UserController extends Controller
 
     /**
      * @param GenericRequest $request
-     * @param int $id
+     * @param int $userId
      *
      * @return JsonResponse
      */
-    public function delete(GenericRequest $request, int $id): JsonResponse
+    public function delete(GenericRequest $request, int $userId): JsonResponse
     {
         Gate::authorize(GateAbilityConstant::CAN_DELETE_USER);
 
-        $serviceResponse = $this->userService->delete($id);
+        $serviceResponse = $this->userService->delete($userId);
 
         if ($serviceResponse->error) {
             return ResponseUtil::error($serviceResponse->message);
