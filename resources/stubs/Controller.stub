@@ -29,6 +29,7 @@ class {{modelName}}Controller extends Controller
      * Create {{modelNameSpaceCase}}.
      *
      * @param {{modelName}}Request $request
+     *
      * @return JsonResponse|JsonResource
      */
     public function create({{modelName}}Request $request): JsonResponse|JsonResource
@@ -46,6 +47,7 @@ class {{modelName}}Controller extends Controller
      * Get paginated {{modelNameSpaceCase}}s.
      *
      * @param GenericRequest $request
+     *
      * @return JsonResponse|JsonResource
      */
     public function getPaginated(GenericRequest $request): JsonResponse|JsonResource
@@ -65,6 +67,7 @@ class {{modelName}}Controller extends Controller
      *
      * @param GenericRequest $request
      * @param int ${{modelNameId}}
+     *
      * @return JsonResponse|JsonResource
      */
     public function getById(GenericRequest $request, int ${{modelNameId}}): JsonResponse|JsonResource
@@ -84,6 +87,7 @@ class {{modelName}}Controller extends Controller
      *
      * @param {{modelName}}Request $request
      * @param int ${{modelNameId}}
+     *
      * @return JsonResponse|JsonResource
      */
     public function update({{modelName}}Request $request, int ${{modelNameId}}): JsonResponse|JsonResource
@@ -102,6 +106,7 @@ class {{modelName}}Controller extends Controller
      *
      * @param GenericRequest $request
      * @param int ${{modelNameId}}
+     *
      * @return JsonResponse
      */
     public function delete(GenericRequest $request, int ${{modelNameId}}): JsonResponse

@@ -45,9 +45,23 @@ class AddressFeatureTest extends TestCase
     public function testGetPaginatedAddresses(): void
     {
         $token = $this->loginSystemAdminUser();
+        Address::factory()->count(15)->create([
+            'user_id' => $this->getAuthUser($token)->id
+        ]);
         $response = $this->withToken($token)->get("{$this->resource}");
-
         $response->assertOk()->assertJsonStructure(['data', 'links', 'meta']);
+
+        $data = $response->json('data');
+        $this->assertIsArray($data);
+        $this->assertNotEmpty($data);
+
+        $links = $response->json('links');
+        $this->assertIsArray($links);
+        $this->assertNotEmpty($links);
+
+        $meta = $response->json('meta');
+        $this->assertIsArray($meta);
+        $this->assertNotEmpty($meta);
     }
 
     /**
@@ -56,10 +70,12 @@ class AddressFeatureTest extends TestCase
     public function testGetAddressById(): void
     {
         $token = $this->loginSystemAdminUser();
-        $address = Address::factory()->create();
+        $address = Address::factory()->create([
+            'user_id' => $this->getAuthUser($token)->id
+        ]);
         $response = $this->withToken($token)->get("{$this->resource}/{$address->id}");
 
-        $response->assertOk()->assertJson(['id' => $response->json()['id']]);
+        $response->assertOk()->assertJson(['id' => $response->json('id')]);
     }
 
     /**
@@ -68,7 +84,9 @@ class AddressFeatureTest extends TestCase
     public function testUpdateAddress(): void
     {
         $token = $this->loginSystemAdminUser();
-        $address = Address::factory()->create();
+        $address = Address::factory()->create([
+            'user_id' => $this->getAuthUser($token)->id
+        ]);
         $payload = $this->getPayload();
         $response = $this->withToken($token)->put("{$this->resource}/{$address->id}", $payload);
 
@@ -84,7 +102,9 @@ class AddressFeatureTest extends TestCase
     public function testDeleteAddress(): void
     {
         $token = $this->loginSystemAdminUser();
-        $address = Address::factory()->create();
+        $address = Address::factory()->create([
+            'user_id' => $this->getAuthUser($token)->id
+        ]);
         $response = $this->withToken($token)->delete("{$this->resource}/{$address->id}");
 
         $response->assertOk()->assertJsonStructure(['success']);

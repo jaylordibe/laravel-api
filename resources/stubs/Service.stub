@@ -27,6 +27,7 @@ class {{modelName}}Service
      * Create {{modelNameSpaceCase}}.
      *
      * @param {{modelName}}Data ${{modelNameCamelCase}}Data
+     *
      * @return ServiceResponseData
      */
     public function create({{modelName}}Data ${{modelNameCamelCase}}Data): ServiceResponseData
@@ -44,6 +45,7 @@ class {{modelName}}Service
      * Get paginated {{modelNameSpaceCase}}s.
      *
      * @param {{modelName}}FilterData ${{modelNameCamelCase}}FilterData
+     *
      * @return ServiceResponseData
      */
     public function getPaginated({{modelName}}FilterData ${{modelNameCamelCase}}FilterData): ServiceResponseData
@@ -58,6 +60,7 @@ class {{modelName}}Service
      *
      * @param int $id
      * @param array $relations
+     *
      * @return ServiceResponseData
      */
     public function getById(int $id, array $relations = []): ServiceResponseData
@@ -71,6 +74,7 @@ class {{modelName}}Service
      * Update {{modelNameSpaceCase}}.
      *
      * @param {{modelName}}Data ${{modelNameCamelCase}}Data
+     *
      * @return ServiceResponseData
      */
     public function update({{modelName}}Data ${{modelNameCamelCase}}Data): ServiceResponseData
@@ -94,6 +98,7 @@ class {{modelName}}Service
      * Delete {{modelNameSpaceCase}}.
      *
      * @param int $id
+     *
      * @return ServiceResponseData
      */
     public function delete(int $id): ServiceResponseData

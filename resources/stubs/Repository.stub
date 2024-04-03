@@ -18,6 +18,7 @@ class {{modelName}}Repository
      *
      * @param {{modelName}}Data ${{modelNameCamelCase}}Data
      * @param {{modelName}}|null ${{modelNameCamelCase}}
+     *
      * @return {{modelName}}|null
      */
     public function save({{modelName}}Data ${{modelNameCamelCase}}Data, ?{{modelName}} ${{modelNameCamelCase}} = null): ?{{modelName}}
@@ -33,6 +34,7 @@ class {{modelName}}Repository
      *
      * @param int $id
      * @param array $relations
+     *
      * @return {{modelName}}|null
      */
     public function findById(int $id, array $relations = []): ?{{modelName}}
@@ -44,6 +46,7 @@ class {{modelName}}Repository
      * Checks if the {{modelNameSpaceCase}} exists.
      *
      * @param int $id
+     *
      * @return bool
      */
     public function exists(int $id): bool
@@ -55,11 +58,18 @@ class {{modelName}}Repository
      * Get paginated {{modelNameSpaceCase}}s.
      *
      * @param {{modelName}}FilterData ${{modelNameCamelCase}}FilterData
+     *
      * @return LengthAwarePaginator
      */
     public function getPaginated({{modelName}}FilterData ${{modelNameCamelCase}}FilterData): LengthAwarePaginator
     {
         ${{modelNameCamelCasePlural}} = {{modelName}}::with(${{modelNameCamelCase}}FilterData->meta->relations);
+
+        if (!empty(${{modelNameCamelCase}}FilterData->id)) {
+            ${{modelNameCamelCasePlural}}->where(function (Builder $queryBuilder) use (${{modelNameCamelCase}}FilterData) {
+                $queryBuilder->where('id', ${{modelNameCamelCase}}FilterData->id);
+            });
+        }
 
         return ${{modelNameCamelCasePlural}}->orderBy(
             ${{modelNameCamelCase}}FilterData->meta->sortField,
@@ -71,6 +81,7 @@ class {{modelName}}Repository
      * Delete {{modelNameSpaceCase}}.
      *
      * @param int $id
+     *
      * @return bool
      */
     public function delete(int $id): bool
