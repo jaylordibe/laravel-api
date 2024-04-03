@@ -75,12 +75,16 @@ class {{modelName}}Repository
      */
     public function delete(int $id): bool
     {
+        ${{modelNameCamelCase}} = $this->findById($id);
+
+        if (empty(${{modelNameCamelCase}})) {
+            return false;
+        }
+
         try {
-            ${{modelNameCamelCase}} = $this->findById($id);
-            ${{modelNameCamelCase}}->save();
             return (bool) ${{modelNameCamelCase}}->delete();
         } catch (Exception $e) {
-            Log::error('Delete {{modelNameUpperWordSpaceCase}} Exception: ' . $e->getMessage());
+            Log::error("Delete {{modelNameUpperWordSpaceCase}} Exception: {$e->getMessage()}");
             return false;
         }
     }
