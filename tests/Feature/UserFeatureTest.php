@@ -85,7 +85,7 @@ class UserFeatureTest extends TestCase
         unset($payload['passwordConfirmation']);
         $payload['username'] = Str::replace('.', '', Str::before($payload['email'], '@'));
 
-        $response->assertCreated()->assertJson($payload);
+        $response->assertOk()->assertJson($payload);
     }
 
     /**

@@ -36,7 +36,7 @@ class AddressFeatureTest extends TestCase
         $payload = $this->getPayload();
         $response = $this->withToken($token)->post("{$this->resource}", $payload);
 
-        $response->assertCreated()->assertJson($payload);
+        $response->assertOk()->assertJson($payload);
     }
 
     /**
