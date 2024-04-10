@@ -328,11 +328,11 @@ class CRUDGenerator extends Command
         $routeTemplate = <<<ROUTES
         \n\t// CRUD routes for {$modelName}
         \tRoute::prefix('{$resourceName}')->group(function () {
-            \t\tRoute::post('/', [{$controllerClassName}, 'create']);
-            \t\tRoute::get('/', [{$controllerClassName}, 'getPaginated']);
-            \t\tRoute::get('/{{$modelIdName}}', [{$controllerClassName}, 'getById'])->where('{$modelIdName}', RoutePatternConstant::NUMERIC);
-            \t\tRoute::put('/{{$modelIdName}}', [{$controllerClassName}, 'update'])->where('{$modelIdName}', RoutePatternConstant::NUMERIC);
-            \t\tRoute::delete('/{{$modelIdName}}', [{$controllerClassName}, 'delete'])->where('{$modelIdName}', RoutePatternConstant::NUMERIC);
+            \tRoute::post('/', [{$controllerClassName}, 'create']);
+            \tRoute::get('/', [{$controllerClassName}, 'getPaginated']);
+            \tRoute::get('/{{$modelIdName}}', [{$controllerClassName}, 'getById'])->where('{$modelIdName}', RoutePatternConstant::NUMERIC);
+            \tRoute::put('/{{$modelIdName}}', [{$controllerClassName}, 'update'])->where('{$modelIdName}', RoutePatternConstant::NUMERIC);
+            \tRoute::delete('/{{$modelIdName}}', [{$controllerClassName}, 'delete'])->where('{$modelIdName}', RoutePatternConstant::NUMERIC);
         \t});
         ROUTES;
 

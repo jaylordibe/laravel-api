@@ -48,7 +48,7 @@ class {{modelName}}FeatureTest extends TestCase
     public function testGetPaginated{{modelNamePlural}}(): void
     {
         $token = $this->loginSystemAdminUser();
-        ${{modelNameCamelCase}} = {{modelName}}::factory()->create();
+        {{modelName}}::factory()->count(15)->create();
         $response = $this->withToken($token)->get($this->resource);
 
         $response->assertOk()->assertJsonStructure(['data', 'links', 'meta']);
@@ -79,7 +79,7 @@ class {{modelName}}FeatureTest extends TestCase
         ${{modelNameCamelCase}} = {{modelName}}::factory()->create();
         $response = $this->withToken($token)->get("{$this->resource}/{${{modelNameCamelCase}}->id}");
 
-        $response->assertOk()->assertJson(['id' => $response->json()['id']]);
+        $response->assertOk()->assertJson(['id' => ${{modelNameCamelCase}}->id]);
     }
 
     /**

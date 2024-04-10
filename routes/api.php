@@ -2,6 +2,7 @@
 
 use App\Constants\RoutePatternConstant;
 use App\Http\Controllers\AddressController;
+use App\Http\Controllers\AppVersionController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
@@ -19,11 +20,21 @@ use Illuminate\Support\Facades\Route;
 
 // Public Routes
 Route::post('auth/sign-in', [AuthController::class, 'signIn']);
+Route::get('app-versions/latest', [AppVersionController::class, 'getLatest']);
 
 // Authenticated Routes
 Route::middleware('auth:api')->group(function () {
     // Auth
     Route::post('auth/sign-out', [AuthController::class, 'signOut']);
+
+    // CRUD routes for AppVersion
+    Route::prefix('app-versions')->group(function () {
+        Route::post('/', [AppVersionController::class, 'create']);
+        Route::get('/', [AppVersionController::class, 'getPaginated']);
+        Route::get('/{appVersionId}', [AppVersionController::class, 'getById'])->where('appVersionId', RoutePatternConstant::NUMERIC);
+        Route::put('/{appVersionId}', [AppVersionController::class, 'update'])->where('appVersionId', RoutePatternConstant::NUMERIC);
+        Route::delete('/{appVersionId}', [AppVersionController::class, 'delete'])->where('appVersionId', RoutePatternConstant::NUMERIC);
+    });
 
     // CRUD routes for User
     Route::post('users', [UserController::class, 'create']);
