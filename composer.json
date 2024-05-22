@@ -18,6 +18,7 @@
         "spatie/laravel-permission": "^5.9"
     },
     "require-dev": {
+        "brianium/paratest": "^7.4",
         "fakerphp/faker": "^1.9.1",
         "laravel/pint": "^1.0",
         "laravel/sail": "^1.18",
