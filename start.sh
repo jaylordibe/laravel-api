@@ -63,8 +63,8 @@ fi
 docker exec -it laravel-api bash -c "$COMMANDS"
 
 echo -e "\033[0m \033[1;35m Application is running at: \033[0m"
-echo -e "\033[0m \033[1;32m \t http://localhost:9000/ \033[0m"
+echo -e "\033[0m \033[1;32m \t http://localhost:8000/ \033[0m"
 echo -e "\033[0m \033[1;35m phpMyAdmin is running at: \033[0m"
-echo -e "\033[0m \033[1;32m \t http://localhost:9001/ \033[0m"
+echo -e "\033[0m \033[1;32m \t http://localhost:8001/ on mysql port 3307 \033[0m"
 echo -e "\033[0m \033[1;35m Test environment phpMyAdmin is running at: \033[0m"
-echo -e "\033[0m \033[1;32m \t http://localhost:9002/ \033[0m"
+echo -e "\033[0m \033[1;32m \t http://localhost:8002/ on mysql port 3308 \033[0m"
