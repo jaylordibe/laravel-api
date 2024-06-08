@@ -14,7 +14,7 @@ This README would normally document whatever steps are necessary to get your app
 * Dependencies
     * [Docker](https://docs.docker.com/get-docker/)
 * Summary of set up
-    * To start the application with a fresh database
+    * To start the application with a fresh database or when setting up the project for the first time
     ```
     ./start.sh fresh
     ```
