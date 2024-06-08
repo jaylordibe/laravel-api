@@ -2,9 +2,9 @@
 
 namespace App\Http\Requests;
 
-use App\Data\CreateUserData;
+use App\Data\SignUpUserData;
 
-class CreateUserRequest extends BaseRequest
+class SignUpUserRequest extends BaseRequest
 {
 
     /**
@@ -37,11 +37,11 @@ class CreateUserRequest extends BaseRequest
     /**
      * Convert request to data.
      *
-     * @return CreateUserData
+     * @return SignUpUserData
      */
-    public function toData(): CreateUserData
+    public function toData(): SignUpUserData
     {
-        return new CreateUserData(
+        return new SignUpUserData(
             firstName: $this->getInputAsString('firstName'),
             lastName: $this->getInputAsString('lastName'),
             email: $this->getInputAsString('email'),

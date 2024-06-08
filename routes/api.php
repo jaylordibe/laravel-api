@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Route;
 
 // Public Routes
 Route::post('auth/sign-in', [AuthController::class, 'signIn']);
+Route::post('users/sign-up', [UserController::class, 'signUp']);
 Route::get('app-versions/latest', [AppVersionController::class, 'getLatest']);
 
 // Authenticated Routes

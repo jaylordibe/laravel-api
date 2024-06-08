@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Data\CreateUserData;
 use App\Data\ServiceResponseData;
+use App\Data\SignUpUserData;
 use App\Data\UserData;
 use App\Data\UserFilterData;
 use App\Repositories\UserRepository;
@@ -18,6 +19,29 @@ class UserService
         private readonly UserRepository $userRepository
     )
     {
+    }
+
+    /**
+     * @param SignUpUserData $signUpUserData
+     *
+     * @return ServiceResponseData
+     */
+    public function signUp(SignUpUserData $signUpUserData): ServiceResponseData
+    {
+        $userData = new UserData(
+            firstName: $signUpUserData->firstName,
+            lastName: $signUpUserData->lastName,
+            username: $this->generateUsername($signUpUserData->email),
+            email: $signUpUserData->email,
+            phoneNumber: $signUpUserData->phoneNumber
+        );
+        $user = $this->userRepository->create($userData, $signUpUserData->rawPassword);
+
+        if (empty($user)) {
+            return ServiceResponseUtil::error('Sign up failed.');
+        }
+
+        return ServiceResponseUtil::success('Sign up successful.', $user);
     }
 
     /**

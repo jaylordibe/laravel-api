@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Constants\GateAbilityConstant;
 use App\Http\Requests\CreateUserRequest;
 use App\Http\Requests\GenericRequest;
+use App\Http\Requests\SignUpUserRequest;
 use App\Http\Requests\UserRequest;
 use App\Http\Resources\UserResource;
 use App\Services\UserService;
@@ -21,6 +22,24 @@ class UserController extends Controller
         private readonly UserService $userService
     )
     {
+    }
+
+    /**
+     * Sign up a new user.
+     *
+     * @param SignUpUserRequest $request
+     *
+     * @return JsonResponse|JsonResource
+     */
+    public function signUp(SignUpUserRequest $request): JsonResponse|JsonResource
+    {
+        $serviceResponse = $this->userService->signUp($request->toData());
+
+        if ($serviceResponse->error) {
+            return ResponseUtil::error($serviceResponse->message);
+        }
+
+        return ResponseUtil::resource(UserResource::class, $serviceResponse->data);
     }
 
     /**

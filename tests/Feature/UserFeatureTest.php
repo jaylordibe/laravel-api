@@ -29,6 +29,28 @@ class UserFeatureTest extends TestCase
     }
 
     /**
+     * A basic test in signing up a user.
+     */
+    public function testSignUpUser(): void
+    {
+        $payload = $this->getPayload();
+        unset($payload['middleName']); // unsetting this because the Create User endpoint does not expect this field
+        unset($payload['timezone']); // unsetting this because the Create User endpoint does not expect this field
+        unset($payload['birthday']); // unsetting this because the Create User endpoint does not expect this field
+        $payload['email'] = fake()->unique()->safeEmail();
+        $payload['password'] = 'password';
+        $payload['passwordConfirmation'] = 'password';
+        $response = $this->post("{$this->resource}/sign-up", $payload);
+
+        // For assertion
+        unset($payload['password']);
+        unset($payload['passwordConfirmation']);
+        $payload['username'] = Str::replace('.', '', Str::before($payload['email'], '@'));
+
+        $response->assertOk()->assertJson($payload);
+    }
+
+    /**
      * A basic test in getting authenticated user by id.
      */
     public function testGetAuthUser(): void
