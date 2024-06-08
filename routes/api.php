@@ -38,19 +38,23 @@ Route::middleware('auth:api')->group(function () {
     });
 
     // CRUD routes for User
-    Route::post('users', [UserController::class, 'create']);
-    Route::get('users', [UserController::class, 'getPaginated']);
-    Route::get('users/auth', [UserController::class, 'getAuthUser']);
-    Route::put('users/auth/username', [UserController::class, 'updateAuthUserName']);
-    Route::put('users/auth/email', [UserController::class, 'updateAuthUserEmail']);
-    Route::get('users/{userId}', [UserController::class, 'getById'])->where('userId', RoutePatternConstant::NUMERIC);
-    Route::put('users/{userId}', [UserController::class, 'update'])->where('userId', RoutePatternConstant::NUMERIC);
-    Route::delete('users/{userId}', [UserController::class, 'delete'])->where('userId', RoutePatternConstant::NUMERIC);
+    Route::prefix('users')->group(function () {
+        Route::post('/', [UserController::class, 'create']);
+        Route::get('/', [UserController::class, 'getPaginated']);
+        Route::get('/auth', [UserController::class, 'getAuthUser']);
+        Route::put('/auth/username', [UserController::class, 'updateAuthUserName']);
+        Route::put('/auth/email', [UserController::class, 'updateAuthUserEmail']);
+        Route::get('/{userId}', [UserController::class, 'getById'])->where('userId', RoutePatternConstant::NUMERIC);
+        Route::put('/{userId}', [UserController::class, 'update'])->where('userId', RoutePatternConstant::NUMERIC);
+        Route::delete('/{userId}', [UserController::class, 'delete'])->where('userId', RoutePatternConstant::NUMERIC);
+    });
 
     // CRUD routes for Address
-    Route::post('addresses', [AddressController::class, 'create']);
-    Route::get('addresses', [AddressController::class, 'getPaginated']);
-    Route::get('addresses/{addressId}', [AddressController::class, 'getById'])->where('addressId', RoutePatternConstant::NUMERIC);
-    Route::put('addresses/{addressId}', [AddressController::class, 'update'])->where('addressId', RoutePatternConstant::NUMERIC);
-    Route::delete('addresses/{addressId}', [AddressController::class, 'delete'])->where('addressId', RoutePatternConstant::NUMERIC);
+    Route::prefix('addresses')->group(function () {
+        Route::post('/', [AddressController::class, 'create']);
+        Route::get('/', [AddressController::class, 'getPaginated']);
+        Route::get('/{addressId}', [AddressController::class, 'getById'])->where('addressId', RoutePatternConstant::NUMERIC);
+        Route::put('/{addressId}', [AddressController::class, 'update'])->where('addressId', RoutePatternConstant::NUMERIC);
+        Route::delete('/{addressId}', [AddressController::class, 'delete'])->where('addressId', RoutePatternConstant::NUMERIC);
+    });
 });
