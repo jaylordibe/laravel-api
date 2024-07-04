@@ -14,11 +14,6 @@ use Illuminate\Routing\Controller;
 class {{modelName}}Controller extends Controller
 {
 
-    /**
-     * {{modelName}}Controller constructor.
-     *
-     * @param {{modelName}}Service ${{modelNameCamelCase}}Service
-     */
     public function __construct(
         private readonly {{modelName}}Service ${{modelNameCamelCase}}Service
     )

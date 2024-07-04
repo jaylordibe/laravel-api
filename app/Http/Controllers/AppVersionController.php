@@ -14,11 +14,6 @@ use Illuminate\Routing\Controller;
 class AppVersionController extends Controller
 {
 
-    /**
-     * AppVersionController constructor.
-     *
-     * @param AppVersionService $appVersionService
-     */
     public function __construct(
         private readonly AppVersionService $appVersionService
     )

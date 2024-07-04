@@ -11,16 +11,10 @@ use App\Utils\ServiceResponseUtil;
 class AppVersionService
 {
 
-    private AppVersionRepository $appVersionRepository;
-
-    /**
-     * AppVersionService constructor.
-     *
-     * @param AppVersionRepository $appVersionRepository
-     */
-    public function __construct(AppVersionRepository $appVersionRepository)
+    public function __construct(
+        private readonly AppVersionRepository $appVersionRepository
+    )
     {
-        $this->appVersionRepository = $appVersionRepository;
     }
 
     /**

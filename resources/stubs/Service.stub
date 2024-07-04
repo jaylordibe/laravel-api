@@ -11,16 +11,10 @@ use App\Utils\ServiceResponseUtil;
 class {{modelName}}Service
 {
 
-    private {{modelName}}Repository ${{modelNameCamelCase}}Repository;
-
-    /**
-     * {{modelName}}Service constructor.
-     *
-     * @param {{modelName}}Repository ${{modelNameCamelCase}}Repository
-     */
-    public function __construct({{modelName}}Repository ${{modelNameCamelCase}}Repository)
+    public function __construct(
+        private readonly {{modelName}}Repository ${{modelNameCamelCase}}Repository
+    )
     {
-        $this->{{modelNameCamelCase}}Repository = ${{modelNameCamelCase}}Repository;
     }
 
     /**
