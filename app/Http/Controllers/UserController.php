@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Constants\GateAbilityConstant;
+use App\Constants\PermissionConstant;
 use App\Http\Requests\CreateUserRequest;
 use App\Http\Requests\GenericRequest;
 use App\Http\Requests\SignUpUserRequest;
@@ -116,7 +116,7 @@ class UserController extends Controller
      */
     public function create(CreateUserRequest $request): JsonResponse|JsonResource
     {
-        Gate::authorize(GateAbilityConstant::CAN_CREATE_USER);
+        Gate::authorize(PermissionConstant::CREATE_USER);
 
         $serviceResponse = $this->userService->create($request->toData());
 
@@ -134,7 +134,7 @@ class UserController extends Controller
      */
     public function getPaginated(GenericRequest $request): JsonResponse|JsonResource
     {
-        Gate::authorize(GateAbilityConstant::CAN_READ_USER);
+        Gate::authorize(PermissionConstant::READ_USER);
 
         $userFilterData = UserRequest::createFrom($request)->toFilterData();
         $serviceResponse = $this->userService->getPaginated($userFilterData);
@@ -154,7 +154,7 @@ class UserController extends Controller
      */
     public function getById(GenericRequest $request, int $userId): JsonResponse|JsonResource
     {
-        Gate::authorize(GateAbilityConstant::CAN_READ_USER);
+        Gate::authorize(PermissionConstant::READ_USER);
 
         $serviceResponse = $this->userService->getById($userId);
 
@@ -173,7 +173,7 @@ class UserController extends Controller
      */
     public function update(UserRequest $request, int $userId): JsonResponse|JsonResource
     {
-        Gate::authorize(GateAbilityConstant::CAN_UPDATE_USER);
+        Gate::authorize(PermissionConstant::UPDATE_USER);
 
         $serviceResponse = $this->userService->update($request->toData());
 
@@ -192,7 +192,7 @@ class UserController extends Controller
      */
     public function delete(GenericRequest $request, int $userId): JsonResponse
     {
-        Gate::authorize(GateAbilityConstant::CAN_DELETE_USER);
+        Gate::authorize(PermissionConstant::DELETE_USER);
 
         $serviceResponse = $this->userService->delete($userId);
 

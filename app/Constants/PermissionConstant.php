@@ -22,15 +22,20 @@ class PermissionConstant extends BaseConstant
     public static function fromRole(string $role): array
     {
         return match ($role) {
-            RoleConstant::SYSTEM_ADMIN => [
-                self::CREATE_USER,
-                self::READ_USER,
-                self::UPDATE_USER,
-                self::DELETE_USER
-            ],
+            RoleConstant::SYSTEM_ADMIN => self::asList(),
             default => [],
         };
 
+    }
+
+    /**
+     * Get the API guard name.
+     *
+     * @return string
+     */
+    public static function getApiGuard(): string
+    {
+        return 'api';
     }
 
 }
