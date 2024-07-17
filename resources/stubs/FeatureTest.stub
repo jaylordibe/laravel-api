@@ -1,0 +1,121 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\{{modelName}};
+use Tests\TestCase;
+
+class {{modelName}}FeatureTest extends TestCase
+{
+
+    private string $resource = '/api/{{modelNameKebabCasePlural}}';
+
+    /**
+     * Get {{modelNameSpaceCase}} payload.
+     *
+     * @return array
+     */
+    private function getPayload(): array
+    {
+        return [
+            // Add the request payload here
+        ];
+    }
+
+    /**
+     * @test
+     *
+     * A basic unit test in creating {{modelNameSpaceCase}}.
+     *
+     * @return void
+     */
+    public function testCreate{{modelName}}(): void
+    {
+        $token = $this->loginSystemAdminUser();
+        $payload = $this->getPayload();
+        $response = $this->withToken($token)->post($this->resource, $payload);
+
+        $response->assertOk()->assertJson($payload);
+    }
+
+    /**
+     * @test
+     *
+     * A basic unit test in getting paginated {{modelNameSpaceCasePlural}}.
+     *
+     * @return void
+     */
+    public function testGetPaginated{{modelNamePlural}}(): void
+    {
+        $token = $this->loginSystemAdminUser();
+        {{modelName}}::factory()->count(15)->create();
+        $response = $this->withToken($token)->get($this->resource);
+
+        $response->assertOk()->assertJsonStructure(['data', 'links', 'meta']);
+
+        $data = $response->json('data');
+        $this->assertIsArray($data);
+        $this->assertNotEmpty($data);
+
+        $links = $response->json('links');
+        $this->assertIsArray($links);
+        $this->assertNotEmpty($links);
+
+        $meta = $response->json('meta');
+        $this->assertIsArray($meta);
+        $this->assertNotEmpty($meta);
+    }
+
+    /**
+     * @test
+     *
+     * A basic unit test in getting {{modelNameSpaceCase}} by id.
+     *
+     * @return void
+     */
+    public function testGet{{modelName}}ById(): void
+    {
+        $token = $this->loginSystemAdminUser();
+        ${{modelNameCamelCase}} = {{modelName}}::factory()->create();
+        $response = $this->withToken($token)->get("{$this->resource}/{${{modelNameCamelCase}}->id}");
+
+        $response->assertOk()->assertJson(['id' => ${{modelNameCamelCase}}->id]);
+    }
+
+    /**
+     * @test
+     *
+     * A basic unit test in updating {{modelNameSpaceCase}}.
+     *
+     * @return void
+     */
+    public function testUpdate{{modelName}}(): void
+    {
+        $token = $this->loginSystemAdminUser();
+        ${{modelNameCamelCase}} = {{modelName}}::factory()->create();
+        $payload = $this->getPayload();
+        $response = $this->withToken($token)->put("{$this->resource}/{${{modelNameCamelCase}}->id}", $payload);
+
+        // For assertion
+        $payload['id'] = ${{modelNameCamelCase}}->id;
+
+        $response->assertOk()->assertJson($payload);
+    }
+
+    /**
+     * @test
+     *
+     * A basic unit test in deleting {{modelNameSpaceCase}}.
+     *
+     * @return void
+     */
+    public function testDelete{{modelName}}(): void
+    {
+        $token = $this->loginSystemAdminUser();
+        ${{modelNameCamelCase}} = {{modelName}}::factory()->create();
+        $response = $this->withToken($token)->delete("{$this->resource}/{${{modelNameCamelCase}}->id}");
+
+        $response->assertOk()->assertJsonStructure(['success']);
+    }
+
+}

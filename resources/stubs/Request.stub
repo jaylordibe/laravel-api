@@ -1,0 +1,61 @@
+<?php
+
+namespace App\Http\Requests;
+
+use App\Data\{{modelName}}Data;
+use App\Data\{{modelName}}FilterData;
+
+class {{modelName}}Request extends BaseRequest
+{
+
+    /**
+     * Get the validation rules that apply to the request.
+     *
+     * @return array
+     */
+    public function rules(): array
+    {
+        return [];
+    }
+
+    /**
+     * Get the error messages for the defined validation rules.
+     *
+     * @return array
+     */
+    public function messages(): array
+    {
+        return [];
+    }
+
+    /**
+     * Transform request to data object.
+     *
+     * @return {{modelName}}Data
+     */
+    public function toData(): {{modelName}}Data
+    {
+        return new {{modelName}}Data(
+            // Add {{modelName}}Data properties here
+            id: $this->route('{{modelNameId}}'),
+            authUser: $this->getAuthUserData(),
+            meta: $this->getMetaData()
+        );
+    }
+
+    /**
+     * Transform request to filter data object.
+     *
+     * @return {{modelName}}FilterData
+     */
+    public function toFilterData(): {{modelName}}FilterData
+    {
+        return new {{modelName}}FilterData(
+            // Add {{modelName}}FilterData properties here
+            id: $this->getInputAsInt('id'),
+            authUser: $this->getAuthUserData(),
+            meta: $this->getMetaData()
+        );
+    }
+
+}

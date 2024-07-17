@@ -1,0 +1,115 @@
+<?php
+
+namespace App\Services;
+
+use App\Data\{{modelName}}Data;
+use App\Data\{{modelName}}FilterData;
+use App\Data\ServiceResponseData;
+use App\Repositories\{{modelName}}Repository;
+use App\Utils\ServiceResponseUtil;
+
+class {{modelName}}Service
+{
+
+    public function __construct(
+        private readonly {{modelName}}Repository ${{modelNameCamelCase}}Repository
+    )
+    {
+    }
+
+    /**
+     * Create {{modelNameSpaceCase}}.
+     *
+     * @param {{modelName}}Data ${{modelNameCamelCase}}Data
+     *
+     * @return ServiceResponseData
+     */
+    public function create({{modelName}}Data ${{modelNameCamelCase}}Data): ServiceResponseData
+    {
+        ${{modelNameCamelCase}} = $this->{{modelNameCamelCase}}Repository->save(${{modelNameCamelCase}}Data);
+
+        if (empty(${{modelNameCamelCase}})) {
+            return ServiceResponseUtil::error('Failed to create {{modelNameSpaceCase}}.');
+        }
+
+        return ServiceResponseUtil::success('{{modelNameUpperFirstSpaceCase}} successfully added.', ${{modelNameCamelCase}});
+    }
+
+    /**
+     * Get paginated {{modelNameSpaceCase}}s.
+     *
+     * @param {{modelName}}FilterData ${{modelNameCamelCase}}FilterData
+     *
+     * @return ServiceResponseData
+     */
+    public function getPaginated({{modelName}}FilterData ${{modelNameCamelCase}}FilterData): ServiceResponseData
+    {
+        return ServiceResponseUtil::map(
+            $this->{{modelNameCamelCase}}Repository->getPaginated(${{modelNameCamelCase}}FilterData)
+        );
+    }
+
+    /**
+     * Get {{modelNameSpaceCase}} by id.
+     *
+     * @param int $id
+     * @param array $relations
+     *
+     * @return ServiceResponseData
+     */
+    public function getById(int $id, array $relations = []): ServiceResponseData
+    {
+        return ServiceResponseUtil::map(
+            $this->{{modelNameCamelCase}}Repository->findById($id, $relations)
+        );
+    }
+
+    /**
+     * Update {{modelNameSpaceCase}}.
+     *
+     * @param {{modelName}}Data ${{modelNameCamelCase}}Data
+     *
+     * @return ServiceResponseData
+     */
+    public function update({{modelName}}Data ${{modelNameCamelCase}}Data): ServiceResponseData
+    {
+        ${{modelNameCamelCase}} = $this->{{modelNameCamelCase}}Repository->findById(${{modelNameCamelCase}}Data->id);
+
+        if (empty(${{modelNameCamelCase}})) {
+            return ServiceResponseUtil::error('Failed to update {{modelNameSpaceCase}}.');
+        }
+
+        ${{modelNameCamelCase}} = $this->{{modelNameCamelCase}}Repository->save(${{modelNameCamelCase}}Data, ${{modelNameCamelCase}});
+
+        if (empty(${{modelNameCamelCase}})) {
+            return ServiceResponseUtil::error('Failed to update {{modelNameSpaceCase}}.');
+        }
+
+        return ServiceResponseUtil::success('{{modelNameUpperFirstSpaceCase}} successfully updated.', ${{modelNameCamelCase}});
+    }
+
+    /**
+     * Delete {{modelNameSpaceCase}}.
+     *
+     * @param int $id
+     *
+     * @return ServiceResponseData
+     */
+    public function delete(int $id): ServiceResponseData
+    {
+        ${{modelNameCamelCase}} = $this->{{modelNameCamelCase}}Repository->findById($id);
+
+        if (empty(${{modelNameCamelCase}})) {
+            return ServiceResponseUtil::error('Failed to delete {{modelNameSpaceCase}}.');
+        }
+
+        $isDeleted = $this->{{modelNameCamelCase}}Repository->delete($id);
+
+        if (!$isDeleted) {
+            return ServiceResponseUtil::error('Failed to delete {{modelNameSpaceCase}}.');
+        }
+
+        return ServiceResponseUtil::success('{{modelNameUpperFirstSpaceCase}} successfully deleted.');
+    }
+
+}

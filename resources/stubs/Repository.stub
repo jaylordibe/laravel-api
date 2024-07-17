@@ -1,0 +1,103 @@
+<?php
+
+namespace App\Repositories;
+
+use App\Data\{{modelName}}Data;
+use App\Data\{{modelName}}FilterData;
+use App\Models\{{modelName}};
+use Exception;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Log;
+
+class {{modelName}}Repository
+{
+
+    /**
+     * Save {{modelNameSpaceCase}}.
+     *
+     * @param {{modelName}}Data ${{modelNameCamelCase}}Data
+     * @param {{modelName}}|null ${{modelNameCamelCase}}
+     *
+     * @return {{modelName}}|null
+     */
+    public function save({{modelName}}Data ${{modelNameCamelCase}}Data, ?{{modelName}} ${{modelNameCamelCase}} = null): ?{{modelName}}
+    {
+        ${{modelNameCamelCase}} ??= new {{modelName}}();
+        ${{modelNameCamelCase}}->save();
+
+        return $this->findById(${{modelNameCamelCase}}->id);
+    }
+
+    /**
+     * Find {{modelNameSpaceCase}} by id.
+     *
+     * @param int $id
+     * @param array $relations
+     *
+     * @return {{modelName}}|null
+     */
+    public function findById(int $id, array $relations = []): ?{{modelName}}
+    {
+        return {{modelName}}::with($relations)->firstWhere('id', $id);
+    }
+
+    /**
+     * Checks if the {{modelNameSpaceCase}} exists.
+     *
+     * @param int $id
+     *
+     * @return bool
+     */
+    public function exists(int $id): bool
+    {
+        return {{modelName}}::where('id', $id)->exists();
+    }
+
+    /**
+     * Get paginated {{modelNameSpaceCase}}s.
+     *
+     * @param {{modelName}}FilterData ${{modelNameCamelCase}}FilterData
+     *
+     * @return LengthAwarePaginator
+     */
+    public function getPaginated({{modelName}}FilterData ${{modelNameCamelCase}}FilterData): LengthAwarePaginator
+    {
+        ${{modelNameCamelCasePlural}} = {{modelName}}::with(${{modelNameCamelCase}}FilterData->meta->relations);
+
+        if (!empty(${{modelNameCamelCase}}FilterData->id)) {
+            ${{modelNameCamelCasePlural}}->where(function (Builder $queryBuilder) use (${{modelNameCamelCase}}FilterData) {
+                $queryBuilder->where('id', ${{modelNameCamelCase}}FilterData->id);
+            });
+        }
+
+        return ${{modelNameCamelCasePlural}}->orderBy(
+            ${{modelNameCamelCase}}FilterData->meta->sortField,
+            ${{modelNameCamelCase}}FilterData->meta->sortDirection
+        )->paginate(${{modelNameCamelCase}}FilterData->meta->limit);
+    }
+
+    /**
+     * Delete {{modelNameSpaceCase}}.
+     *
+     * @param int $id
+     *
+     * @return bool
+     */
+    public function delete(int $id): bool
+    {
+        ${{modelNameCamelCase}} = $this->findById($id);
+
+        if (empty(${{modelNameCamelCase}})) {
+            return false;
+        }
+
+        try {
+            return (bool) ${{modelNameCamelCase}}->delete();
+        } catch (Exception $e) {
+            Log::error("Delete {{modelNameUpperWordSpaceCase}} Exception: {$e->getMessage()}");
+            return false;
+        }
+    }
+
+}

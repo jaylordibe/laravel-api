@@ -1,0 +1,16 @@
+<?php
+
+namespace App\Data;
+
+class {{modelName}}FilterData extends BaseData
+{
+
+    public function __construct(
+        // Add {{modelName}}FilterData properties here
+        ...$args
+    )
+    {
+        parent::__construct(...$args);
+    }
+
+}

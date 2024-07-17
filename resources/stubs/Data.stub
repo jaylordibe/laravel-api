@@ -1,0 +1,16 @@
+<?php
+
+namespace App\Data;
+
+class {{modelName}}Data extends BaseData
+{
+
+    public function __construct(
+        // Add {{modelName}}Data properties here
+        ...$args
+    )
+    {
+        parent::__construct(...$args);
+    }
+
+}
