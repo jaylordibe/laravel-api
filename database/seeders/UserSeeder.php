@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Constants\PermissionConstant;
 use App\Constants\RoleConstant;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
@@ -30,7 +31,7 @@ class UserSeeder extends Seeder
         ]);
 
         // Assign user role
-        $systemAdminRole = Role::findByName(RoleConstant::SYSTEM_ADMIN, 'api');
+        $systemAdminRole = Role::findByName(RoleConstant::SYSTEM_ADMIN, PermissionConstant::getApiGuard());
         $user->assignRole($systemAdminRole);
 
         // Create app admin user
@@ -44,7 +45,7 @@ class UserSeeder extends Seeder
         ]);
 
         // Assign user role
-        $systemAdminRole = Role::findByName(RoleConstant::APP_ADMIN, 'api');
+        $systemAdminRole = Role::findByName(RoleConstant::APP_ADMIN, PermissionConstant::getApiGuard());
         $user->assignRole($systemAdminRole);
     }
 

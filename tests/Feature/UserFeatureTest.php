@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Support\Str;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class UserFeatureTest extends TestCase
@@ -28,9 +29,7 @@ class UserFeatureTest extends TestCase
         ];
     }
 
-    /**
-     * A basic test in signing up a user.
-     */
+    #[Test]
     public function testSignUpUser(): void
     {
         $payload = $this->getPayload();
@@ -50,9 +49,7 @@ class UserFeatureTest extends TestCase
         $response->assertOk()->assertJson($payload);
     }
 
-    /**
-     * A basic test in getting authenticated user by id.
-     */
+    #[Test]
     public function testGetAuthUser(): void
     {
         $token = $this->loginSystemAdminUser();
@@ -61,9 +58,7 @@ class UserFeatureTest extends TestCase
         $response->assertOk();
     }
 
-    /**
-     * A basic test in updating auth user's username.
-     */
+    #[Test]
     public function testUpdateAuthUserName(): void
     {
         $user = User::factory()->create();
@@ -74,9 +69,7 @@ class UserFeatureTest extends TestCase
         $response->assertOk()->assertJson(['username' => $payload['username']]);
     }
 
-    /**
-     * A basic test in updating auth user's email.
-     */
+    #[Test]
     public function testUpdateAuthUserEmail(): void
     {
         $user = User::factory()->create();
@@ -87,9 +80,7 @@ class UserFeatureTest extends TestCase
         $response->assertOk()->assertJson(['email' => $payload['email']]);
     }
 
-    /**
-     * A basic test in creating a user.
-     */
+    #[Test]
     public function testCreateUser(): void
     {
         $token = $this->loginSystemAdminUser();
@@ -110,9 +101,7 @@ class UserFeatureTest extends TestCase
         $response->assertOk()->assertJson($payload);
     }
 
-    /**
-     * A basic test in getting paginated users.
-     */
+    #[Test]
     public function testGetPaginatedUsers(): void
     {
         $token = $this->loginSystemAdminUser();
@@ -121,9 +110,7 @@ class UserFeatureTest extends TestCase
         $response->assertOk()->assertJsonStructure(['data', 'links', 'meta']);
     }
 
-    /**
-     * A basic test in getting user by id.
-     */
+    #[Test]
     public function testGetUserById(): void
     {
         $token = $this->loginSystemAdminUser();
@@ -133,9 +120,7 @@ class UserFeatureTest extends TestCase
         $response->assertOk()->assertJson(['id' => $response->json()['id']]);
     }
 
-    /**
-     * A basic test in updating a user.
-     */
+    #[Test]
     public function testUpdateUser(): void
     {
         $token = $this->loginSystemAdminUser();
@@ -149,9 +134,7 @@ class UserFeatureTest extends TestCase
         $response->assertOk()->assertJson($payload);
     }
 
-    /**
-     * A basic test in deleting a user.
-     */
+    #[Test]
     public function testDeleteUser(): void
     {
         $token = $this->loginSystemAdminUser();

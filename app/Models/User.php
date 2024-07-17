@@ -18,6 +18,7 @@ use Spatie\Permission\Models\Role;
 use Spatie\Permission\Traits\HasRoles;
 
 /**
+ * Model properties
  * @property int $id
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -74,14 +75,17 @@ class User extends Authenticatable
     ];
 
     /**
-     * The attributes that should be cast.
+     * Get the attributes that should be cast.
      *
-     * @var array<string, string>
+     * @return array<string, string>
      */
-    protected $casts = [
-        'email_verified_at' => 'datetime',
-        'birthday' => 'datetime',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'email_verified_at' => 'datetime',
+            'password' => 'hashed',
+        ];
+    }
 
     /**
      * The accessors to append to the model's array form.
@@ -98,7 +102,7 @@ class User extends Authenticatable
     protected function fullName(): Attribute
     {
         return Attribute::make(
-            get: fn (mixed $value, array $attributes) => "{$attributes['first_name']} {$attributes['last_name']}"
+            get: fn(mixed $value, array $attributes) => "{$attributes['first_name']} {$attributes['last_name']}"
         );
     }
 

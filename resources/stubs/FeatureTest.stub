@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\{{modelName}};
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class {{modelName}}FeatureTest extends TestCase
@@ -22,13 +23,7 @@ class {{modelName}}FeatureTest extends TestCase
         ];
     }
 
-    /**
-     * @test
-     *
-     * A basic unit test in creating {{modelNameSpaceCase}}.
-     *
-     * @return void
-     */
+    #[Test]
     public function testCreate{{modelName}}(): void
     {
         $token = $this->loginSystemAdminUser();
@@ -38,13 +33,7 @@ class {{modelName}}FeatureTest extends TestCase
         $response->assertOk()->assertJson($payload);
     }
 
-    /**
-     * @test
-     *
-     * A basic unit test in getting paginated {{modelNameSpaceCasePlural}}.
-     *
-     * @return void
-     */
+    #[Test]
     public function testGetPaginated{{modelNamePlural}}(): void
     {
         $token = $this->loginSystemAdminUser();
@@ -66,13 +55,7 @@ class {{modelName}}FeatureTest extends TestCase
         $this->assertNotEmpty($meta);
     }
 
-    /**
-     * @test
-     *
-     * A basic unit test in getting {{modelNameSpaceCase}} by id.
-     *
-     * @return void
-     */
+    #[Test]
     public function testGet{{modelName}}ById(): void
     {
         $token = $this->loginSystemAdminUser();
@@ -82,13 +65,7 @@ class {{modelName}}FeatureTest extends TestCase
         $response->assertOk()->assertJson(['id' => ${{modelNameCamelCase}}->id]);
     }
 
-    /**
-     * @test
-     *
-     * A basic unit test in updating {{modelNameSpaceCase}}.
-     *
-     * @return void
-     */
+    #[Test]
     public function testUpdate{{modelName}}(): void
     {
         $token = $this->loginSystemAdminUser();
@@ -102,13 +79,7 @@ class {{modelName}}FeatureTest extends TestCase
         $response->assertOk()->assertJson($payload);
     }
 
-    /**
-     * @test
-     *
-     * A basic unit test in deleting {{modelNameSpaceCase}}.
-     *
-     * @return void
-     */
+    #[Test]
     public function testDelete{{modelName}}(): void
     {
         $token = $this->loginSystemAdminUser();

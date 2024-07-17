@@ -44,16 +44,14 @@ class Address extends BaseModel
     protected function completeAddress(): Attribute
     {
         return Attribute::make(
-            get: function (mixed $value, array $attributes) {
-                $address = $attributes['address'] ?? '';
-                $villageOrBarangay = $attributes['village_or_barangay'] ?? '';
-                $cityOrMunicipality = $attributes['city_or_municipality'] ?? '';
-                $stateOrProvince = $attributes['state_or_province'] ?? '';
-                $zipOrPostalCode = $attributes['zip_or_postal_code'] ?? '';
-                $country = $attributes['country'] ?? '';
-
-                return "{$address} {$villageOrBarangay} {$cityOrMunicipality} {$stateOrProvince} {$zipOrPostalCode} {$country}";
-            }
+            get: fn(mixed $value, array $attributes) => implode(' ', array_filter([
+                $attributes['address'] ?? '',
+                $attributes['village_or_barangay'] ?? '',
+                $attributes['city_or_municipality'] ?? '',
+                $attributes['state_or_province'] ?? '',
+                $attributes['zip_or_postal_code'] ?? '',
+                $attributes['country'] ?? ''
+            ], fn(string $component) => !empty($component)))
         );
     }
 

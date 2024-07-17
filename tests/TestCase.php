@@ -9,8 +9,6 @@ use Illuminate\Support\Carbon;
 abstract class TestCase extends BaseTestCase
 {
 
-    use CreatesApplication;
-
     /**
      * Login.
      *

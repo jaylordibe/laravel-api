@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use Illuminate\Support\Facades\Log;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class AuthFeatureTest extends TestCase
@@ -23,9 +24,7 @@ class AuthFeatureTest extends TestCase
         ];
     }
 
-    /**
-     * A basic test in signing in.
-     */
+    #[Test]
     public function testSignIn(): void
     {
         $payload = $this->getPayload();
@@ -34,9 +33,7 @@ class AuthFeatureTest extends TestCase
         $response->assertOk()->assertJsonStructure(['token']);
     }
 
-    /**
-     * A basic test in signing out.
-     */
+    #[Test]
     public function testSignOut(): void
     {
         $token = $this->loginSystemAdminUser();

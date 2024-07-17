@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Address;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class AddressFeatureTest extends TestCase
@@ -27,9 +28,7 @@ class AddressFeatureTest extends TestCase
         ];
     }
 
-    /**
-     * A basic test in creating an address.
-     */
+    #[Test]
     public function testCreateAddress(): void
     {
         $token = $this->loginSystemAdminUser();
@@ -39,9 +38,7 @@ class AddressFeatureTest extends TestCase
         $response->assertOk()->assertJson($payload);
     }
 
-    /**
-     * A basic test in getting paginated addresses.
-     */
+    #[Test]
     public function testGetPaginatedAddresses(): void
     {
         $token = $this->loginSystemAdminUser();
@@ -64,9 +61,7 @@ class AddressFeatureTest extends TestCase
         $this->assertNotEmpty($meta);
     }
 
-    /**
-     * A basic test in getting an address by id.
-     */
+    #[Test]
     public function testGetAddressById(): void
     {
         $token = $this->loginSystemAdminUser();
@@ -78,9 +73,7 @@ class AddressFeatureTest extends TestCase
         $response->assertOk()->assertJson(['id' => $response->json('id')]);
     }
 
-    /**
-     * A basic test in updating an address.
-     */
+    #[Test]
     public function testUpdateAddress(): void
     {
         $token = $this->loginSystemAdminUser();
@@ -96,9 +89,7 @@ class AddressFeatureTest extends TestCase
         $response->assertOk()->assertJson($payload);
     }
 
-    /**
-     * A basic test in deleting an address.
-     */
+    #[Test]
     public function testDeleteAddress(): void
     {
         $token = $this->loginSystemAdminUser();

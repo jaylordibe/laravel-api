@@ -6,10 +6,11 @@ use App\Constants\DatabaseTableConstant;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
+ * Model properties
  * @property ...
  *
  * Model relationships
- * @property ...
+ * @property-read ...
  */
 class {{modelName}} extends BaseModel
 {
@@ -31,10 +32,13 @@ class {{modelName}} extends BaseModel
     protected $fillable = [];
 
     /**
-     * The attributes that should be cast to native types.
+     * Get the attributes that should be cast.
      *
-     * @var array
+     * @return array<string, string>
      */
-    protected $casts = [];
+    protected function casts(): array
+    {
+        return [];
+    }
 
 }

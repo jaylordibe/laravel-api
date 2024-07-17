@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Constants\AppVersionPlatformConstant;
 use App\Models\AppVersion;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class AppVersionFeatureTest extends TestCase
@@ -28,13 +29,7 @@ class AppVersionFeatureTest extends TestCase
         ];
     }
 
-    /**
-     * @test
-     *
-     * A basic unit test in creating app version.
-     *
-     * @return void
-     */
+    #[Test]
     public function testCreateAppVersion(): void
     {
         $token = $this->loginSystemAdminUser();
@@ -44,13 +39,7 @@ class AppVersionFeatureTest extends TestCase
         $response->assertOk()->assertJson($payload);
     }
 
-    /**
-     * @test
-     *
-     * A basic unit test in getting paginated app versions.
-     *
-     * @return void
-     */
+    #[Test]
     public function testGetPaginatedAppVersions(): void
     {
         $token = $this->loginSystemAdminUser();
@@ -72,13 +61,7 @@ class AppVersionFeatureTest extends TestCase
         $this->assertNotEmpty($meta);
     }
 
-    /**
-     * @test
-     *
-     * A basic unit test in getting app version by id.
-     *
-     * @return void
-     */
+    #[Test]
     public function testGetAppVersionById(): void
     {
         $token = $this->loginSystemAdminUser();
@@ -88,13 +71,7 @@ class AppVersionFeatureTest extends TestCase
         $response->assertOk()->assertJson(['id' => $appVersion->id]);
     }
 
-    /**
-     * @test
-     *
-     * A basic unit test in getting the latest app version by platform.
-     *
-     * @return void
-     */
+    #[Test]
     public function testGetLatestAppVersionByPlatform(): void
     {
         $appVersion = AppVersion::factory()->create(['release_date' => now()->addMonth()]);
@@ -103,13 +80,7 @@ class AppVersionFeatureTest extends TestCase
         $response->assertOk()->assertJson(['id' => $appVersion->id]);
     }
 
-    /**
-     * @test
-     *
-     * A basic unit test in updating app version.
-     *
-     * @return void
-     */
+    #[Test]
     public function testUpdateAppVersion(): void
     {
         $token = $this->loginSystemAdminUser();
@@ -124,13 +95,7 @@ class AppVersionFeatureTest extends TestCase
         $response->assertOk()->assertJson($payload);
     }
 
-    /**
-     * @test
-     *
-     * A basic unit test in deleting app version.
-     *
-     * @return void
-     */
+    #[Test]
     public function testDeleteAppVersion(): void
     {
         $token = $this->loginSystemAdminUser();

@@ -2,14 +2,13 @@
 
 namespace Tests\Unit;
 
-use Tests\TestCase;
+use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\TestCase;
 
 class AppVersionUnitTest extends TestCase
 {
 
-    /**
-     * A basic test example.
-     */
+    #[Test]
     public function testUnit(): void
     {
         $this->assertTrue(true);
