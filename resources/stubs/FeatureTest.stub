@@ -11,30 +11,18 @@ class {{modelName}}FeatureTest extends TestCase
 
     private string $resource = '/api/{{modelNameKebabCasePlural}}';
 
-    /**
-     * Get {{modelNameSpaceCase}} payload.
-     *
-     * @return array
-     */
-    private function getPayload(): array
-    {
-        return [
-            // Add the request payload here
-        ];
-    }
-
     #[Test]
-    public function testCreate{{modelName}}(): void
+    public function testCreate(): void
     {
         $token = $this->loginSystemAdminUser();
-        $payload = $this->getPayload();
+        $payload = [];
         $response = $this->withToken($token)->post($this->resource, $payload);
 
         $response->assertOk()->assertJson($payload);
     }
 
     #[Test]
-    public function testGetPaginated{{modelNamePlural}}(): void
+    public function testGetPaginated(): void
     {
         $token = $this->loginSystemAdminUser();
         {{modelName}}::factory()->count(15)->create();
@@ -56,7 +44,7 @@ class {{modelName}}FeatureTest extends TestCase
     }
 
     #[Test]
-    public function testGet{{modelName}}ById(): void
+    public function testGetById(): void
     {
         $token = $this->loginSystemAdminUser();
         ${{modelNameCamelCase}} = {{modelName}}::factory()->create();
@@ -66,7 +54,7 @@ class {{modelName}}FeatureTest extends TestCase
     }
 
     #[Test]
-    public function testUpdate{{modelName}}(): void
+    public function testUpdate(): void
     {
         $token = $this->loginSystemAdminUser();
         ${{modelNameCamelCase}} = {{modelName}}::factory()->create();
@@ -80,7 +68,7 @@ class {{modelName}}FeatureTest extends TestCase
     }
 
     #[Test]
-    public function testDelete{{modelName}}(): void
+    public function testDelete(): void
     {
         $token = $this->loginSystemAdminUser();
         ${{modelNameCamelCase}} = {{modelName}}::factory()->create();
