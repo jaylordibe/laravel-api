@@ -21,7 +21,7 @@ COMMANDS="
     php artisan key:generate
     php artisan migrate:fresh --seed --env=testing
     php artisan passport:keys --force
-    echo -e '\n' | php artisan passport:client --personal
+    echo -e '\n' | php artisan passport:client --personal --env=testing
     php artisan test --parallel
 "
 
