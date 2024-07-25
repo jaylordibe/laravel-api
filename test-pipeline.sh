@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -e
 
+cp .env.example .env
+
 docker compose down -v
 docker compose up -d laravel.test
 docker compose exec laravel.test composer install
