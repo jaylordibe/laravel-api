@@ -2,6 +2,7 @@
 set -e
 
 cp .env.example .env
+source .env
 
 docker compose down -v
 docker compose up -d laravel.test
