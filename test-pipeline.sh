@@ -4,7 +4,7 @@ set -e
 cp .env.example .env
 docker compose down -v
 docker compose up -d laravel.test
-docker compose exec laravel.test composer update
+docker compose exec laravel.test composer install --prefer-dist --no-progress --no-suggest
 docker compose down
 
 ./vendor/bin/sail up -d
