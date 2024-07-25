@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 set -e
 
+docker compose down -v
+docker compose up -d laravel.test
+docker compose exec laravel.test composer install
+docker compose down
+
 ./vendor/bin/sail up -d
 ./vendor/bin/sail composer install
 ./vendor/bin/sail artisan migrate:fresh --seed --env=testing
