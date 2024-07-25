@@ -4,7 +4,7 @@ set -e
 cp .env.example .env
 source .env
 
-./vendor/bin/sail up -d
+./vendor/bin/sail up -d laravel.test mysql
 ./vendor/bin/sail composer install
 ./vendor/bin/sail artisan migrate:fresh --seed --env=testing
 echo -e "\n" | ./vendor/bin/sail artisan passport:client --personal --env=testing
