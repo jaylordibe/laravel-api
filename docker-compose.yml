@@ -4,7 +4,6 @@ services:
         container_name: laravel-api
         restart: unless-stopped
         tty: true
-        platform: linux/x86_64
         ports:
             - "8000:80"
         volumes:

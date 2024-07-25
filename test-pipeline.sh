@@ -18,9 +18,10 @@ COMMANDS="
     chmod -R 777 storage
     chmod -R 777 bootstrap/cache
     composer install --prefer-dist --no-progress --no-interaction
+    php artisan key:generate
     php artisan migrate:fresh --seed --env=testing
-    php artisan passport:install --env=testing
-    php artisan passport:keys --env=testing
+    php artisan passport:keys --force
+    echo -e '\n' | php artisan passport:client --personal
     php artisan test --parallel
 "
 

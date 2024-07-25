@@ -52,10 +52,10 @@ if [ "$TYPE" = "fresh" ]; then
     chmod -R 777 storage
     chmod -R 777 bootstrap/cache
     composer update
-    php artisan migrate:fresh --seed
     php artisan key:generate
-    php artisan passport:install
-    php artisan passport:keys
+    php artisan migrate:fresh --seed
+    php artisan passport:keys --force
+    echo -e '\n' | php artisan passport:client --personal
     "
 else
     COMMANDS="

@@ -13,8 +13,6 @@ fi
 
 COMMANDS="
 php artisan migrate:fresh --seed --env=testing
-php artisan passport:install --env=testing
-php artisan passport:keys --env=testing
 php artisan test --parallel $FILTER
 "
 
