@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-cp .env.example .env
+cp .env.testing .env
 source .env
 
 ./vendor/bin/sail up -d
