@@ -2,6 +2,7 @@
 set -e
 
 cp .env.example .env
+source .env
 
 ./vendor/bin/sail up -d
 ./vendor/bin/sail composer install
