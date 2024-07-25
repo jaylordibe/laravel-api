@@ -1,6 +1,6 @@
 services:
     laravel-api:
-        image: jaylordibe/laravel-php
+        image: jaylordibe/laravel-php:8.3
         container_name: laravel-api
         restart: unless-stopped
         tty: true
