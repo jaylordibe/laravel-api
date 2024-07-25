@@ -5,7 +5,6 @@ type=$1
 
 if [ "$type" = "fresh" ]; then
     if [[ -d "vendor" ]]; then
-        echo -e "\033[0m \033[1;35m Removing existing database data \033[0m"
         rm -r vendor
     fi
 
