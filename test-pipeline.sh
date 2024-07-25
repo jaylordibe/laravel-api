@@ -2,10 +2,12 @@
 set -e
 
 cp .env.example .env
-docker compose down -v
-docker compose up -d laravel.test
-docker compose exec laravel.test composer install --prefer-dist --no-progress --no-suggest
-docker compose down
+docker run --rm \
+    --pull=always \
+    -v "$(pwd)":/opt \
+    -w /opt \
+    laravelsail/php83-composer:latest \
+    bash -c "composer install --prefer-dist --no-progress --no-suggest"
 
 ./vendor/bin/sail up -d
 ./vendor/bin/sail composer install --prefer-dist --no-progress --no-suggest

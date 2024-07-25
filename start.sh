@@ -4,11 +4,17 @@ set -e
 type=$1
 
 if [ "$type" = "fresh" ]; then
-    docker compose down -v
-    docker compose up -d laravel.test
-    docker compose exec laravel.test composer update
-    docker compose down
-#    ./vendor/bin/sail build --no-cache
+    if [[ -d "vendor" ]]; then
+        echo -e "\033[0m \033[1;35m Removing existing database data \033[0m"
+        rm -r vendor
+    fi
+
+    docker run --rm \
+        --pull=always \
+        -v "$(pwd)":/opt \
+        -w /opt \
+        laravelsail/php83-composer:latest \
+        bash -c "composer install"
 
     ./vendor/bin/sail up -d
     ./vendor/bin/sail composer update
