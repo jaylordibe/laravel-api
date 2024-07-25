@@ -18,7 +18,8 @@ class {{modelName}}FeatureTest extends TestCase
         $payload = [];
         $response = $this->withToken($token)->post($this->resource, $payload);
 
-        $response->assertOk()->assertJson($payload);
+        $expected = [];
+        $response->assertOk()->assertJson($expected);
     }
 
     #[Test]
@@ -28,7 +29,12 @@ class {{modelName}}FeatureTest extends TestCase
         {{modelName}}::factory()->count(15)->create();
         $response = $this->withToken($token)->get($this->resource);
 
-        $response->assertOk()->assertJsonStructure(['data', 'links', 'meta']);
+        $expected = [
+            'data',
+            'links',
+            'meta'
+        ];
+        $response->assertOk()->assertJsonStructure($expected);
 
         $data = $response->json('data');
         $this->assertIsArray($data);
@@ -50,7 +56,10 @@ class {{modelName}}FeatureTest extends TestCase
         ${{modelNameCamelCase}} = {{modelName}}::factory()->create();
         $response = $this->withToken($token)->get("{$this->resource}/{${{modelNameCamelCase}}->id}");
 
-        $response->assertOk()->assertJson(['id' => ${{modelNameCamelCase}}->id]);
+        $expected = [
+            'id' => ${{modelNameCamelCase}}->id
+        ];
+        $response->assertOk()->assertJson($expected);
     }
 
     #[Test]
@@ -58,13 +67,14 @@ class {{modelName}}FeatureTest extends TestCase
     {
         $token = $this->loginSystemAdminUser();
         ${{modelNameCamelCase}} = {{modelName}}::factory()->create();
-        $payload = $this->getPayload();
+        $payload = [];
         $response = $this->withToken($token)->put("{$this->resource}/{${{modelNameCamelCase}}->id}", $payload);
 
         // For assertion
-        $payload['id'] = ${{modelNameCamelCase}}->id;
-
-        $response->assertOk()->assertJson($payload);
+        $expected = [
+            'id' => ${{modelNameCamelCase}}->id
+        ];
+        $response->assertOk()->assertJson($expected);
     }
 
     #[Test]
@@ -74,7 +84,10 @@ class {{modelName}}FeatureTest extends TestCase
         ${{modelNameCamelCase}} = {{modelName}}::factory()->create();
         $response = $this->withToken($token)->delete("{$this->resource}/{${{modelNameCamelCase}}->id}");
 
-        $response->assertOk()->assertJsonStructure(['success']);
+        $expected = [
+            'success'
+        ];
+        $response->assertOk()->assertJsonStructure($expected);
     }
 
 }
