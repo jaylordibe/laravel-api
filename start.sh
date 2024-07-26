@@ -2,10 +2,12 @@
 set -e
 set -a
 
-echo -e "\033[0m \033[1;35m Stopping existing services \033[0m"
-docker compose down
-
 TYPE=$1
+
+if [[ -f ".env" ]]; then
+    echo -e "\033[0m \033[1;35m Stopping existing services \033[0m"
+    docker compose down
+fi
 
 if [ "$TYPE" = "fresh" ]; then
     if [[ -f ".env" ]]; then

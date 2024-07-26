@@ -4,6 +4,7 @@ services:
         container_name: laravel-api
         restart: unless-stopped
         tty: true
+        platform: linux/amd64
         ports:
             - "8000:80"
         volumes:
@@ -16,7 +17,7 @@ services:
         container_name: laravel-db
         restart: unless-stopped
         tty: true
-        platform: linux/x86_64
+        platform: linux/amd64
         ports:
             - "3307:3306"
         environment:
@@ -33,7 +34,7 @@ services:
         container_name: laravel-db-gui-admin
         restart: unless-stopped
         tty: true
-        platform: linux/x86_64
+        platform: linux/amd64
         ports:
             - "8001:80"
         environment:
@@ -46,7 +47,7 @@ services:
         container_name: laravel-db-test
         restart: unless-stopped
         tty: true
-        platform: linux/x86_64
+        platform: linux/amd64
         ports:
             - "3308:3306"
         environment:
@@ -63,7 +64,7 @@ services:
         container_name: laravel-db-test-gui-admin
         restart: unless-stopped
         tty: true
-        platform: linux/x86_64
+        platform: linux/amd64
         ports:
             - "8002:80"
         environment:
