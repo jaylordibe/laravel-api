@@ -6,7 +6,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 
-class CRUDGenerator extends Command
+class GenerateResourceCommand extends Command
 {
 
     /**
@@ -14,14 +14,14 @@ class CRUDGenerator extends Command
      *
      * @var string
      */
-    protected $signature = 'app:crud-generator {--model=}';
+    protected $signature = 'app:generate-resource {--model=}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Generate CRUD files';
+    protected $description = 'Generate resources for a model';
 
     /**
      * Execute the console command.
@@ -35,6 +35,8 @@ class CRUDGenerator extends Command
 
             return;
         }
+
+        $this->info(PHP_EOL . "Generating resources for {$modelName} model..." . PHP_EOL);
 
         if (!File::exists(app_path("Models/{$modelName}.php"))) {
             $this->createModelFile($modelName);
@@ -51,7 +53,7 @@ class CRUDGenerator extends Command
         $this->createServiceFile($modelName);
         $this->createRepositoryFile($modelName);
 
-        $this->info(PHP_EOL . "Done generating CRUD files for {$modelName} model" . PHP_EOL . PHP_EOL);
+        $this->info(PHP_EOL . "Done generating resources for {$modelName} model" . PHP_EOL);
     }
 
     /**
@@ -326,7 +328,7 @@ class CRUDGenerator extends Command
         $controllerClassName = "{$controllerClass}::class";
 
         $routeTemplate = <<<ROUTES
-        \n\t// CRUD routes for {$modelName}
+        \n\t// {$modelName} routes
         \tRoute::prefix('{$resourceName}')->group(function () {
             \tRoute::post('/', [{$controllerClassName}, 'create']);
             \tRoute::get('/', [{$controllerClassName}, 'getPaginated']);
