@@ -39,6 +39,9 @@ class ResetRolePermissionsCommand extends Command
             Permission::firstOrCreate(['name' => $permission, 'guard_name' => PermissionConstant::getApiGuard()]);
         }
 
+        // Delete old permissions that are not in the list
+        Permission::whereNotIn('name', $permissions)->where('guard_name', PermissionConstant::getApiGuard())->delete();
+
         // Create roles and assign existing permissions
         $roles = RoleConstant::asList();
 
@@ -46,6 +49,9 @@ class ResetRolePermissionsCommand extends Command
             $rolePermissions = PermissionConstant::fromRole($role);
             Role::firstOrCreate(['name' => $role, 'guard_name' => PermissionConstant::getApiGuard()])->givePermissionTo($rolePermissions);
         }
+
+        // Delete old roles that are not in the list
+        Role::whereNotIn('name', $roles)->where('guard_name', PermissionConstant::getApiGuard())->delete();
 
         $this->info(PHP_EOL . "Done resetting role permissions" . PHP_EOL);
     }
