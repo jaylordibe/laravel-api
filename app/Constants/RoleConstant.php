@@ -5,7 +5,7 @@ namespace App\Constants;
 class RoleConstant extends BaseConstant
 {
 
-    const SYSTEM_ADMIN = 'SYSTEM_ADMIN';
-    const APP_ADMIN = 'APP_ADMIN';
+    const string SYSTEM_ADMIN = 'SYSTEM_ADMIN';
+    const string APP_ADMIN = 'APP_ADMIN';
 
 }

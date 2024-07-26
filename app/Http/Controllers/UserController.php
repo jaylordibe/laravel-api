@@ -13,6 +13,7 @@ use App\Utils\ResponseUtil;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 
 class UserController extends Controller
@@ -52,7 +53,7 @@ class UserController extends Controller
     public function getAuthUser(GenericRequest $request): JsonResponse|JsonResource
     {
         $relations = ['roles', 'permissions'];
-        $serviceResponse = $this->userService->getById($request->getAuthUser()->id, $relations);
+        $serviceResponse = $this->userService->getById(Auth::user()->id, $relations);
 
         if ($serviceResponse->error) {
             return ResponseUtil::error($serviceResponse->message);
@@ -76,7 +77,7 @@ class UserController extends Controller
             return ResponseUtil::error('Username is required.');
         }
 
-        $serviceResponse = $this->userService->updateUsername($request->getAuthUser()->id, $username);
+        $serviceResponse = $this->userService->updateUsername(Auth::user()->id, $username);
 
         if ($serviceResponse->error) {
             return ResponseUtil::error($serviceResponse->message);
@@ -100,7 +101,7 @@ class UserController extends Controller
             return ResponseUtil::error('Email is required.');
         }
 
-        $serviceResponse = $this->userService->updateEmail($request->getAuthUser()->id, $email);
+        $serviceResponse = $this->userService->updateEmail(Auth::user()->id, $email);
 
         if ($serviceResponse->error) {
             return ResponseUtil::error($serviceResponse->message);

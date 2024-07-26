@@ -5,10 +5,10 @@ namespace App\Constants;
 class PermissionConstant extends BaseConstant
 {
 
-    const CREATE_USER = 'CREATE_USER';
-    const READ_USER = 'READ_USER';
-    const UPDATE_USER = 'UPDATE_USER';
-    const DELETE_USER = 'DELETE_USER';
+    const string CREATE_USER = 'CREATE_USER';
+    const string READ_USER = 'READ_USER';
+    const string UPDATE_USER = 'UPDATE_USER';
+    const string DELETE_USER = 'DELETE_USER';
 
     /**
      * Get permissions by role.

@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Data\AddressData;
 use App\Data\AddressFilterData;
+use Illuminate\Support\Facades\Auth;
 
 class AddressRequest extends BaseRequest
 {
@@ -43,7 +44,7 @@ class AddressRequest extends BaseRequest
     public function toData(): AddressData
     {
         return new AddressData(
-            userId: $this->getAuthUser()->id,
+            userId: Auth::user()->id,
             address: $this->getInputAsString('address'),
             villageOrBarangay: $this->getInputAsString('villageOrBarangay'),
             cityOrMunicipality: $this->getInputAsString('cityOrMunicipality'),
@@ -64,7 +65,7 @@ class AddressRequest extends BaseRequest
     public function toFilterData(): AddressFilterData
     {
         return new AddressFilterData(
-            userId: $this->getAuthUser()->id,
+            userId: Auth::user()->id,
             address: $this->getInputAsString('address'),
             villageOrBarangay: $this->getInputAsString('villageOrBarangay'),
             cityOrMunicipality: $this->getInputAsString('cityOrMunicipality'),

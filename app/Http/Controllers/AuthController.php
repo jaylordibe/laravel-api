@@ -4,12 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\AuthRequest;
 use App\Http\Requests\GenericRequest;
-use App\Services\UserService;
 use App\Utils\ResponseUtil;
 use App\Utils\AppUtil;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Auth;
+use Laravel\Passport\PersonalAccessTokenResult;
 
 class AuthController extends Controller
 {
@@ -41,8 +41,11 @@ class AuthController extends Controller
             return ResponseUtil::error('Email not yet verified. Please check your email and verify.');
         }
 
+        /** @var PersonalAccessTokenResult $personalAccessTokenResult */
+        $personalAccessTokenResult = $user->createToken(config('app.name'));
+
         $response = [
-            'token' => $user->createToken(config('app.name'))->accessToken
+            'token' => $personalAccessTokenResult->accessToken
         ];
 
         return ResponseUtil::json($response);

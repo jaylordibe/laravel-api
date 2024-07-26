@@ -6,6 +6,7 @@ use Brick\Math\BigDecimal;
 use Brick\Math\Exception\MathException;
 use Illuminate\Contracts\Database\Eloquent\CastsAttributes;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Log;
 
 class BigDecimalCast implements CastsAttributes
 {
@@ -29,6 +30,12 @@ class BigDecimalCast implements CastsAttributes
         try {
             return BigDecimal::of($value);
         } catch (MathException $e) {
+            Log::warning('BigDecimalCast:get', [
+                'value' => $value,
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
             return BigDecimal::zero();
         }
     }
@@ -54,6 +61,11 @@ class BigDecimalCast implements CastsAttributes
         try {
             $newValue = BigDecimal::of($value);
         } catch (MathException $e) {
+            Log::warning('BigDecimalCast:get', [
+                'value' => $value,
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
             $newValue = BigDecimal::zero();
         }
 

@@ -5,7 +5,6 @@ namespace App\Http\Requests;
 use App\Constants\AppConstant;
 use App\Data\MetaData;
 use App\Data\UserData;
-use App\Models\User;
 use App\Utils\ResponseUtil;
 use Brick\Math\BigDecimal;
 use Brick\Math\BigInteger;
@@ -305,7 +304,7 @@ class BaseRequest extends FormRequest
      */
     public function getAuthUserData(): UserData
     {
-        $authUser = $this->getAuthUser();
+        $authUser = Auth::user();
 
         return new UserData(
             firstName: $authUser->first_name,
@@ -320,16 +319,6 @@ class BaseRequest extends FormRequest
             id: $authUser->id,
             createdAt: $authUser->created_at
         );
-    }
-
-    /**
-     * Get authenticated user.
-     *
-     * @return User
-     */
-    public function getAuthUser(): User
-    {
-        return Auth::user();
     }
 
 }

@@ -5,8 +5,8 @@ namespace App\Constants;
 class DatabaseTableConstant
 {
 
-    const USERS = 'users';
-    const APP_VERSIONS = 'app_versions';
-    const ADDRESSES = 'addresses';
+    const string USERS = 'users';
+    const string APP_VERSIONS = 'app_versions';
+    const string ADDRESSES = 'addresses';
 
 }
