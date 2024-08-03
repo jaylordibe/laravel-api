@@ -17,8 +17,6 @@ use Illuminate\Support\Carbon;
 class AppVersion extends BaseModel
 {
 
-    use SoftDeletes;
-
     /**
      * The table associated with the model.
      *
