@@ -34,6 +34,37 @@ class AppUtil
     }
 
     /**
+     * Transform a Philippine phone number to international format.
+     *
+     * @param string $phoneNumber
+     *
+     * @return string
+     */
+    public static function transformPhilippinePhoneNumberToInternationalFormat(string $phoneNumber): string
+    {
+        // Remove any non-digit characters except the leading '+'
+        $phoneNumber = preg_replace('/[^\d+]/', '', $phoneNumber);
+
+        // Check if the phone number starts with '+63'
+        if (str_starts_with($phoneNumber, '+63')) {
+            return $phoneNumber;
+        }
+
+        // Check if the phone number starts with '63' and prepend '+'
+        if (str_starts_with($phoneNumber, '63')) {
+            return '+' . $phoneNumber;
+        }
+
+        // If the phone number starts with '0', remove the '0' and prepend '+63'
+        if (str_starts_with($phoneNumber, '0')) {
+            return '+63' . substr($phoneNumber, 1);
+        }
+
+        // For any other case, assume it should be prefixed with '+63'
+        return '+63' . $phoneNumber;
+    }
+
+    /**
      * Generate a unique token.
      *
      * @param string $prefix
