@@ -32,7 +32,7 @@ class AppUtil
         $phoneNumber = preg_replace('/[^\d+]/', '', $phoneNumber);
 
         // Check if the phone number matches any of the valid patterns
-        $pattern = '/^(?:\+63|63|0)\d{10}$/';
+        $pattern = '/^(?:\+63|63|0)?\d{10}$/';
 
         return (bool) preg_match($pattern, $phoneNumber);
     }
