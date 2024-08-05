@@ -51,11 +51,11 @@ class ResponseUtil
      * Returns an empty object or resource with 200(OK) status code.
      *
      * @param string $resource
-     * @param object|array|null $data
+     * @param mixed $data
      *
      * @return JsonResponse|JsonResource
      */
-    public static function resource(string $resource, object|array|null $data): JsonResponse|JsonResource
+    public static function resource(string $resource, mixed $data): JsonResponse|JsonResource
     {
         $response = self::empty();
 

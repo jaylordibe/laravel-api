@@ -11,11 +11,11 @@ class ServiceResponseUtil
      * Create a success service response.
      *
      * @param string $message
-     * @param object|array|null $data
+     * @param mixed $data
      *
      * @return ServiceResponseData
      */
-    public static function success(string $message, object|array|null $data = null): ServiceResponseData
+    public static function success(string $message, mixed $data = null): ServiceResponseData
     {
         return new ServiceResponseData(
             success: true,
@@ -28,11 +28,11 @@ class ServiceResponseUtil
      * Create an error service response.
      *
      * @param string $message
-     * @param object|array|null $data
+     * @param mixed $data
      *
      * @return ServiceResponseData
      */
-    public static function error(string $message, object|array|null $data = null): ServiceResponseData
+    public static function error(string $message, mixed $data = null): ServiceResponseData
     {
         return new ServiceResponseData(
             error: true,
@@ -44,11 +44,11 @@ class ServiceResponseUtil
     /**
      * Create mapped service response.
      *
-     * @param object|array|null $data
+     * @param mixed $data
      *
      * @return ServiceResponseData
      */
-    public static function map(object|array|null $data = null): ServiceResponseData
+    public static function map(mixed $data = null): ServiceResponseData
     {
         return new ServiceResponseData(
             success: true,
