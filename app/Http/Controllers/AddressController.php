@@ -29,7 +29,7 @@ class AddressController extends Controller
     {
         $serviceResponse = $this->addressService->create($request->toData());
 
-        if ($serviceResponse->error) {
+        if ($serviceResponse->failed()) {
             return ResponseUtil::error($serviceResponse->message);
         }
 
@@ -46,7 +46,7 @@ class AddressController extends Controller
         $addressFilterData = AddressRequest::createFrom($request)->toFilterData();
         $serviceResponse = $this->addressService->getPaginated($addressFilterData);
 
-        if ($serviceResponse->error) {
+        if ($serviceResponse->failed()) {
             return ResponseUtil::error($serviceResponse->message);
         }
 
@@ -63,7 +63,7 @@ class AddressController extends Controller
     {
         $serviceResponse = $this->addressService->getById($addressId);
 
-        if ($serviceResponse->error) {
+        if ($serviceResponse->failed()) {
             return ResponseUtil::error($serviceResponse->message);
         }
 
@@ -80,7 +80,7 @@ class AddressController extends Controller
     {
         $serviceResponse = $this->addressService->update($request->toData());
 
-        if ($serviceResponse->error) {
+        if ($serviceResponse->failed()) {
             return ResponseUtil::error($serviceResponse->message);
         }
 
@@ -97,7 +97,7 @@ class AddressController extends Controller
     {
         $serviceResponse = $this->addressService->delete($addressId);
 
-        if ($serviceResponse->error) {
+        if ($serviceResponse->failed()) {
             return ResponseUtil::error($serviceResponse->message);
         }
 

@@ -12,15 +12,17 @@ class ServiceResponseUtil
      *
      * @param string $message
      * @param mixed $data
+     * @param int $statusCode
      *
      * @return ServiceResponseData
      */
-    public static function success(string $message, mixed $data = null): ServiceResponseData
+    public static function success(string $message, mixed $data = null, int $statusCode = 200): ServiceResponseData
     {
         return new ServiceResponseData(
             success: true,
             message: $message,
-            data: $data
+            data: $data,
+            statusCode: $statusCode
         );
     }
 
@@ -29,15 +31,17 @@ class ServiceResponseUtil
      *
      * @param string $message
      * @param mixed $data
+     * @param int $statusCode
      *
      * @return ServiceResponseData
      */
-    public static function error(string $message, mixed $data = null): ServiceResponseData
+    public static function error(string $message, mixed $data = null, int $statusCode = 400): ServiceResponseData
     {
         return new ServiceResponseData(
-            error: true,
+            success: false,
             message: $message,
-            data: $data
+            data: $data,
+            statusCode: $statusCode
         );
     }
 
@@ -45,15 +49,17 @@ class ServiceResponseUtil
      * Create mapped service response.
      *
      * @param mixed $data
+     * @param int $statusCode
      *
      * @return ServiceResponseData
      */
-    public static function map(mixed $data = null): ServiceResponseData
+    public static function map(mixed $data = null, int $statusCode = 200): ServiceResponseData
     {
         return new ServiceResponseData(
             success: true,
             message: 'Success',
-            data: $data
+            data: $data,
+            statusCode: $statusCode
         );
     }
 

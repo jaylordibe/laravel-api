@@ -36,7 +36,7 @@ class UserController extends Controller
     {
         $serviceResponse = $this->userService->signUp($request->toData());
 
-        if ($serviceResponse->error) {
+        if ($serviceResponse->failed()) {
             return ResponseUtil::error($serviceResponse->message);
         }
 
@@ -55,7 +55,7 @@ class UserController extends Controller
         $relations = ['roles', 'permissions'];
         $serviceResponse = $this->userService->getById(Auth::user()->id, $relations);
 
-        if ($serviceResponse->error) {
+        if ($serviceResponse->failed()) {
             return ResponseUtil::error($serviceResponse->message);
         }
 
@@ -79,7 +79,7 @@ class UserController extends Controller
 
         $serviceResponse = $this->userService->updateUsername(Auth::user()->id, $username);
 
-        if ($serviceResponse->error) {
+        if ($serviceResponse->failed()) {
             return ResponseUtil::error($serviceResponse->message);
         }
 
@@ -103,7 +103,7 @@ class UserController extends Controller
 
         $serviceResponse = $this->userService->updateEmail(Auth::user()->id, $email);
 
-        if ($serviceResponse->error) {
+        if ($serviceResponse->failed()) {
             return ResponseUtil::error($serviceResponse->message);
         }
 
@@ -121,7 +121,7 @@ class UserController extends Controller
 
         $serviceResponse = $this->userService->create($request->toData());
 
-        if ($serviceResponse->error) {
+        if ($serviceResponse->failed()) {
             return ResponseUtil::error($serviceResponse->message);
         }
 
@@ -140,7 +140,7 @@ class UserController extends Controller
         $userFilterData = UserRequest::createFrom($request)->toFilterData();
         $serviceResponse = $this->userService->getPaginated($userFilterData);
 
-        if ($serviceResponse->error) {
+        if ($serviceResponse->failed()) {
             return ResponseUtil::error($serviceResponse->message);
         }
 
@@ -159,7 +159,7 @@ class UserController extends Controller
 
         $serviceResponse = $this->userService->getById($userId);
 
-        if ($serviceResponse->error) {
+        if ($serviceResponse->failed()) {
             return ResponseUtil::error($serviceResponse->message);
         }
 
@@ -178,7 +178,7 @@ class UserController extends Controller
 
         $serviceResponse = $this->userService->update($request->toData());
 
-        if ($serviceResponse->error) {
+        if ($serviceResponse->failed()) {
             return ResponseUtil::error($serviceResponse->message);
         }
 
@@ -197,7 +197,7 @@ class UserController extends Controller
 
         $serviceResponse = $this->userService->delete($userId);
 
-        if ($serviceResponse->error) {
+        if ($serviceResponse->failed()) {
             return ResponseUtil::error($serviceResponse->message);
         }
 

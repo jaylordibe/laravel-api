@@ -31,7 +31,7 @@ class AppVersionController extends Controller
     {
         $serviceResponse = $this->appVersionService->create($request->toData());
 
-        if ($serviceResponse->error) {
+        if ($serviceResponse->failed()) {
             return ResponseUtil::error($serviceResponse->message);
         }
 
@@ -50,7 +50,7 @@ class AppVersionController extends Controller
         $appVersionData = AppVersionRequest::createFrom($request)->toFilterData();
         $serviceResponse = $this->appVersionService->getPaginated($appVersionData);
 
-        if ($serviceResponse->error) {
+        if ($serviceResponse->failed()) {
             return ResponseUtil::error($serviceResponse->message);
         }
 
@@ -70,7 +70,7 @@ class AppVersionController extends Controller
         $relations = $request->getRelations();
         $serviceResponse = $this->appVersionService->getById($appVersionId, $relations);
 
-        if ($serviceResponse->error) {
+        if ($serviceResponse->failed()) {
             return ResponseUtil::error($serviceResponse->message);
         }
 
@@ -89,7 +89,7 @@ class AppVersionController extends Controller
     {
         $serviceResponse = $this->appVersionService->update($request->toData());
 
-        if ($serviceResponse->error) {
+        if ($serviceResponse->failed()) {
             return ResponseUtil::error($serviceResponse->message);
         }
 
@@ -108,7 +108,7 @@ class AppVersionController extends Controller
     {
         $serviceResponse = $this->appVersionService->delete($appVersionId);
 
-        if ($serviceResponse->error) {
+        if ($serviceResponse->failed()) {
             return ResponseUtil::error($serviceResponse->message);
         }
 
@@ -132,7 +132,7 @@ class AppVersionController extends Controller
 
         $serviceResponse = $this->appVersionService->getLatest($platform);
 
-        if ($serviceResponse->error) {
+        if ($serviceResponse->failed()) {
             return ResponseUtil::error($serviceResponse->message);
         }
 
