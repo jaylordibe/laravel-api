@@ -40,12 +40,13 @@ class AppVersionRepository
      *
      * @param int $id
      * @param array $relations
+     * @param array $columns
      *
      * @return AppVersion|null
      */
-    public function findById(int $id, array $relations = []): ?AppVersion
+    public function findById(int $id, array $relations = [], array $columns = ['*']): ?AppVersion
     {
-        return AppVersion::with($relations)->firstWhere('id', $id);
+        return AppVersion::with($relations)->where('id', $id)->first($columns);
     }
 
     /**

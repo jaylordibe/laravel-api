@@ -34,12 +34,13 @@ class {{modelName}}Repository
      *
      * @param int $id
      * @param array $relations
+     * @param array $columns
      *
      * @return {{modelName}}|null
      */
-    public function findById(int $id, array $relations = []): ?{{modelName}}
+    public function findById(int $id, array $relations = [], array $columns = ['*']): ?{{modelName}}
     {
-        return {{modelName}}::with($relations)->firstWhere('id', $id);
+        return {{modelName}}::with($relations)->where('id', $id)->first($columns);
     }
 
     /**
