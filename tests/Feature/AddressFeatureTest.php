@@ -11,14 +11,11 @@ class AddressFeatureTest extends TestCase
 
     private string $resource = '/api/addresses';
 
-    /**
-     * Get address payload.
-     *
-     * @return array
-     */
-    private function getPayload(): array
+    #[Test]
+    public function testCreateAddress(): void
     {
-        return [
+        $token = $this->loginSystemAdminUser();
+        $payload = [
             'address' => fake()->address(),
             'villageOrBarangay' => fake()->streetAddress(),
             'cityOrMunicipality' => fake()->city(),
@@ -26,13 +23,6 @@ class AddressFeatureTest extends TestCase
             'zipOrPostalCode' => fake()->postcode(),
             'country' => fake()->country()
         ];
-    }
-
-    #[Test]
-    public function testCreateAddress(): void
-    {
-        $token = $this->loginSystemAdminUser();
-        $payload = $this->getPayload();
         $response = $this->withToken($token)->post("{$this->resource}", $payload);
 
         $response->assertOk()->assertJson($payload);
@@ -80,7 +70,14 @@ class AddressFeatureTest extends TestCase
         $address = Address::factory()->create([
             'user_id' => $this->getAuthUser($token)->id
         ]);
-        $payload = $this->getPayload();
+        $payload = [
+            'address' => fake()->address(),
+            'villageOrBarangay' => fake()->streetAddress(),
+            'cityOrMunicipality' => fake()->city(),
+            'stateOrProvince' => fake()->address(),
+            'zipOrPostalCode' => fake()->postcode(),
+            'country' => fake()->country()
+        ];
         $response = $this->withToken($token)->put("{$this->resource}/{$address->id}", $payload);
 
         // For assertion

@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Constants\AppVersionPlatformConstant;
+use App\Constants\AppPlatformConstant;
 use App\Models\AppVersion;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -12,28 +12,18 @@ class AppVersionFeatureTest extends TestCase
 
     private string $resource = '/api/app-versions';
 
-    /**
-     * Get app version payload.
-     *
-     * @return array
-     */
-    private function getPayload(): array
-    {
-        return [
-            'version' => fake()->unique()->numerify('##.##.##'),
-            'description' => fake()->text(),
-            'platform' => fake()->randomElement(AppVersionPlatformConstant::asList()),
-            'releaseDate' => now()->millisecond(0)->toISOString(),
-            'downloadUrl' => fake()->url(),
-            'forceUpdate' => fake()->boolean()
-        ];
-    }
-
     #[Test]
     public function testCreateAppVersion(): void
     {
         $token = $this->loginSystemAdminUser();
-        $payload = $this->getPayload();
+        $payload = [
+            'version' => fake()->unique()->numerify('##.##.##'),
+            'description' => fake()->text(),
+            'platform' => fake()->randomElement(AppPlatformConstant::asList()),
+            'releaseDate' => now()->millisecond(0)->toISOString(),
+            'downloadUrl' => fake()->url(),
+            'forceUpdate' => fake()->boolean()
+        ];
         $response = $this->withToken($token)->post($this->resource, $payload);
 
         $response->assertOk()->assertJson($payload);
@@ -85,8 +75,14 @@ class AppVersionFeatureTest extends TestCase
     {
         $token = $this->loginSystemAdminUser();
         $appVersion = AppVersion::factory()->create();
-        $payload = $this->getPayload();
-        $payload['version'] = $appVersion->version;
+        $payload = [
+            'version' => $appVersion->version,
+            'description' => fake()->text(),
+            'platform' => fake()->randomElement(AppPlatformConstant::asList()),
+            'releaseDate' => now()->millisecond(0)->toISOString(),
+            'downloadUrl' => fake()->url(),
+            'forceUpdate' => fake()->boolean()
+        ];
         $response = $this->withToken($token)->put("{$this->resource}/{$appVersion->id}", $payload);
 
         // For assertion

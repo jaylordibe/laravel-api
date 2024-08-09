@@ -23,5 +23,7 @@ return [
     'sysad_email' => env('SYSAD_EMAIL'),
     'sysad_password' => env('SYSAD_PASSWORD'),
     'appad_email' => env('APPAD_EMAIL'),
-    'appad_password' => env('APPAD_PASSWORD')
+    'appad_password' => env('APPAD_PASSWORD'),
+    'firebase_project_id' => env('FIREBASE_PROJECT_ID'),
+    'firebase_project_service_account_file' => env('FIREBASE_PROJECT_SERVICE_ACCOUNT_FILE')
 ];

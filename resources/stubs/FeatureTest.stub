@@ -53,6 +53,7 @@ class {{modelName}}FeatureTest extends TestCase
     public function testGetById(): void
     {
         $token = $this->loginSystemAdminUser();
+        /** @var {{modelName}} ${{modelNameCamelCase}} */
         ${{modelNameCamelCase}} = {{modelName}}::factory()->create();
         $response = $this->withToken($token)->get("{$this->resource}/{${{modelNameCamelCase}}->id}");
 
@@ -66,6 +67,7 @@ class {{modelName}}FeatureTest extends TestCase
     public function testUpdate(): void
     {
         $token = $this->loginSystemAdminUser();
+        /** @var {{modelName}} ${{modelNameCamelCase}} */
         ${{modelNameCamelCase}} = {{modelName}}::factory()->create();
         $payload = [];
         $response = $this->withToken($token)->put("{$this->resource}/{${{modelNameCamelCase}}->id}", $payload);
@@ -81,6 +83,7 @@ class {{modelName}}FeatureTest extends TestCase
     public function testDelete(): void
     {
         $token = $this->loginSystemAdminUser();
+        /** @var {{modelName}} ${{modelNameCamelCase}} */
         ${{modelNameCamelCase}} = {{modelName}}::factory()->create();
         $response = $this->withToken($token)->delete("{$this->resource}/{${{modelNameCamelCase}}->id}");
 

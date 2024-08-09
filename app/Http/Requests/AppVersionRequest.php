@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests;
 
-use App\Constants\AppVersionPlatformConstant;
+use App\Constants\AppPlatformConstant;
 use App\Data\AppVersionData;
 use App\Data\AppVersionFilterData;
 use Illuminate\Validation\Rule;
@@ -20,7 +20,7 @@ class AppVersionRequest extends BaseRequest
         return [
             'version' => 'required|string',
             'description' => 'nullable|string',
-            'platform' => ['required', 'string', Rule::in(AppVersionPlatformConstant::asList())],
+            'platform' => ['required', 'string', Rule::in(AppPlatformConstant::asList())],
             'releaseDate' => 'required|date',
             'downloadUrl' => 'nullable|url',
             'forceUpdate' => 'required|boolean'

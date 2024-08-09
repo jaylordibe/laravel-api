@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use Illuminate\Support\Facades\Log;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -11,23 +10,13 @@ class AuthFeatureTest extends TestCase
 
     private string $resource = '/api/auth';
 
-    /**
-     * Get address payload.
-     *
-     * @return array
-     */
-    private function getPayload(): array
-    {
-        return [
-            'identifier' => config('custom.sysad_email'),
-            'password' => config('custom.sysad_password')
-        ];
-    }
-
     #[Test]
     public function testSignIn(): void
     {
-        $payload = $this->getPayload();
+        $payload = [
+            'identifier' => config('custom.sysad_email'),
+            'password' => config('custom.sysad_password')
+        ];
         $response = $this->post("{$this->resource}/sign-in", $payload);
 
         $response->assertOk()->assertJsonStructure(['token']);

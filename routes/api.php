@@ -6,6 +6,7 @@ use App\Http\Controllers\AppVersionController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\DeviceTokenController;
 
 // Public Routes
 Route::post('auth/sign-in', [AuthController::class, 'signIn']);
@@ -46,4 +47,13 @@ Route::middleware('auth:api')->group(function () {
         Route::put('/{addressId}', [AddressController::class, 'update'])->where('addressId', RoutePatternConstant::NUMERIC);
         Route::delete('/{addressId}', [AddressController::class, 'delete'])->where('addressId', RoutePatternConstant::NUMERIC);
     });
+
+	// DeviceToken routes
+	Route::prefix('device-tokens')->group(function () {
+    	Route::post('/', [DeviceTokenController::class, 'create']);
+    	Route::get('/', [DeviceTokenController::class, 'getPaginated']);
+    	Route::get('/{deviceTokenId}', [DeviceTokenController::class, 'getById'])->where('deviceTokenId', RoutePatternConstant::NUMERIC);
+    	Route::put('/{deviceTokenId}', [DeviceTokenController::class, 'update'])->where('deviceTokenId', RoutePatternConstant::NUMERIC);
+    	Route::delete('/{deviceTokenId}', [DeviceTokenController::class, 'delete'])->where('deviceTokenId', RoutePatternConstant::NUMERIC);
+	});
 });

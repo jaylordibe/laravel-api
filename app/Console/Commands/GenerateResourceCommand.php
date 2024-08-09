@@ -101,7 +101,7 @@ class GenerateResourceCommand extends Command
         $databaseTableConstantName = Str::upper(Str::snake(Str::plural($modelName)));
         $databaseTableConstantValue = Str::lower(Str::snake(Str::plural($modelName)));
         $databaseTableConstantTemplate = <<<DATABASETABLECONSTANTS
-        \tconst {$databaseTableConstantName} = '{$databaseTableConstantValue}';
+        \tconst string {$databaseTableConstantName} = '{$databaseTableConstantValue}';
         DATABASETABLECONSTANTS;
 
         $databaseTableConstantFilePath = app_path('Constants/DatabaseTableConstant.php');

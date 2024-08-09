@@ -6,8 +6,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
 
     /**
      * Run the migrations.
@@ -16,7 +15,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create(DatabaseTableConstant::{{modelNameUpperSnakeCasePlural}}, function (Blueprint $table) {
+        Schema::create(DatabaseTableConstant::DEVICE_TOKENS, function (Blueprint $table) {
             $table->id();
             $table->dateTime('created_at')->useCurrent();
             $table->dateTime('updated_at')->default(DB::raw('CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP'));
@@ -24,6 +23,12 @@ return new class extends Migration
             $table->foreignId('created_by')->nullable()->constrained(DatabaseTableConstant::USERS);
             $table->foreignId('updated_by')->nullable()->constrained(DatabaseTableConstant::USERS);
             $table->foreignId('deleted_by')->nullable()->constrained(DatabaseTableConstant::USERS);
+            $table->foreignId('user_id')->index()->constrained(DatabaseTableConstant::USERS);
+            $table->string('token')->index();
+            $table->string('app_platform');
+            $table->string('device_type');
+            $table->string('device_os');
+            $table->string('device_os_version');
         });
     }
 
@@ -34,7 +39,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists(DatabaseTableConstant::{{modelNameUpperSnakeCasePlural}});
+        Schema::dropIfExists(DatabaseTableConstant::DEVICE_TOKENS);
     }
 
 };

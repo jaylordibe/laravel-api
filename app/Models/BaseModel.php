@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -10,6 +11,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 
 /**
+ * Model properties
  * @property int $id
  * @property Carbon $created_at
  * @property Carbon $updated_at
@@ -18,10 +20,12 @@ use Illuminate\Support\Facades\Auth;
  * @property int|null $updated_by
  * @property int|null $deleted_by
  *
- * Model properties.
+ * Model relationships
  * @property-read User|null $createdByUser
  * @property-read User|null $updatedByUser
  * @property-read User|null $deletedByUser
+ *
+ * @mixin Builder
  */
 class BaseModel extends Model
 {

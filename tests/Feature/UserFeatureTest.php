@@ -12,33 +12,17 @@ class UserFeatureTest extends TestCase
 
     private string $resource = '/api/users';
 
-    /**
-     * Get user payload.
-     *
-     * @return array
-     */
-    private function getPayload(): array
-    {
-        return [
-            'firstName' => fake()->firstName(),
-            'middleName' => fake()->lastName(),
-            'lastName' => fake()->lastName(),
-            'timezone' => fake()->timezone(),
-            'phoneNumber' => fake()->phoneNumber(),
-            'birthday' => now()->subYears(25)->startOfDay()->toISOString()
-        ];
-    }
-
     #[Test]
     public function testSignUpUser(): void
     {
-        $payload = $this->getPayload();
-        unset($payload['middleName']); // unsetting this because the Create User endpoint does not expect this field
-        unset($payload['timezone']); // unsetting this because the Create User endpoint does not expect this field
-        unset($payload['birthday']); // unsetting this because the Create User endpoint does not expect this field
-        $payload['email'] = fake()->unique()->safeEmail();
-        $payload['password'] = 'password';
-        $payload['passwordConfirmation'] = 'password';
+        $payload = [
+            'firstName' => fake()->firstName(),
+            'lastName' => fake()->lastName(),
+            'phoneNumber' => fake()->phoneNumber(),
+            'email' => fake()->unique()->safeEmail(),
+            'password' => 'password',
+            'passwordConfirmation' => 'password'
+        ];
         $response = $this->post("{$this->resource}/sign-up", $payload);
 
         // For assertion
@@ -61,6 +45,7 @@ class UserFeatureTest extends TestCase
     #[Test]
     public function testUpdateAuthUserName(): void
     {
+        /** @var User $user */
         $user = User::factory()->create();
         $token = $this->login($user->email);
         $payload = ['username' => fake()->unique()->userName()];
@@ -72,6 +57,7 @@ class UserFeatureTest extends TestCase
     #[Test]
     public function testUpdateAuthUserEmail(): void
     {
+        /** @var User $user */
         $user = User::factory()->create();
         $token = $this->login($user->email);
         $payload = ['email' => fake()->unique()->safeEmail()];
@@ -84,13 +70,14 @@ class UserFeatureTest extends TestCase
     public function testCreateUser(): void
     {
         $token = $this->loginSystemAdminUser();
-        $payload = $this->getPayload();
-        unset($payload['middleName']); // unsetting this because the Create User endpoint does not expect this field
-        unset($payload['timezone']); // unsetting this because the Create User endpoint does not expect this field
-        unset($payload['birthday']); // unsetting this because the Create User endpoint does not expect this field
-        $payload['email'] = fake()->unique()->safeEmail();
-        $payload['password'] = 'password';
-        $payload['passwordConfirmation'] = 'password';
+        $payload = [
+            'firstName' => fake()->firstName(),
+            'lastName' => fake()->lastName(),
+            'phoneNumber' => fake()->phoneNumber(),
+            'email' => fake()->unique()->safeEmail(),
+            'password' => 'password',
+            'passwordConfirmation' => 'password'
+        ];
         $response = $this->withToken($token)->post("{$this->resource}", $payload);
 
         // For assertion
@@ -114,6 +101,7 @@ class UserFeatureTest extends TestCase
     public function testGetUserById(): void
     {
         $token = $this->loginSystemAdminUser();
+        /** @var User $user */
         $user = User::factory()->create();
         $response = $this->withToken($token)->get("{$this->resource}/{$user->id}");
 
@@ -124,8 +112,16 @@ class UserFeatureTest extends TestCase
     public function testUpdateUser(): void
     {
         $token = $this->loginSystemAdminUser();
+        /** @var User $user */
         $user = User::factory()->create();
-        $payload = $this->getPayload();
+        $payload = [
+            'firstName' => fake()->firstName(),
+            'middleName' => fake()->lastName(),
+            'lastName' => fake()->lastName(),
+            'timezone' => fake()->timezone(),
+            'phoneNumber' => fake()->phoneNumber(),
+            'birthday' => now()->subYears(25)->startOfDay()->toISOString()
+        ];
         $response = $this->withToken($token)->put("{$this->resource}/{$user->id}", $payload);
 
         // For assertion
@@ -138,6 +134,7 @@ class UserFeatureTest extends TestCase
     public function testDeleteUser(): void
     {
         $token = $this->loginSystemAdminUser();
+        /** @var User $user */
         $user = User::factory()->create();
         $response = $this->withToken($token)->delete("{$this->resource}/{$user->id}");
 

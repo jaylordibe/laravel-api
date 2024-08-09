@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Constants\DatabaseTableConstant;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -44,6 +45,8 @@ use Spatie\Permission\Traits\HasRoles;
  * @property-read Collection|Role[]|null $roles
  * @property-read Collection|Permission[]|null $permissions
  * @property-read Collection|Address[]|null $addresses
+ *
+ * @mixin Builder
  */
 class User extends Authenticatable
 {

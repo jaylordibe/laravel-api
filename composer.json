@@ -8,6 +8,7 @@
         "php": "^8.3",
         "barryvdh/laravel-snappy": "^1.0",
         "brick/math": "^0.12.1",
+        "google/apiclient": "^2.17",
         "guzzlehttp/guzzle": "^7.8",
         "h4cc/wkhtmltoimage-amd64": "^0.12.4",
         "h4cc/wkhtmltopdf-amd64": "^0.12.4",

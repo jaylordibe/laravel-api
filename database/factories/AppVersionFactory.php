@@ -2,7 +2,7 @@
 
 namespace Database\Factories;
 
-use App\Constants\AppVersionPlatformConstant;
+use App\Constants\AppPlatformConstant;
 use App\Models\AppVersion;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -22,7 +22,7 @@ class AppVersionFactory extends Factory
         return [
             'version' => $this->faker->unique()->numerify('##.##.##'),
             'description' => $this->faker->text(),
-            'platform' => $this->faker->randomElement(AppVersionPlatformConstant::asList()),
+            'platform' => $this->faker->randomElement(AppPlatformConstant::asList()),
             'release_date' => now(),
             'download_url' => $this->faker->url(),
             'force_update' => $this->faker->boolean()
