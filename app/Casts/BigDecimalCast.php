@@ -61,7 +61,7 @@ class BigDecimalCast implements CastsAttributes
         try {
             $newValue = BigDecimal::of($value);
         } catch (MathException $e) {
-            Log::warning('BigDecimalCast:get', [
+            Log::warning('BigDecimalCast:set', [
                 'value' => $value,
                 'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
