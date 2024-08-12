@@ -315,7 +315,7 @@ class BaseRequest extends FormRequest
             timezone: $authUser->timezone,
             phoneNumber: $authUser->phone_number,
             birthday: $authUser->birthday,
-            profilePicture: $authUser->profile_picture,
+            profilePictureUrl: $authUser->profile_picture_url,
             id: $authUser->id,
             createdAt: $authUser->created_at
         );
