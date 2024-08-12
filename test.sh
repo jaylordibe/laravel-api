@@ -14,6 +14,9 @@ fi
 COMMANDS="
 php artisan migrate:fresh --seed --env=testing
 echo -e '\n' | php artisan passport:client --personal --env=testing
+php artisan config:clear --env=testing
+php artisan cache:clear --env=testing
+php artisan route:clear --env=testing
 php artisan test --parallel $FILTER
 "
 
