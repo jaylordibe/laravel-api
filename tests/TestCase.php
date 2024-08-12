@@ -59,7 +59,7 @@ abstract class TestCase extends BaseTestCase
             timezone: $authUser['timezone'],
             phoneNumber: $authUser['phoneNumber'],
             birthday: $authUser['birthday'],
-            profilePictureUrl: $authUser['profilePictureUrl'],
+            profilePhotoUrl: $authUser['profilePictureUrl'],
             id: $authUser['id'],
             createdAt: Carbon::parse($authUser['createdAt'])
         );

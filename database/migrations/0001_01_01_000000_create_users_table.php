@@ -32,7 +32,7 @@ return new class extends Migration {
             $table->string('timezone')->nullable();
             $table->string('phone_number')->nullable();
             $table->timestamp('birthday')->nullable();
-            $table->text('profile_picture_url')->nullable();
+            $table->text('profile_photo_url')->nullable();
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {

@@ -32,7 +32,7 @@ class UserResource extends JsonResource
             'timezone' => $this->timezone,
             'phoneNumber' => $this->phone_number,
             'birthday' => $this->birthday,
-            'profilePictureUrl' => $this->profile_picture_url ?: 'https://i.imgur.com/UJ0N2SN.jpg'
+            'profilePhotoUrl' => $this->profile_photo_url ?: 'https://i.imgur.com/UJ0N2SN.jpg'
         ];
     }
 
