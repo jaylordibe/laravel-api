@@ -67,9 +67,7 @@ class {{modelName}}Repository
         ${{modelNameCamelCasePlural}} = {{modelName}}::with(${{modelNameCamelCase}}FilterData->meta->relations);
 
         if (!empty(${{modelNameCamelCase}}FilterData->id)) {
-            ${{modelNameCamelCasePlural}}->where(function (Builder $queryBuilder) use (${{modelNameCamelCase}}FilterData) {
-                $queryBuilder->where('id', ${{modelNameCamelCase}}FilterData->id);
-            });
+            ${{modelNameCamelCasePlural}}->where('id', ${{modelNameCamelCase}}FilterData->id);
         }
 
         return ${{modelNameCamelCasePlural}}->orderBy(
