@@ -170,7 +170,6 @@ class UserRepository
         }
 
         $user->username = $username;
-        $user->updated_by = Auth::user()->id;
         $user->save();
 
         return $user;
@@ -197,7 +196,6 @@ class UserRepository
         }
 
         $user->email = $email;
-        $user->updated_by = Auth::user()->id;
         $user->save();
 
         return $user;

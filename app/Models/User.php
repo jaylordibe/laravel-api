@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
 use Laravel\Passport\HasApiTokens;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -98,6 +99,38 @@ class User extends Authenticatable
     protected $appends = [
         'full_name'
     ];
+
+    protected static function boot(): void
+    {
+        parent::boot();
+
+        static::creating(function (self $model) {
+            if (Auth::check()) {
+                if (!$model->isDirty('created_by')) {
+                    $model->created_by = Auth::id();
+                }
+
+                if (!$model->isDirty('updated_by')) {
+                    $model->updated_by = Auth::id();
+                }
+            }
+        });
+
+        static::updating(function (self $model) {
+            if (Auth::check() && !$model->isDirty('updated_by')) {
+                $model->updated_by = Auth::id();
+            }
+        });
+
+        static::deleted(function (self $model) {
+            if (Auth::check()) {
+                $model->newQuery()
+                    ->withTrashed()
+                    ->where($model->getKeyName(), $model->getKey())
+                    ->update(['deleted_by' => Auth::id()]);
+            }
+        });
+    }
 
     /**
      * Get the user's full name.
