@@ -47,8 +47,8 @@ class {{modelName}}Controller extends Controller
      */
     public function getPaginated(GenericRequest $request): JsonResponse|JsonResource
     {
-        ${{modelNameCamelCase}}Data = {{modelName}}Request::createFrom($request)->toFilterData();
-        $serviceResponse = $this->{{modelNameCamelCase}}Service->getPaginated(${{modelNameCamelCase}}Data);
+        ${{modelNameCamelCase}}FilterData = {{modelName}}Request::createFrom($request)->toFilterData();
+        $serviceResponse = $this->{{modelNameCamelCase}}Service->getPaginated(${{modelNameCamelCase}}FilterData);
 
         if ($serviceResponse->failed()) {
             return ResponseUtil::error($serviceResponse->message);
