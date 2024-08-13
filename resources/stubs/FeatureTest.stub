@@ -88,9 +88,9 @@ class {{modelName}}FeatureTest extends TestCase
         $response = $this->withToken($token)->delete("{$this->resource}/{${{modelNameCamelCase}}->id}");
 
         $expected = [
-            'success'
+            'success' => true
         ];
-        $response->assertOk()->assertJsonStructure($expected);
+        $response->assertOk()->assertJson($expected);
     }
 
 }
