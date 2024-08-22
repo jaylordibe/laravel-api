@@ -111,6 +111,30 @@ class UserController extends Controller
     }
 
     /**
+     * Update auth user's profile photo.
+     *
+     * @param GenericRequest $request
+     *
+     * @return JsonResponse|JsonResource
+     */
+    public function updateAuthUserProfilePhoto(GenericRequest $request): JsonResponse|JsonResource
+    {
+        $profilePhoto = $request->file('profilePhoto');
+
+        if (empty($profilePhoto)) {
+            return ResponseUtil::error('Profile photo is required.');
+        }
+
+        $serviceResponse = $this->userService->updateProfilePhoto(Auth::user()->id, $profilePhoto);
+
+        if ($serviceResponse->failed()) {
+            return ResponseUtil::error($serviceResponse->message);
+        }
+
+        return ResponseUtil::resource(UserResource::class, $serviceResponse->data);
+    }
+
+    /**
      * @param CreateUserRequest $request
      *
      * @return JsonResponse|JsonResource

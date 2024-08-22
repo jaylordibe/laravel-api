@@ -9,7 +9,9 @@ use App\Data\UserData;
 use App\Data\UserFilterData;
 use App\Repositories\UserRepository;
 use App\Utils\AppUtil;
+use App\Utils\FileUtil;
 use App\Utils\ServiceResponseUtil;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
 
 class UserService
@@ -213,6 +215,27 @@ class UserService
     public function updateEmail(int $id, string $email): ServiceResponseData
     {
         $user = $this->userRepository->updateEmail($id, $email);
+
+        if (empty($user)) {
+            return ServiceResponseUtil::error('Failed to update email');
+        }
+
+        return ServiceResponseUtil::map($user);
+    }
+
+    /**
+     * Update profile photo.
+     *
+     * @param int $id
+     * @param UploadedFile $profilePhoto
+     *
+     * @return ServiceResponseData
+     */
+    public function updateProfilePhoto(int $id, UploadedFile $profilePhoto): ServiceResponseData
+    {
+        $path = FileUtil::upload("{$id}/profile", $profilePhoto);
+        $profilePhotoUrl = FileUtil::getUrl($path);
+        $user = $this->userRepository->updateProfilePhotoUrl($id, $profilePhotoUrl);
 
         if (empty($user)) {
             return ServiceResponseUtil::error('Failed to update email');

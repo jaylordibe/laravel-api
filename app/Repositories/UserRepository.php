@@ -209,4 +209,26 @@ class UserRepository
         return $user;
     }
 
+    /**
+     * Update profile photo url.
+     *
+     * @param int $id
+     * @param string $profilePhotoUrl
+     *
+     * @return User|null
+     */
+    public function updateProfilePhotoUrl(int $id, string $profilePhotoUrl): ?User
+    {
+        $user = $this->findById($id);
+
+        if (empty($user)) {
+            return null;
+        }
+
+        $user->profile_photo_url = $profilePhotoUrl;
+        $user->save();
+
+        return $user;
+    }
+
 }

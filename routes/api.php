@@ -34,6 +34,7 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/auth', [UserController::class, 'getAuthUser']);
         Route::put('/auth/username', [UserController::class, 'updateAuthUsername']);
         Route::put('/auth/email', [UserController::class, 'updateAuthUserEmail']);
+        Route::post('/auth/profile-photo', [UserController::class, 'updateAuthUserProfilePhoto']);
         Route::get('/{userId}', [UserController::class, 'getById'])->where('userId', RoutePatternConstant::NUMERIC);
         Route::put('/{userId}', [UserController::class, 'update'])->where('userId', RoutePatternConstant::NUMERIC);
         Route::delete('/{userId}', [UserController::class, 'delete'])->where('userId', RoutePatternConstant::NUMERIC);
@@ -48,12 +49,12 @@ Route::middleware('auth:api')->group(function () {
         Route::delete('/{addressId}', [AddressController::class, 'delete'])->where('addressId', RoutePatternConstant::NUMERIC);
     });
 
-	// DeviceToken routes
-	Route::prefix('device-tokens')->group(function () {
-    	Route::post('/', [DeviceTokenController::class, 'create']);
-    	Route::get('/', [DeviceTokenController::class, 'getPaginated']);
-    	Route::get('/{deviceTokenId}', [DeviceTokenController::class, 'getById'])->where('deviceTokenId', RoutePatternConstant::NUMERIC);
-    	Route::put('/{deviceTokenId}', [DeviceTokenController::class, 'update'])->where('deviceTokenId', RoutePatternConstant::NUMERIC);
-    	Route::delete('/{deviceTokenId}', [DeviceTokenController::class, 'delete'])->where('deviceTokenId', RoutePatternConstant::NUMERIC);
-	});
+    // DeviceToken routes
+    Route::prefix('device-tokens')->group(function () {
+        Route::post('/', [DeviceTokenController::class, 'create']);
+        Route::get('/', [DeviceTokenController::class, 'getPaginated']);
+        Route::get('/{deviceTokenId}', [DeviceTokenController::class, 'getById'])->where('deviceTokenId', RoutePatternConstant::NUMERIC);
+        Route::put('/{deviceTokenId}', [DeviceTokenController::class, 'update'])->where('deviceTokenId', RoutePatternConstant::NUMERIC);
+        Route::delete('/{deviceTokenId}', [DeviceTokenController::class, 'delete'])->where('deviceTokenId', RoutePatternConstant::NUMERIC);
+    });
 });
