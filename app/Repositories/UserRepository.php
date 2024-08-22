@@ -165,6 +165,10 @@ class UserRepository
             return null;
         }
 
+        if ($username === $user->username) {
+            return $user;
+        }
+
         if ($this->isUsernameExists($username)) {
             return null;
         }
@@ -189,6 +193,10 @@ class UserRepository
 
         if (empty($user)) {
             return null;
+        }
+
+        if ($email === $user->email) {
+            return $user;
         }
 
         if ($this->isEmailExists($email)) {
