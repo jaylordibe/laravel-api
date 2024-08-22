@@ -32,7 +32,7 @@ Route::middleware('auth:api')->group(function () {
         Route::post('/', [UserController::class, 'create']);
         Route::get('/', [UserController::class, 'getPaginated']);
         Route::get('/auth', [UserController::class, 'getAuthUser']);
-        Route::put('/auth/username', [UserController::class, 'updateAuthUserName']);
+        Route::put('/auth/username', [UserController::class, 'updateAuthUsername']);
         Route::put('/auth/email', [UserController::class, 'updateAuthUserEmail']);
         Route::get('/{userId}', [UserController::class, 'getById'])->where('userId', RoutePatternConstant::NUMERIC);
         Route::put('/{userId}', [UserController::class, 'update'])->where('userId', RoutePatternConstant::NUMERIC);

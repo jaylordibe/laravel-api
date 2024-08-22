@@ -69,7 +69,7 @@ class UserController extends Controller
      *
      * @return JsonResponse|JsonResource
      */
-    public function updateAuthUserName(GenericRequest $request): JsonResponse|JsonResource
+    public function updateAuthUsername(GenericRequest $request): JsonResponse|JsonResource
     {
         $username = $request->getInputAsString('username');
 
