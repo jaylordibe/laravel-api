@@ -18,7 +18,7 @@ class PhilippinePhoneNumberRule implements ValidationRule
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
         if (!AppUtil::isValidPhilippinePhoneNumber($value)) {
-            $fail('The :attribute must be a valid Philipine phone number.');
+            $fail('The :attribute field must be a valid Philipine phone number.');
         }
     }
 

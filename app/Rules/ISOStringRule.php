@@ -2,9 +2,9 @@
 
 namespace App\Rules;
 
+use App\Utils\DateUtil;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
-use Illuminate\Support\Carbon;
 use Illuminate\Translation\PotentiallyTranslatedString;
 
 class ISOStringRule implements ValidationRule
@@ -17,10 +17,8 @@ class ISOStringRule implements ValidationRule
      */
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
-        $parsedDate = Carbon::parse($value);
-
-        if ($parsedDate->toISOString() !== $value) {
-            $fail('The :attribute must be a valid ISO string.');
+        if (!DateUtil::isValidISOString($value)) {
+            $fail('The :attribute field must be a valid ISO string.');
         }
     }
 
