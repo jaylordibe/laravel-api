@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use App\Constants\AppPlatformConstant;
 use App\Data\AppVersionData;
 use App\Data\AppVersionFilterData;
+use App\Rules\ISOStringRule;
 use Illuminate\Validation\Rule;
 
 class AppVersionRequest extends BaseRequest
@@ -21,7 +22,7 @@ class AppVersionRequest extends BaseRequest
             'version' => ['required', 'string'],
             'description' => ['nullable', 'string'],
             'platform' => ['required', 'string', Rule::in(AppPlatformConstant::asList())],
-            'releaseDate' => ['required', 'date', 'date_format:Y-m-d\TH:i:s\Z'],
+            'releaseDate' => ['required', 'date', new ISOStringRule()],
             'downloadUrl' => ['nullable', 'url'],
             'forceUpdate' => ['required', 'boolean']
         ];
