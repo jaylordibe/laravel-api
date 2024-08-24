@@ -18,12 +18,12 @@ class AppVersionRequest extends BaseRequest
     public function rules(): array
     {
         return [
-            'version' => 'required|string',
-            'description' => 'nullable|string',
+            'version' => ['required', 'string'],
+            'description' => ['nullable', 'string'],
             'platform' => ['required', 'string', Rule::in(AppPlatformConstant::asList())],
-            'releaseDate' => 'required|date',
-            'downloadUrl' => 'nullable|url',
-            'forceUpdate' => 'required|boolean'
+            'releaseDate' => ['required', 'date', 'date_format:Y-m-d\TH:i:s\Z'],
+            'downloadUrl' => ['nullable', 'url'],
+            'forceUpdate' => ['required', 'boolean']
         ];
     }
 

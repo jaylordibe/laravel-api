@@ -15,12 +15,12 @@ class SignUpUserRequest extends BaseRequest
     public function rules(): array
     {
         return [
-            'firstName' => 'required|string',
-            'lastName' => 'required|string',
-            'email' => 'required|email',
-            'phoneNumber' => 'required|string',
-            'password' => 'required|string|min:8',
-            'passwordConfirmation' => 'required|same:password|min:8'
+            'firstName' => ['required', 'string'],
+            'lastName' => ['required', 'string'],
+            'email' => ['required', 'email'],
+            'phoneNumber' => ['required', 'string'],
+            'password' => ['required', 'string', 'min:8'],
+            'passwordConfirmation' => ['required', 'same:password', 'min:8']
         ];
     }
 
@@ -46,8 +46,7 @@ class SignUpUserRequest extends BaseRequest
             lastName: $this->getInputAsString('lastName'),
             email: $this->getInputAsString('email'),
             phoneNumber: $this->getInputAsString('phoneNumber'),
-            rawPassword: $this->getInputAsString('password'),
-            rawPasswordConfirmation: $this->getInputAsString('passwordConfirmation')
+            password: $this->getInputAsString('password')
         );
     }
 

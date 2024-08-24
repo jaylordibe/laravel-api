@@ -37,7 +37,7 @@ class UserService
             email: $signUpUserData->email,
             phoneNumber: $signUpUserData->phoneNumber
         );
-        $user = $this->userRepository->create($userData, $signUpUserData->rawPassword);
+        $user = $this->userRepository->create($userData, $signUpUserData->password);
 
         if (empty($user)) {
             return ServiceResponseUtil::error('Sign up failed.');

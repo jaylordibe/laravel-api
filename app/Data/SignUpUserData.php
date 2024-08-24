@@ -12,8 +12,7 @@ class SignUpUserData extends Data
         public string $lastName,
         public string $email,
         public string $phoneNumber,
-        public string $rawPassword,
-        public string $rawPasswordConfirmation
+        public string $password
     )
     {
     }

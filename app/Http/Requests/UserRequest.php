@@ -16,10 +16,10 @@ class UserRequest extends BaseRequest
     public function rules(): array
     {
         return [
-            'firstName' => 'required',
-            'lastName' => 'required',
-            'phoneNumber' => 'required',
-            'birthday' => 'required'
+            'firstName' => ['required', 'string'],
+            'lastName' => ['required', 'string'],
+            'phoneNumber' => ['required', 'string'],
+            'birthday' => ['required', 'string']
         ];
     }
 

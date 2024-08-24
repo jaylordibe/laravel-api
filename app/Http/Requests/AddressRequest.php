@@ -17,12 +17,12 @@ class AddressRequest extends BaseRequest
     public function rules(): array
     {
         return [
-            'address' => 'required',
-            'villageOrBarangay' => 'required',
-            'cityOrMunicipality' => 'required',
-            'stateOrProvince' => 'required',
-            'zipOrPostalCode' => 'required',
-            'country' => 'required'
+            'address' => ['required', 'string'],
+            'villageOrBarangay' => ['required', 'string'],
+            'cityOrMunicipality' => ['required', 'string'],
+            'stateOrProvince' => ['required', 'string'],
+            'zipOrPostalCode' => ['required', 'string'],
+            'country' => ['required', 'string']
         ];
     }
 

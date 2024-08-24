@@ -15,8 +15,8 @@ class AuthRequest extends BaseRequest
     public function rules(): array
     {
         return [
-            'identifier' => 'required',
-            'password' => 'required'
+            'identifier' => ['required', 'string'],
+            'password' => ['required', 'string']
         ];
     }
 
@@ -28,7 +28,7 @@ class AuthRequest extends BaseRequest
     public function messages(): array
     {
         return [
-            'identifier.required' => 'Email is required.',
+            'identifier.required' => 'Username or email is required.',
             'password.required' => 'Password is required.'
         ];
     }
