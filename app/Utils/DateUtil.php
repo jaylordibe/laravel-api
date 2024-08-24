@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Log;
 class DateUtil
 {
 
-    public static function isValidISOString(string $datetimeString): bool
+    public static function isValidUtcIsoString(string $datetimeString): bool
     {
         try {
             $parsedDate = Carbon::parse($datetimeString);
@@ -23,7 +23,7 @@ class DateUtil
     }
 
     /**
-     * Strips milliseconds from an ISO string.
+     * Strips milliseconds from a UTC ISO string.
      *
      * @param string $datetimeString
      *

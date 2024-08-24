@@ -17,7 +17,7 @@ class UtcIsoStringRule implements ValidationRule
      */
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
-        if (!DateUtil::isValidISOString($value)) {
+        if (!DateUtil::isValidUtcIsoString($value)) {
             $fail('The :attribute field must be a valid UTC ISO string.');
         }
     }
