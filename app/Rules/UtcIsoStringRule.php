@@ -7,7 +7,7 @@ use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Translation\PotentiallyTranslatedString;
 
-class ISOStringRule implements ValidationRule
+class UtcIsoStringRule implements ValidationRule
 {
 
     /**
@@ -18,7 +18,7 @@ class ISOStringRule implements ValidationRule
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
         if (!DateUtil::isValidISOString($value)) {
-            $fail('The :attribute field must be a valid ISO string.');
+            $fail('The :attribute field must be a valid UTC ISO string.');
         }
     }
 
