@@ -1,7 +1,7 @@
 # Set workflow name
 name: Deploy To Production
 
-# Set events that trigger the workflow
+# Set events that triggers the workflow
 on:
   push:
     branches:
