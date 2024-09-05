@@ -57,6 +57,7 @@ if [ "$TYPE" = "fresh" ]; then
     php artisan migrate:fresh --seed --force
     php artisan key:generate --force
     php artisan passport:keys --force
+    echo 'y' | php artisan passport:client --personal --name='API Personal Access Client'
     echo 'y' | php artisan passport:client --password --name='API Password Grant Client' --provider='users'
     "
 else
