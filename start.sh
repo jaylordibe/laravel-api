@@ -54,9 +54,9 @@ if [ "$TYPE" = "fresh" ]; then
     chmod -R 777 storage
     chmod -R 777 bootstrap/cache
     composer update
-    php artisan migrate:fresh --seed --force
-    php artisan key:generate --force
-    php artisan passport:keys --force
+    php artisan migrate:fresh --seed
+    php artisan key:generate
+    php artisan passport:keys
     echo 'y' | php artisan passport:client --personal --name='API Personal Access Client'
     echo 'y' | php artisan passport:client --password --name='API Password Grant Client' --provider='users'
     "
