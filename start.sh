@@ -59,6 +59,7 @@ if [ "$TYPE" = "fresh" ]; then
     php artisan passport:keys
     echo 'y' | php artisan passport:client --personal --name='API Personal Access Client'
     echo 'y' | php artisan passport:client --password --name='API Password Grant Client' --provider='users'
+    php artisan storage:link
     "
 else
     COMMANDS="
