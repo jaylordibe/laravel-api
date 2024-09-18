@@ -30,6 +30,8 @@ class AddressService
             return ServiceResponseUtil::error('Failed to create address.');
         }
 
+        $address = $this->addressRepository->findById($address->id, $addressData->meta->relations);
+
         return ServiceResponseUtil::success('Address successfully created.', $address);
     }
 
@@ -76,6 +78,8 @@ class AddressService
         if (empty($address)) {
             return ServiceResponseUtil::error('Failed to update address.');
         }
+
+        $address = $this->addressRepository->findById($address->id, $addressData->meta->relations);
 
         return ServiceResponseUtil::success('Address successfully updated.', $address);
     }

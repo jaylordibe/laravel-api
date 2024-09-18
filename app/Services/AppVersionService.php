@@ -38,6 +38,8 @@ class AppVersionService
             return ServiceResponseUtil::error('Failed to create app version.');
         }
 
+        $appVersion = $this->appVersionRepository->findById($appVersion->id, $appVersionData->meta->relations);
+
         return ServiceResponseUtil::success('App version successfully added.', $appVersion);
     }
 
@@ -98,6 +100,8 @@ class AppVersionService
         if (empty($appVersion)) {
             return ServiceResponseUtil::error('Failed to update app version.');
         }
+
+        $appVersion = $this->appVersionRepository->findById($appVersion->id, $appVersionData->meta->relations);
 
         return ServiceResponseUtil::success('App version successfully updated.', $appVersion);
     }

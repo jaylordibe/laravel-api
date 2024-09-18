@@ -32,7 +32,7 @@ class DeviceTokenRepository
         $deviceToken->device_os_version = $deviceTokenData->deviceOsVersion;
         $deviceToken->save();
 
-        return $this->findById($deviceToken->id);
+        return $deviceToken;
     }
 
     /**
@@ -103,6 +103,7 @@ class DeviceTokenRepository
             return (bool) $deviceToken->delete();
         } catch (Exception $e) {
             Log::error("Delete Device Token Exception: {$e->getMessage()}");
+
             return false;
         }
     }

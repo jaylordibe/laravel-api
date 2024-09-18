@@ -43,6 +43,8 @@ class UserService
             return ServiceResponseUtil::error('Sign up failed.');
         }
 
+        $user = $this->userRepository->findById($user->id, $userData->meta->relations);
+
         return ServiceResponseUtil::success('Sign up successful.', $user);
     }
 
@@ -65,6 +67,8 @@ class UserService
         if (empty($user)) {
             return ServiceResponseUtil::error('Failed to create user.');
         }
+
+        $user = $this->userRepository->findById($user->id, $userData->meta->relations);
 
         return ServiceResponseUtil::success('User successfully created.', $user);
     }
@@ -112,6 +116,8 @@ class UserService
         if (empty($user)) {
             return ServiceResponseUtil::error('Failed to update user.');
         }
+
+        $user = $this->userRepository->findById($user->id, $userData->meta->relations);
 
         return ServiceResponseUtil::success('User successfully updated.', $user);
     }

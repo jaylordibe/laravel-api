@@ -48,7 +48,7 @@ class UserRepository
         $user->phone_number = $userData->phoneNumber;
         $user->save();
 
-        return $this->findById($user->id);
+        return $user;
     }
 
     /**

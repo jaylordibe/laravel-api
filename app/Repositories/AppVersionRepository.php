@@ -32,7 +32,7 @@ class AppVersionRepository
         $appVersion->force_update = $appVersionData->forceUpdate;
         $appVersion->save();
 
-        return $this->findById($appVersion->id);
+        return $appVersion;
     }
 
     /**
