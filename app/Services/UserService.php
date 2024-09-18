@@ -66,8 +66,6 @@ class UserService
             return ServiceResponseUtil::error('Failed to create user.');
         }
 
-        $user = $this->userRepository->findById($user->id, $userData->meta->relations);
-
         return ServiceResponseUtil::success('User successfully created.', $user);
     }
 
