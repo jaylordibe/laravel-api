@@ -30,7 +30,7 @@ services:
         networks:
             - laravel-network
     laravel-db-gui-admin:
-        image: phpmyadmin/phpmyadmin
+        image: phpmyadmin/phpmyadmin:latest
         container_name: laravel-db-gui-admin
         restart: unless-stopped
         tty: true
@@ -60,7 +60,7 @@ services:
         networks:
             - laravel-network
     laravel-db-test-gui-admin:
-        image: phpmyadmin/phpmyadmin
+        image: phpmyadmin/phpmyadmin:latest
         container_name: laravel-db-test-gui-admin
         restart: unless-stopped
         tty: true
