@@ -24,6 +24,7 @@ class UserFeatureTest extends TestCase
             'passwordConfirmation' => 'password'
         ];
         $response = $this->post("{$this->resource}/sign-up", $payload);
+
         $expected = [
             'firstName' => $payload['firstName'],
             'lastName' => $payload['lastName'],
@@ -41,7 +42,18 @@ class UserFeatureTest extends TestCase
         $token = $this->loginSystemAdminUser();
         $response = $this->withToken($token)->get("{$this->resource}/auth");
 
-        $response->assertOk();
+        $expected = [
+            'id',
+            'firstName',
+            'middleName',
+            'lastName',
+            'phoneNumber',
+            'email',
+            'username',
+            'birthday',
+            'timezone',
+        ];
+        $response->assertOk()->assertJsonStructure($expected);
     }
 
     #[Test]
@@ -87,6 +99,7 @@ class UserFeatureTest extends TestCase
             'passwordConfirmation' => 'password'
         ];
         $response = $this->withToken($token)->post("{$this->resource}", $payload);
+
         $expected = [
             'firstName' => $payload['firstName'],
             'lastName' => $payload['lastName'],
@@ -141,6 +154,7 @@ class UserFeatureTest extends TestCase
             'birthday' => now()->subYears(25)->startOfDay()->toISOString()
         ];
         $response = $this->withToken($token)->put("{$this->resource}/{$user->id}", $payload);
+
         $expected = [
             'id' => $user->id,
             'firstName' => $payload['firstName'],
@@ -161,6 +175,7 @@ class UserFeatureTest extends TestCase
         /** @var User $user */
         $user = User::factory()->create();
         $response = $this->withToken($token)->delete("{$this->resource}/{$user->id}");
+
         $expected = [
             'success' => true
         ];
