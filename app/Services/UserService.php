@@ -43,8 +43,6 @@ class UserService
             return ServiceResponseUtil::error('Sign up failed.');
         }
 
-        $user = $this->userRepository->findById($user->id, $userData->meta->relations);
-
         return ServiceResponseUtil::success('Sign up successful.', $user);
     }
 
