@@ -79,13 +79,15 @@ class UserFeatureTest extends TestCase
             'passwordConfirmation' => 'password'
         ];
         $response = $this->withToken($token)->post("{$this->resource}", $payload);
+        $expected = [
+            'firstName' => $payload['firstName'],
+            'lastName' => $payload['lastName'],
+            'phoneNumber' => $payload['phoneNumber'],
+            'email' => $payload['email'],
+            'username' => Str::replace('.', '', Str::before($payload['email'], '@'))
+        ];
 
-        // For assertion
-        unset($payload['password']);
-        unset($payload['passwordConfirmation']);
-        $payload['username'] = Str::replace('.', '', Str::before($payload['email'], '@'));
-
-        $response->assertOk()->assertJson($payload);
+        $response->assertCreated()->assertJson($expected);
     }
 
     #[Test]
@@ -123,11 +125,17 @@ class UserFeatureTest extends TestCase
             'birthday' => now()->subYears(25)->startOfDay()->toISOString()
         ];
         $response = $this->withToken($token)->put("{$this->resource}/{$user->id}", $payload);
+        $expected = [
+            'id' => $user->id,
+            'firstName' => $payload['firstName'],
+            'middleName' => $payload['middleName'],
+            'lastName' => $payload['lastName'],
+            'timezone' => $payload['timezone'],
+            'phoneNumber' => $payload['phoneNumber'],
+            'birthday' => $this->stripMilliseconds($payload['birthday'])
+        ];
 
-        // For assertion
-        $payload['id'] = $user->id;
-
-        $response->assertOk()->assertJson($payload);
+        $response->assertOk()->assertJson($expected);
     }
 
     #[Test]
