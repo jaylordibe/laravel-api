@@ -44,6 +44,10 @@ class FileUtil
         $uploadedFilePaths = [];
 
         foreach ($files as $file) {
+            if (empty($file)) {
+                continue;
+            }
+
             $uploadedFilePaths[] = self::upload($file, $path);
         }
 
@@ -80,13 +84,10 @@ class FileUtil
         }
 
         foreach ($paths as $path) {
-
-            if (self::missing($path)) {
-                return false;
+            if (empty($path)) {
+                continue;
             }
-        }
 
-        foreach ($paths as $path) {
             self::delete($path);
         }
 
@@ -129,6 +130,10 @@ class FileUtil
         $preSignedUrls = [];
 
         foreach ($paths as $path) {
+            if (empty($path)) {
+                continue;
+            }
+
             $preSignedUrls[] = self::generatePublicUrl($path, $expirationInMinutes);
         }
 
@@ -175,6 +180,10 @@ class FileUtil
         $preSignedUrls = [];
 
         foreach ($paths as $path) {
+            if (empty($path)) {
+                continue;
+            }
+
             $preSignedUrls[] = self::generateDownloadUrl($path, $expirationInMinutes);
         }
 
