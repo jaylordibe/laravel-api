@@ -2,7 +2,6 @@
 
 namespace App\Utils;
 
-use Illuminate\Http\File;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -11,22 +10,18 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class FileUtil
 {
 
-    private const DISK = 'public';
+    private const string DISK = 'public';
 
     /**
      * Uploads a single file.
      *
+     * @param UploadedFile $file - the file to be uploaded
      * @param string $path - the path where the file should be stored
-     * @param File|UploadedFile|null $file - the file to be uploaded
      *
      * @return string - the uploaded file path
      */
-    public static function upload(string $path, File|UploadedFile|null $file): string
+    public static function upload(UploadedFile $file, string $path = ''): string
     {
-        if (empty($path) || empty($file)) {
-            return '';
-        }
-
         $fileName = time() . '_' . Str::uuid() . '_' . $file->getClientOriginalName();
 
         return Storage::disk(self::DISK)->putFileAs($path, $file, $fileName);
@@ -35,21 +30,21 @@ class FileUtil
     /**
      * Uploads multiple files.
      *
+     * @param UploadedFile[]|array $files - the files to be uploaded
      * @param string $path - the path where the files should be stored
-     * @param File[]|UploadedFile[]|array|null $files - the files to be uploaded
      *
      * @return array - the uploaded file paths
      */
-    public static function uploadMultiple(string $path, ?array $files): array
+    public static function uploadMultiple(array $files, string $path = ''): array
     {
-        if (empty($path) || empty($files)) {
+        if (empty($files)) {
             return [];
         }
 
         $uploadedFilePaths = [];
 
         foreach ($files as $file) {
-            $uploadedFilePaths[] = self::upload($path, $file);
+            $uploadedFilePaths[] = self::upload($file, $path);
         }
 
         return $uploadedFilePaths;

@@ -233,7 +233,7 @@ class UserService
      */
     public function updateProfilePhoto(int $id, UploadedFile $profilePhoto): ServiceResponseData
     {
-        $path = FileUtil::upload("{$id}/profile", $profilePhoto);
+        $path = FileUtil::upload($profilePhoto);
         $profilePhotoUrl = FileUtil::getUrl($path);
         $user = $this->userRepository->updateProfilePhotoUrl($id, $profilePhotoUrl);
 
