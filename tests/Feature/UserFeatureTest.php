@@ -24,13 +24,15 @@ class UserFeatureTest extends TestCase
             'passwordConfirmation' => 'password'
         ];
         $response = $this->post("{$this->resource}/sign-up", $payload);
+        $expected = [
+            'firstName' => $payload['firstName'],
+            'lastName' => $payload['lastName'],
+            'phoneNumber' => $payload['phoneNumber'],
+            'email' => $payload['email'],
+            'username' => Str::replace('.', '', Str::before($payload['email'], '@'))
+        ];
 
-        // For assertion
-        unset($payload['password']);
-        unset($payload['passwordConfirmation']);
-        $payload['username'] = Str::replace('.', '', Str::before($payload['email'], '@'));
-
-        $response->assertCreated()->assertJson($payload);
+        $response->assertCreated()->assertJson($expected);
     }
 
     #[Test]
@@ -51,7 +53,10 @@ class UserFeatureTest extends TestCase
         $payload = ['username' => fake()->unique()->userName()];
         $response = $this->withToken($token)->put("{$this->resource}/auth/username", $payload);
 
-        $response->assertOk()->assertJson(['username' => $payload['username']]);
+        $expected = [
+            'username' => $payload['username']
+        ];
+        $response->assertOk()->assertJson($expected);
     }
 
     #[Test]
@@ -63,7 +68,10 @@ class UserFeatureTest extends TestCase
         $payload = ['email' => fake()->unique()->safeEmail()];
         $response = $this->withToken($token)->put("{$this->resource}/auth/email", $payload);
 
-        $response->assertOk()->assertJson(['email' => $payload['email']]);
+        $expected = [
+            'email' => $payload['email']
+        ];
+        $response->assertOk()->assertJson($expected);
     }
 
     #[Test]
@@ -96,7 +104,12 @@ class UserFeatureTest extends TestCase
         $token = $this->loginSystemAdminUser();
         $response = $this->withToken($token)->get("{$this->resource}");
 
-        $response->assertOk()->assertJsonStructure(['data', 'links', 'meta']);
+        $expected = [
+            'data',
+            'links',
+            'meta'
+        ];
+        $response->assertOk()->assertJsonStructure($expected);
     }
 
     #[Test]
@@ -107,7 +120,10 @@ class UserFeatureTest extends TestCase
         $user = User::factory()->create();
         $response = $this->withToken($token)->get("{$this->resource}/{$user->id}");
 
-        $response->assertOk()->assertJson(['id' => $response->json()['id']]);
+        $expected = [
+            'id' => $user->id
+        ];
+        $response->assertOk()->assertJson($expected);
     }
 
     #[Test]
@@ -145,8 +161,10 @@ class UserFeatureTest extends TestCase
         /** @var User $user */
         $user = User::factory()->create();
         $response = $this->withToken($token)->delete("{$this->resource}/{$user->id}");
-
-        $response->assertOk()->assertJsonStructure(['success']);
+        $expected = [
+            'success' => true
+        ];
+        $response->assertOk()->assertJson($expected);
     }
 
 }
