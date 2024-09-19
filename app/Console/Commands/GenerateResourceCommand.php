@@ -226,16 +226,16 @@ class GenerateResourceCommand extends Command
      */
     private function createTestFile(string $modelName): void
     {
-        $stubName = 'UnitTest';
-        $path = base_path("tests/Unit/{$modelName}{$stubName}.php");
-
-        if (File::exists($path)) {
-            $this->error("{$path} already exists. Skipping...");
-        } else {
-            $file = $this->getStubFile($modelName, $stubName);
-            file_put_contents($path, $file);
-            $this->info("{$path} successfully created" . PHP_EOL);
-        }
+//        $stubName = 'UnitTest';
+//        $path = base_path("tests/Unit/{$modelName}{$stubName}.php");
+//
+//        if (File::exists($path)) {
+//            $this->error("{$path} already exists. Skipping...");
+//        } else {
+//            $file = $this->getStubFile($modelName, $stubName);
+//            file_put_contents($path, $file);
+//            $this->info("{$path} successfully created" . PHP_EOL);
+//        }
 
         $stubName = 'FeatureTest';
         $path = base_path("tests/Feature/{$modelName}{$stubName}.php");
