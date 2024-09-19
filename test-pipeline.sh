@@ -14,7 +14,7 @@ while ! docker exec laravel-db-test mysql -uroot -p$TEST_DB_ROOT_PASSWORD -e "SE
     sleep 1
 done
 
-COMMANDS="
+commands="
     chmod -R 777 storage
     chmod -R 777 bootstrap/cache
     composer install --prefer-dist --no-progress --no-interaction
@@ -25,4 +25,4 @@ COMMANDS="
     php artisan test --parallel
 "
 
-docker exec laravel-api bash -c "$COMMANDS"
+docker exec laravel-api bash -c "$commands"

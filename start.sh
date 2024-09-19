@@ -2,14 +2,14 @@
 set -e
 set -a
 
-TYPE=$1
+type=$1
 
 if [[ -f ".env" ]]; then
     echo -e "\033[0m \033[1;35m Stopping existing services \033[0m"
     docker compose down
 fi
 
-if [ "$TYPE" = "fresh" ]; then
+if [ "$type" = "fresh" ]; then
     if [[ -f ".env" ]]; then
         echo -e "\033[0m \033[1;35m Removing existing .env file \033[0m"
         rm .env
@@ -37,9 +37,9 @@ if [[ ! -f ".env" ]]; then
 fi
 
 source .env
-COMMANDS=""
+commands=""
 
-echo -e "\033[0m \033[1;35m Starting services \033[0m"
+echo -e "\033[0m \033[1;35m Starting services... \033[0m"
 docker compose up -d
 
 # Wait for the containers to initialize
@@ -49,8 +49,8 @@ while ! docker exec laravel-db mysql -uroot -p$DB_ROOT_PASSWORD -e "SELECT 1" >/
     sleep 1
 done
 
-if [ "$TYPE" = "fresh" ]; then
-    COMMANDS="
+if [ "$type" = "fresh" ]; then
+    commands="
     chmod -R 777 storage
     chmod -R 777 bootstrap/cache
     composer update
@@ -62,7 +62,7 @@ if [ "$TYPE" = "fresh" ]; then
     php artisan storage:link
     "
 else
-    COMMANDS="
+    commands="
     chmod -R 777 storage
     chmod -R 777 bootstrap/cache
     composer update
@@ -70,7 +70,7 @@ else
     "
 fi
 
-docker exec -it laravel-api bash -c "$COMMANDS"
+docker exec -it laravel-api bash -c "$commands"
 
 echo -e "\033[0m \033[1;35m Application is running at: \033[0m"
 echo -e "\033[0m \033[1;32m \t http://localhost:8000/ \033[0m"
