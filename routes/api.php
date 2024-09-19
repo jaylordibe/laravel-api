@@ -18,7 +18,7 @@ Route::middleware('auth:api')->group(function () {
     // Auth
     Route::post('auth/sign-out', [AuthController::class, 'signOut']);
 
-    // CRUD routes for AppVersion
+    // AppVersion routes
     Route::prefix('app-versions')->group(function () {
         Route::post('/', [AppVersionController::class, 'create']);
         Route::get('/', [AppVersionController::class, 'getPaginated']);
@@ -27,7 +27,7 @@ Route::middleware('auth:api')->group(function () {
         Route::delete('/{appVersionId}', [AppVersionController::class, 'delete'])->where('appVersionId', RoutePatternConstant::NUMERIC);
     });
 
-    // CRUD routes for User
+    // User routes
     Route::prefix('users')->group(function () {
         Route::post('/', [UserController::class, 'create']);
         Route::get('/', [UserController::class, 'getPaginated']);
@@ -40,7 +40,7 @@ Route::middleware('auth:api')->group(function () {
         Route::delete('/{userId}', [UserController::class, 'delete'])->where('userId', RoutePatternConstant::NUMERIC);
     });
 
-    // CRUD routes for Address
+    // Address routes
     Route::prefix('addresses')->group(function () {
         Route::post('/', [AddressController::class, 'create']);
         Route::get('/', [AddressController::class, 'getPaginated']);
