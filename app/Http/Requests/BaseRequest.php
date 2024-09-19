@@ -111,27 +111,15 @@ class BaseRequest extends FormRequest
     public function getInputAsArray(string $key, ?array $default = null): ?array
     {
         $data = $this->input($key);
+        $value = $default;
 
-        return is_null($data) ? $default : (array) $data;
-    }
-
-    /**
-     * Transform input value to array from a pipe separated string.
-     *
-     * @param string $key
-     * @param array|null $default
-     *
-     * @return array|null
-     */
-    public function getInputAsArrayFromPipeSeparatedString(string $key, ?array $default = null): ?array
-    {
-        $value = $this->input($key);
-
-        if (empty($value)) {
-            return $default;
+        if (is_string($data) && !empty($data)) {
+            $value = explode('|', $data);
+        } elseif (is_array($data) && !empty($data)) {
+            $value = $data;
         }
 
-        return explode('|', (string) $value);
+        return $value;
     }
 
     /**
@@ -248,13 +236,13 @@ class BaseRequest extends FormRequest
      */
     public function getRelations(): array
     {
-        $value = $this->input('relations');
+        $data = $this->input('relations');
         $relations = [];
 
-        if (is_string($value) && !empty($value)) {
-            $relations = explode('|', $value);
-        } elseif (is_array($value) && !empty($value)) {
-            $relations = $value;
+        if (is_string($data) && !empty($data)) {
+            $relations = explode('|', $data);
+        } elseif (is_array($data) && !empty($data)) {
+            $relations = $data;
         }
 
         return $relations;
@@ -266,13 +254,13 @@ class BaseRequest extends FormRequest
      */
     public function getColumns(): array
     {
-        $value = $this->input('columns');
+        $data = $this->input('columns');
         $columns = [];
 
-        if (is_string($value) && !empty($value)) {
-            $columns = explode(',', $value);
-        } elseif (is_array($value) && !empty($value)) {
-            $columns = $value;
+        if (is_string($data) && !empty($data)) {
+            $columns = explode(',', $data);
+        } elseif (is_array($data) && !empty($data)) {
+            $columns = $data;
         }
 
         return $columns;
