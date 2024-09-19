@@ -116,14 +116,14 @@ class BaseRequest extends FormRequest
     }
 
     /**
-     * Transform input value to array from a comma separated string.
+     * Transform input value to array from a pipe separated string.
      *
      * @param string $key
      * @param array|null $default
      *
      * @return array|null
      */
-    public function getInputAsArrayFromCommaSeparatedString(string $key, ?array $default = null): ?array
+    public function getInputAsArrayFromPipeSeparatedString(string $key, ?array $default = null): ?array
     {
         $value = $this->input($key);
 
@@ -131,7 +131,7 @@ class BaseRequest extends FormRequest
             return $default;
         }
 
-        return explode(',', (string) $value);
+        return explode('|', (string) $value);
     }
 
     /**
