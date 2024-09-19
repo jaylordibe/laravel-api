@@ -5,7 +5,6 @@ echo -e "\033[0m \033[1;35m Running tests... \033[0m"
 
 class_name_or_method_name="$1"
 file_path="$2"
-filter=""
 commands=""
 
 if [[ -n "$class_name_or_method_name" && -n "$file_path" ]]; then
