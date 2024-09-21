@@ -60,10 +60,16 @@ class ResponseUtil
         $response = self::empty();
 
         if ($data instanceof Model && !empty($data->id)) {
+            // Handle single model with an ID
             $response = new $resource($data);
+        } elseif (is_array($data) && !empty($data) && isset($data[0]) && $data[0] instanceof Model) {
+            // Handle array of models
+            $response = $resource::collection(collect($data));
         } elseif (is_array($data) && !empty($data)) {
+            // Handle array of data (non-models)
             $response = new $resource((object) $data);
         } elseif ($data instanceof LengthAwarePaginator || $data instanceof Collection) {
+            // Handle collections or paginators
             $response = $resource::collection($data);
         }
 
