@@ -2,7 +2,7 @@
 
 namespace App\Utils;
 
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Contracts\Pagination\Paginator;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -68,7 +68,7 @@ class ResponseUtil
         } elseif (is_array($data) && !empty($data)) {
             // Handle array of data (non-models)
             $response = new $resource((object) $data);
-        } elseif ($data instanceof LengthAwarePaginator || $data instanceof Collection) {
+        } elseif ($data instanceof Paginator || $data instanceof Collection) {
             // Handle collections or paginators
             $response = $resource::collection($data);
         }
