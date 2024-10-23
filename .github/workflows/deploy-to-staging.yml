@@ -1,7 +1,7 @@
 # Set workflow name
 name: Deploy To Staging
 
-# Set events that triggers the workflow
+# Set events that trigger the workflow
 on:
   push:
     branches:
