@@ -68,6 +68,7 @@ class UserRepository
         $user->timezone = $userData->timezone;
         $user->phone_number = $userData->phoneNumber;
         $user->birthday = $userData->birthday;
+        $user->gender = $userData->gender;
         $user->save();
 
         return $user;
@@ -108,6 +109,10 @@ class UserRepository
             $users->whereHas('roles', function (Builder $roles) use ($userFilterData) {
                 $roles->whereIn('name', $userFilterData->roles);
             });
+        }
+
+        if (!empty($userFilterData->gender)) {
+            $users->where('gender', $userFilterData->gender);
         }
 
         if (!empty($searchQuery)) {

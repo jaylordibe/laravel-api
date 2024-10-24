@@ -26,12 +26,13 @@ return new class extends Migration {
             $table->string('last_name');
             $table->string('username')->unique();
             $table->string('email')->unique();
-            $table->timestamp('email_verified_at')->nullable();
+            $table->dateTime('email_verified_at')->nullable();
             $table->string('password');
             $table->rememberToken();
             $table->string('timezone')->nullable();
             $table->string('phone_number')->nullable();
-            $table->timestamp('birthday')->nullable();
+            $table->dateTime('birthday')->nullable();
+            $table->string('gender')->nullable();
             $table->text('profile_photo_url')->nullable();
         });
 

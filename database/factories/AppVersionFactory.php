@@ -20,12 +20,12 @@ class AppVersionFactory extends Factory
     public function definition(): array
     {
         return [
-            'version' => $this->faker->unique()->numerify('##.##.##'),
-            'description' => $this->faker->text(),
-            'platform' => $this->faker->randomElement(AppPlatformConstant::asList()),
+            'version' => fake()->unique()->numerify('##.##.##'),
+            'description' => fake()->text(),
+            'platform' => fake()->randomElement(AppPlatformConstant::asList()),
             'release_date' => now(),
-            'download_url' => $this->faker->url(),
-            'force_update' => $this->faker->boolean()
+            'download_url' => fake()->url(),
+            'force_update' => fake()->boolean()
         ];
     }
 
