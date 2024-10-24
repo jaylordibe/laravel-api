@@ -9,6 +9,13 @@ use Illuminate\Support\Facades\Log;
 class DateUtil
 {
 
+    /**
+     * Checks if a datetime string is a valid UTC ISO string.
+     *
+     * @param string $datetimeString
+     *
+     * @return bool
+     */
     public static function isValidUtcIsoString(string $datetimeString): bool
     {
         try {
@@ -23,7 +30,9 @@ class DateUtil
     }
 
     /**
-     * Strips milliseconds from a UTC ISO string.
+     * Strips milliseconds from a datetime string (UTC ISO string).
+     * Laravel, by default, truncates the milliseconds when storing datetime values in the database.
+     * This is because many databases, including MySQL, by default, do not store milliseconds in datetime fields.
      *
      * @param string $datetimeString
      *

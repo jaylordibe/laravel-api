@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Utils\DateUtil;
 use Illuminate\Support\Str;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -162,7 +163,7 @@ class UserFeatureTest extends TestCase
             'lastName' => $payload['lastName'],
             'timezone' => $payload['timezone'],
             'phoneNumber' => $payload['phoneNumber'],
-            'birthday' => $this->stripMilliseconds($payload['birthday'])
+            'birthday' => DateUtil::stripMilliseconds($payload['birthday'])
         ];
 
         $response->assertOk()->assertJson($expected);

@@ -65,18 +65,4 @@ abstract class TestCase extends BaseTestCase
         );
     }
 
-    /**
-     * Strips milliseconds from a datetime string (UTC ISO string).
-     * Laravel, by default, truncates the milliseconds when storing datetime values in the database.
-     * This is because many databases, including MySQL, by default, do not store milliseconds in datetime fields.
-     *
-     * @param string $datetimeString
-     *
-     * @return string
-     */
-    protected function stripMilliseconds(string $datetimeString): string
-    {
-        return preg_replace('/\.\d+Z/', '.000000Z', $datetimeString);
-    }
-
 }
