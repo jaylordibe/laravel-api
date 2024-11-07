@@ -52,8 +52,8 @@ class AddressRequest extends BaseRequest
             zipOrPostalCode: $this->getInputAsString('zipOrPostalCode'),
             country: $this->getInputAsString('country'),
             id: $this->route('addressId'),
-            meta: $this->getMetaData(),
-            authUser: $this->getAuthUserData()
+            authUser: $this->getAuthUserData(),
+            meta: $this->getMetaData()
         );
     }
 
@@ -66,16 +66,14 @@ class AddressRequest extends BaseRequest
     {
         return new AddressFilterData(
             userId: Auth::user()->id,
-            address: $this->getInputAsString('address'),
             villageOrBarangay: $this->getInputAsString('villageOrBarangay'),
             cityOrMunicipality: $this->getInputAsString('cityOrMunicipality'),
             stateOrProvince: $this->getInputAsString('stateOrProvince'),
             zipOrPostalCode: $this->getInputAsString('zipOrPostalCode'),
             country: $this->getInputAsString('country'),
             id: $this->getInputAsInt('id'),
-            meta: $this->getMetaData(),
-            authUser: $this->getAuthUserData()
-        // Add more filter fields here if needed...
+            authUser: $this->getAuthUserData(),
+            meta: $this->getMetaData()
         );
     }
 

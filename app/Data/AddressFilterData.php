@@ -7,7 +7,6 @@ class AddressFilterData extends BaseData
 
     public function __construct(
         public ?int $userId = null,
-        public ?string $address = null,
         public ?string $villageOrBarangay = null,
         public ?string $cityOrMunicipality = null,
         public ?string $stateOrProvince = null,
