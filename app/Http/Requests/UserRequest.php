@@ -63,18 +63,10 @@ class UserRequest extends BaseRequest
     public function toFilterData(): UserFilterData
     {
         return new UserFilterData(
-            firstName: $this->getInputAsString('firstName'),
-            lastName: $this->getInputAsString('lastName'),
-            username: $this->getInputAsString('username', ''),
-            email: $this->getInputAsString('email', ''),
-            middleName: $this->getInputAsString('middleName'),
-            timezone: $this->getInputAsString('timezone'),
-            phoneNumber: $this->getInputAsString('phoneNumber'),
-            birthday: $this->getInputAsCarbon('birthday'),
+            // Add UserFilterData properties here
             id: $this->getInputAsInt('id'),
             meta: $this->getMetaData(),
             authUser: $this->getAuthUserData()
-        // Add more filter fields here if needed...
         );
     }
 
