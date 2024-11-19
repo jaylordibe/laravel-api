@@ -4,6 +4,7 @@ use App\Constants\RoutePatternConstant;
 use App\Http\Controllers\AddressController;
 use App\Http\Controllers\AppVersionController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\JobStatusController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DeviceTokenController;
@@ -56,5 +57,10 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/{deviceTokenId}', [DeviceTokenController::class, 'getById'])->where('deviceTokenId', RoutePatternConstant::NUMERIC);
         Route::put('/{deviceTokenId}', [DeviceTokenController::class, 'update'])->where('deviceTokenId', RoutePatternConstant::NUMERIC);
         Route::delete('/{deviceTokenId}', [DeviceTokenController::class, 'delete'])->where('deviceTokenId', RoutePatternConstant::NUMERIC);
+    });
+
+    // JobStatus routes
+    Route::prefix('job-statuses')->group(function () {
+        Route::get('/{jobStatusId}', [JobStatusController::class, 'getById'])->where('jobStatusId', RoutePatternConstant::NUMERIC);
     });
 });
