@@ -6,6 +6,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use ZipArchive;
 
 class FileUtil
 {
@@ -300,6 +301,67 @@ class FileUtil
     public static function getStoragePath(string $path): string
     {
         return Storage::disk(self::DISK)->path($path);
+    }
+
+    /**
+     * Get the contents of the file from the given path.
+     *
+     * @param string $path
+     *
+     * @return string
+     */
+    public static function get(string $path): string
+    {
+        return Storage::disk(self::DISK)->get($path);
+    }
+
+    /**
+     * Zip files.
+     *
+     * @param array $paths
+     * @param string $fileName
+     *
+     * @return string
+     */
+    public static function zipFiles(array $paths, string $fileName = ''): string
+    {
+        if (empty($paths)) {
+            return '';
+        }
+
+        if (empty($fileName)) {
+            $fileName = time() . '_' . Str::uuid() . '.zip';
+        } else {
+            if (!str_contains($fileName, '.zip')) {
+                $fileName .= '.zip';
+            }
+
+            if (str_contains($fileName, '/')) {
+                $directoryPath = Str::beforeLast($fileName, '/');
+
+                if (self::directoryMissing($directoryPath)) {
+                    self::makeDirectory($directoryPath);
+                }
+            }
+        }
+
+        $zip = new ZipArchive();
+        $zipPath = self::getStoragePath($fileName);
+
+        if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE)) {
+            foreach ($paths as $path) {
+                // Get the file contents and add it to zip
+                $stream = self::get($path);
+                $zip->addFromString(basename($path), $stream);
+
+                // Delete the file after adding to zip
+                self::delete($path);
+            }
+
+            $zip->close();
+        }
+
+        return $fileName;
     }
 
 }

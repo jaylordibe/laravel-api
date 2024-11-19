@@ -10,5 +10,6 @@ class AppConstant
     const int MAX_PAGE_LIMIT = 100;
     const string DEFAULT_DB_QUERY_SORT_FIELD = 'created_at';
     const string DEFAULT_DB_QUERY_SORT_DIRECTION = 'asc';
+    const int DEFAULT_NUMBER_OF_RECORDS_PER_SHEET = 10000;
 
 }
