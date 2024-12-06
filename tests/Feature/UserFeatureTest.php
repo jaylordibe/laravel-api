@@ -41,20 +41,21 @@ class UserFeatureTest extends TestCase
     public function testGetAuthUser(): void
     {
         $token = $this->loginSystemAdminUser();
+        $userData = $this->getAuthUser($token);
         $response = $this->withToken($token)->get("{$this->resource}/auth");
 
         $expected = [
-            'id',
-            'firstName',
-            'middleName',
-            'lastName',
-            'phoneNumber',
-            'email',
-            'username',
-            'birthday',
-            'timezone',
+            'id' => $userData->id,
+            'firstName' => $userData->firstName,
+            'middleName' => $userData->middleName,
+            'lastName' => $userData->lastName,
+            'username' => $userData->username,
+            'email' => $userData->email,
+            'timezone' => $userData->timezone,
+            'phoneNumber' => $userData->phoneNumber,
+            'birthday' => $userData->birthday
         ];
-        $response->assertOk()->assertJsonStructure($expected);
+        $response->assertOk()->assertJson($expected);
     }
 
     #[Test]
@@ -67,7 +68,15 @@ class UserFeatureTest extends TestCase
         $response = $this->withToken($token)->put("{$this->resource}/auth/username", $payload);
 
         $expected = [
-            'username' => $payload['username']
+            'id' => $user->id,
+            'firstName' => $user->first_name,
+            'middleName' => $user->middle_name,
+            'lastName' => $user->last_name,
+            'username' => $payload['username'],
+            'email' => $user->email,
+            'timezone' => $user->timezone,
+            'phoneNumber' => $user->phone_number,
+            'birthday' => $user->birthday->toISOString()
         ];
         $response->assertOk()->assertJson($expected);
     }
@@ -82,7 +91,15 @@ class UserFeatureTest extends TestCase
         $response = $this->withToken($token)->put("{$this->resource}/auth/email", $payload);
 
         $expected = [
-            'email' => $payload['email']
+            'id' => $user->id,
+            'firstName' => $user->first_name,
+            'middleName' => $user->middle_name,
+            'lastName' => $user->last_name,
+            'username' => $user->username,
+            'email' => $payload['email'],
+            'timezone' => $user->timezone,
+            'phoneNumber' => $user->phone_number,
+            'birthday' => $user->birthday->toISOString()
         ];
         $response->assertOk()->assertJson($expected);
     }
@@ -153,7 +170,15 @@ class UserFeatureTest extends TestCase
         $response = $this->withToken($token)->get("{$this->resource}/{$user->id}");
 
         $expected = [
-            'id' => $user->id
+            'id' => $user->id,
+            'firstName' => $user->first_name,
+            'middleName' => $user->middle_name,
+            'lastName' => $user->last_name,
+            'username' => $user->username,
+            'email' => $user->email,
+            'timezone' => $user->timezone,
+            'phoneNumber' => $user->phone_number,
+            'birthday' => $user->birthday->toISOString()
         ];
         $response->assertOk()->assertJson($expected);
     }
