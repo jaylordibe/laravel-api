@@ -2,16 +2,20 @@
 
 namespace App\Services;
 
+use App\Constants\RoleConstant;
 use App\Data\CreateUserData;
 use App\Data\ServiceResponseData;
 use App\Data\SignUpUserData;
+use App\Data\UpdatePasswordData;
 use App\Data\UserData;
 use App\Data\UserFilterData;
+use App\Models\User;
 use App\Repositories\UserRepository;
 use App\Utils\AppUtil;
 use App\Utils\FileUtil;
 use App\Utils\ServiceResponseUtil;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 
 class UserService
@@ -223,6 +227,32 @@ class UserService
         }
 
         return ServiceResponseUtil::map($user);
+    }
+
+    /**
+     * Update user password.
+     *
+     * @param UpdatePasswordData $changePasswordData
+     *
+     * @return ServiceResponseData
+     */
+    public function updatePassword(UpdatePasswordData $changePasswordData): ServiceResponseData
+    {
+        /** @var User $authUser */
+        $authUser = Auth::user();
+        $isAdmin = $authUser->hasRole([RoleConstant::SYSTEM_ADMIN, RoleConstant::APP_ADMIN]);
+
+        if (!$isAdmin && $authUser->id !== $changePasswordData->userId) {
+            return ServiceResponseUtil::error('Unauthorized to update password.');
+        }
+
+        $user = $this->userRepository->updatePassword($changePasswordData);
+
+        if (empty($user)) {
+            return ServiceResponseUtil::error('Failed to update password.');
+        }
+
+        return ServiceResponseUtil::success('Password successfully updated.');
     }
 
     /**

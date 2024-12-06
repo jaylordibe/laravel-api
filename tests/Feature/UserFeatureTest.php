@@ -88,6 +88,24 @@ class UserFeatureTest extends TestCase
     }
 
     #[Test]
+    public function testUpdateAuthUserPassword(): void
+    {
+        /** @var User $user */
+        $user = User::factory()->create();
+        $token = $this->login($user->email);
+        $payload = [
+            'password' => 'password',
+            'passwordConfirmation' => 'password'
+        ];
+        $response = $this->withToken($token)->put("{$this->resource}/auth/password", $payload);
+
+        $expected = [
+            'success' => true
+        ];
+        $response->assertOk()->assertJson($expected);
+    }
+
+    #[Test]
     public function testCreateUser(): void
     {
         $token = $this->loginSystemAdminUser();
@@ -176,6 +194,24 @@ class UserFeatureTest extends TestCase
         /** @var User $user */
         $user = User::factory()->create();
         $response = $this->withToken($token)->delete("{$this->resource}/{$user->id}");
+
+        $expected = [
+            'success' => true
+        ];
+        $response->assertOk()->assertJson($expected);
+    }
+
+    #[Test]
+    public function testUpdateUserPassword(): void
+    {
+        /** @var User $user */
+        $user = User::factory()->create();
+        $token = $this->loginSystemAdminUser();
+        $payload = [
+            'password' => 'password',
+            'passwordConfirmation' => 'password'
+        ];
+        $response = $this->withToken($token)->put("{$this->resource}/{$user->id}/password", $payload);
 
         $expected = [
             'success' => true

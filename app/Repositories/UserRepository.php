@@ -2,6 +2,7 @@
 
 namespace App\Repositories;
 
+use App\Data\UpdatePasswordData;
 use App\Data\UserData;
 use App\Data\UserFilterData;
 use App\Models\User;
@@ -209,6 +210,27 @@ class UserRepository
         }
 
         $user->email = $email;
+        $user->save();
+
+        return $user;
+    }
+
+    /**
+     * Update user password.
+     *
+     * @param UpdatePasswordData $changePasswordData
+     *
+     * @return User|null
+     */
+    public function updatePassword(UpdatePasswordData $changePasswordData): ?User
+    {
+        $user = $this->findById($changePasswordData->userId);
+
+        if (empty($user)) {
+            return null;
+        }
+
+        $user->password = Hash::make($changePasswordData->password);
         $user->save();
 
         return $user;

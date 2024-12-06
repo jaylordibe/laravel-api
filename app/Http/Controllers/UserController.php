@@ -6,6 +6,7 @@ use App\Constants\PermissionConstant;
 use App\Http\Requests\CreateUserRequest;
 use App\Http\Requests\GenericRequest;
 use App\Http\Requests\SignUpUserRequest;
+use App\Http\Requests\UpdatePasswordRequest;
 use App\Http\Requests\UserRequest;
 use App\Http\Resources\UserResource;
 use App\Services\UserService;
@@ -108,6 +109,45 @@ class UserController extends Controller
         }
 
         return ResponseUtil::resource(UserResource::class, $serviceResponse->data);
+    }
+
+    /**
+     * Update auth user's password.
+     *
+     * @param UpdatePasswordRequest $request
+     *
+     * @return JsonResponse|JsonResource
+     */
+    public function updateAuthUserPassword(UpdatePasswordRequest $request): JsonResponse|JsonResource
+    {
+        $serviceResponse = $this->userService->updatePassword($request->toData());
+
+        if ($serviceResponse->failed()) {
+            return ResponseUtil::error($serviceResponse->message);
+        }
+
+        return ResponseUtil::success($serviceResponse->message);
+    }
+
+    /**
+     * Update user password.
+     *
+     * @param UpdatePasswordRequest $request
+     * @param int $userId
+     *
+     * @return JsonResponse|JsonResource
+     */
+    public function updatePassword(UpdatePasswordRequest $request, int $userId): JsonResponse|JsonResource
+    {
+        $updatePasswordData = $request->toData();
+        $updatePasswordData->userId = $userId;
+        $serviceResponse = $this->userService->updatePassword($updatePasswordData);
+
+        if ($serviceResponse->failed()) {
+            return ResponseUtil::error($serviceResponse->message);
+        }
+
+        return ResponseUtil::success($serviceResponse->message);
     }
 
     /**
