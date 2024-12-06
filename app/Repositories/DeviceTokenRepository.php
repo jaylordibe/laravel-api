@@ -81,7 +81,7 @@ class DeviceTokenRepository
         return $deviceTokens->orderBy(
             $deviceTokenFilterData->meta->sortField,
             $deviceTokenFilterData->meta->sortDirection
-        )->paginate($deviceTokenFilterData->meta->limit);
+        )->paginate($deviceTokenFilterData->meta->perPage);
     }
 
     /**

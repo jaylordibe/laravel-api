@@ -69,7 +69,7 @@ class AddressRepository
         return $addresses->orderBy(
             $addressFilterData->meta->sortField,
             $addressFilterData->meta->sortDirection
-        )->paginate($addressFilterData->meta->limit);
+        )->paginate($addressFilterData->meta->perPage);
     }
 
     /**

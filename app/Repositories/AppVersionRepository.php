@@ -94,7 +94,7 @@ class AppVersionRepository
         return $appVersions->orderBy(
             $appVersionFilterData->meta->sortField,
             $appVersionFilterData->meta->sortDirection
-        )->paginate($appVersionFilterData->meta->limit);
+        )->paginate($appVersionFilterData->meta->perPage);
     }
 
     /**

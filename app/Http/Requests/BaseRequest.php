@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use App\Constants\AppConstant;
 use App\Data\MetaData;
 use App\Data\UserData;
+use App\Models\User;
 use App\Utils\ResponseUtil;
 use Brick\Math\BigDecimal;
 use Brick\Math\BigInteger;
@@ -207,15 +208,15 @@ class BaseRequest extends FormRequest
     /**
      * For pagination. Get the requested page limit.
      *
-     * @param int $maxPageLimit
+     * @param int $maxPerPage
      *
      * @return int
      */
-    public function getPageLimit(int $maxPageLimit = AppConstant::MAX_PAGE_LIMIT): int
+    public function getPerPage(int $maxPerPage = AppConstant::MAX_PER_PAGE): int
     {
-        $limit = $this->getInputAsInt('limit') ?: AppConstant::DEFAULT_PAGE_LIMIT;
+        $perPage = $this->getInputAsInt('perPage') ?: AppConstant::DEFAULT_PER_PAGE;
 
-        return $limit > $maxPageLimit ? AppConstant::DEFAULT_PAGE_LIMIT : $limit;
+        return $perPage > $maxPerPage ? AppConstant::DEFAULT_PER_PAGE : $perPage;
     }
 
     /**
@@ -227,7 +228,7 @@ class BaseRequest extends FormRequest
     {
         $offset = $this->getInputAsInt('offset');
 
-        return $offset ?: ($this->getPage() - 1) * $this->getPageLimit();
+        return $offset ?: ($this->getPage() - 1) * $this->getPerPage();
     }
 
     /**
@@ -273,14 +274,14 @@ class BaseRequest extends FormRequest
     public function getMetaData(): MetaData
     {
         return new MetaData(
-            searchQuery: $this->getInputAsString('searchQuery', ''),
+            search: $this->getInputAsString('search', ''),
             relations: $this->getRelations() ?? [],
             columns: $this->getColumns() ?? ['*'],
             groupBy: $this->getInputAsString('groupBy', ''),
             sortField: $this->getInputAsString('sortField', 'id'),
             sortDirection: $this->getInputAsString('sortDirection', 'asc'),
             page: $this->getPage(),
-            limit: $this->getPageLimit(),
+            perPage: $this->getPerPage(),
             offset: $this->getPageOffset(),
             exact: $this->getInputAsBoolean('exact', false)
         );
@@ -292,6 +293,7 @@ class BaseRequest extends FormRequest
      */
     public function getAuthUserData(): UserData
     {
+        /** @var User $authUser */
         $authUser = Auth::user();
 
         return new UserData(

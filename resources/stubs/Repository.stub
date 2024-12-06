@@ -73,7 +73,7 @@ class {{modelName}}Repository
         return ${{modelNameCamelCasePlural}}->orderBy(
             ${{modelNameCamelCase}}FilterData->meta->sortField,
             ${{modelNameCamelCase}}FilterData->meta->sortDirection
-        )->paginate(${{modelNameCamelCase}}FilterData->meta->limit);
+        )->paginate(${{modelNameCamelCase}}FilterData->meta->perPage);
     }
 
     /**

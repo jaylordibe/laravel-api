@@ -101,7 +101,7 @@ class UserRepository
      */
     public function getPaginated(UserFilterData $userFilterData): LengthAwarePaginator
     {
-        $searchQuery = $userFilterData->meta->searchQuery;
+        $searchQuery = $userFilterData->meta->search;
 
         $users = User::with($userFilterData->meta->relations);
 
@@ -127,7 +127,7 @@ class UserRepository
         return $users->orderBy(
             $userFilterData->meta->sortField,
             $userFilterData->meta->sortDirection
-        )->paginate($userFilterData->meta->limit);
+        )->paginate($userFilterData->meta->perPage);
     }
 
     /**
