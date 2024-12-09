@@ -14,7 +14,7 @@ use App\Http\Controllers\ThisIsTestController;
 Route::post('auth/sign-in', [AuthController::class, 'signIn']);
 Route::post('users/sign-up', [UserController::class, 'signUp']);
 Route::get('app-versions/latest', [AppVersionController::class, 'getLatest']);
-Route::get('email/verify/{id}', [UserController::class, 'verifyEmail']);
+Route::get('email/verify/{id}', [UserController::class, 'verifyEmail'])->name('verification.verify');
 
 // Authenticated Routes
 Route::middleware('auth:api')->group(function () {

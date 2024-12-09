@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use App\Utils\DateUtil;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -16,6 +17,9 @@ class UserFeatureTest extends TestCase
     #[Test]
     public function testSignUpUser(): void
     {
+        // Prevent the actual notification from being sent
+        Notification::fake();
+
         $payload = [
             'firstName' => fake()->firstName(),
             'lastName' => fake()->lastName(),
