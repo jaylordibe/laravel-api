@@ -11,6 +11,7 @@ use App\Http\Requests\UserRequest;
 use App\Http\Resources\UserResource;
 use App\Services\UserService;
 use App\Utils\ResponseUtil;
+use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Routing\Controller;
@@ -42,6 +43,29 @@ class UserController extends Controller
         }
 
         return ResponseUtil::resource(UserResource::class, $serviceResponse->data);
+    }
+
+    /**
+     * Verify user email.
+     *
+     * @param EmailVerificationRequest $request
+     * @param int $userId
+     *
+     * @return JsonResponse|JsonResource
+     */
+    public function verifyEmail(EmailVerificationRequest $request, int $userId): JsonResponse|JsonResource
+    {
+        if (!$request->hasValidSignature()) {
+            return ResponseUtil::error('Invalid verification link.');
+        }
+
+        $serviceResponse = $this->userService->verifyEmail($userId);
+
+        if ($serviceResponse->failed()) {
+            return ResponseUtil::error($serviceResponse->message);
+        }
+
+        return ResponseUtil::success($serviceResponse->message);
     }
 
     /**

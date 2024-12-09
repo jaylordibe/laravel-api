@@ -47,7 +47,33 @@ class UserService
             return ServiceResponseUtil::error('Sign up failed.');
         }
 
+        $user->sendEmailVerificationNotification();
+
         return ServiceResponseUtil::success('Sign up successful.', $user);
+    }
+
+    /**
+     * Verify user email.
+     *
+     * @param int $userId
+     *
+     * @return ServiceResponseData
+     */
+    public function verifyEmail(int $userId): ServiceResponseData
+    {
+        $user = $this->userRepository->findById($userId);
+
+        if (empty($user)) {
+            return ServiceResponseUtil::error('User not found.');
+        }
+
+        if ($user->hasVerifiedEmail()) {
+            return ServiceResponseUtil::error('Email already verified.');
+        }
+
+        $user->markEmailAsVerified();
+
+        return ServiceResponseUtil::success('Email verified.');
     }
 
     /**

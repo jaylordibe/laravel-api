@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Constants\DatabaseTableConstant;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -50,7 +50,7 @@ use Spatie\Permission\Traits\HasRoles;
  *
  * @mixin Builder
  */
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
 
     use HasApiTokens, HasFactory, HasRoles, Notifiable, SoftDeletes;
