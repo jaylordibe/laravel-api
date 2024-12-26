@@ -72,6 +72,13 @@ services:
             UPLOAD_LIMIT: 300M
         networks:
             - laravel-network
+    laravel-redis:
+        image: redis
+        container_name: laravel-redis
+        ports:
+            - "6379:6379"
+        networks:
+            - laravel-network
 networks:
     laravel-network:
         driver: bridge
