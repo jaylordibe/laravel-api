@@ -73,7 +73,7 @@ services:
         networks:
             - laravel-network
     laravel-redis:
-        image: redis
+        image: redis:latest
         container_name: laravel-redis
         ports:
             - "6379:6379"
