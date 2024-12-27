@@ -8,7 +8,7 @@ use App\Http\Controllers\JobStatusController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DeviceTokenController;
-use App\Http\Controllers\ThisIsTestController;
+use App\Http\Controllers\ActivityController;
 
 // Public Routes
 Route::post('auth/sign-in', [AuthController::class, 'signIn']);
@@ -68,12 +68,9 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/{jobStatusId}', [JobStatusController::class, 'getById'])->where('jobStatusId', RoutePatternConstant::NUMERIC);
     });
 
-	// ThisIsTest routes
-	Route::prefix('this-is-tests')->group(function () {
-    	Route::post('/', [ThisIsTestController::class, 'create']);
-    	Route::get('/', [ThisIsTestController::class, 'getPaginated']);
-    	Route::get('/{thisIsTestId}', [ThisIsTestController::class, 'getById'])->where('thisIsTestId', RoutePatternConstant::NUMERIC);
-    	Route::put('/{thisIsTestId}', [ThisIsTestController::class, 'update'])->where('thisIsTestId', RoutePatternConstant::NUMERIC);
-    	Route::delete('/{thisIsTestId}', [ThisIsTestController::class, 'delete'])->where('thisIsTestId', RoutePatternConstant::NUMERIC);
+	// Activity routes
+	Route::prefix('activities')->group(function () {
+    	Route::post('/', [ActivityController::class, 'create']);
+    	Route::get('/', [ActivityController::class, 'getPaginated']);
 	});
 });
