@@ -30,6 +30,19 @@ This README would normally document whatever steps are necessary to get your app
     ```
     ./test.sh
     ```
+
+### Enabled and ready to use packages ###
+1. [Laravel Resource Generator](https://github.com/jaylordibe/laravel-resource-generator)
+2. [Laravel Horizon](https://laravel.com/docs/8.x/horizon)
+3. [Laravel Snappy](https://github.com/barryvdh/laravel-snappy)
+4. [Brick Math](https://github.com/brick/math)
+5. [Google APIs Client](https://github.com/googleapis/google-api-php-client)
+6. [Laravel Job Status](https://github.com/imTigger/laravel-job-status)
+7. [PhpSpreadsheet](https://github.com/PHPOffice/PhpSpreadsheet)
+8. [Laravel Activity Log](https://github.com/spatie/laravel-activitylog)
+9. [Laravel Data](https://github.com/spatie/laravel-data)
+10. [Laravel Permission](https://github.com/spatie/laravel-permission)
+
 ### Contribution guidelines ###
 
 * Writing tests
