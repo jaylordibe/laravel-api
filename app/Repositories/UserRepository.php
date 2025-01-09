@@ -258,4 +258,32 @@ class UserRepository
         return $user;
     }
 
+    /**
+     * Find user by username.
+     *
+     * @param string $username
+     * @param array $relations
+     * @param array $columns
+     *
+     * @return User|null
+     */
+    public function findByUsername(string $username, array $relations = [], array $columns = ['*']): ?User
+    {
+        return User::with($relations)->where('username', $username)->first($columns);
+    }
+
+    /**
+     * Find user by email.
+     *
+     * @param string $email
+     * @param array $relations
+     * @param array $columns
+     *
+     * @return User|null
+     */
+    public function findByEmail(string $email, array $relations = [], array $columns = ['*']): ?User
+    {
+        return User::with($relations)->where('email', $email)->first($columns);
+    }
+
 }
