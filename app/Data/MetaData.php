@@ -17,7 +17,8 @@ class MetaData extends Data
         public int $page = 0, // The current requested page that will be used for pagination
         public int $perPage = 0, // The current requested per page or limit that will be used for pagination
         public int $offset = 0, // The current requested offset that will be used for pagination
-        public bool $exact = false // Boolean value that will be used for getting either exact or related rows in the database
+        public bool $exact = false, // Boolean value that will be used for getting either exact or related rows in the database
+        public bool $all = false // Boolean value that will be used for getting either all or paginated rows in the database
     )
     {
     }

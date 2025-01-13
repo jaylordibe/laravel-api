@@ -283,7 +283,8 @@ class BaseRequest extends FormRequest
             page: $this->getPage(),
             perPage: $this->getPerPage(),
             offset: $this->getPageOffset(),
-            exact: $this->getInputAsBoolean('exact', false)
+            exact: $this->getInputAsBoolean('exact', false),
+            all: $this->getPerPage() < AppConstant::MAX_PER_PAGE_GET_ALL ? $this->getInputAsBoolean('all', false) : false
         );
     }
 
