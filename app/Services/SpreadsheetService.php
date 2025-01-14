@@ -72,6 +72,11 @@ class SpreadsheetService
      */
     public function readRawFileAsWorkSheet(string $readerType, string $filePath, int $sheetIndex = 0): Worksheet
     {
+        if (!file_exists($filePath)) {
+            Log::error("File not found: {$filePath}");
+            throw new Exception('File not found');
+        }
+
         $reader = SpreadsheetReaderTypeConstant::getReader($readerType);
         $reader->setReadEmptyCells(false);
         $reader->setIgnoreRowsWithNoCells(true);
