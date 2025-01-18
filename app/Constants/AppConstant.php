@@ -11,5 +11,7 @@ class AppConstant
     const string DEFAULT_DB_QUERY_SORT_FIELD = 'created_at';
     const string DEFAULT_DB_QUERY_SORT_DIRECTION = 'asc';
     const int DEFAULT_NUMBER_OF_RECORDS_PER_SHEET = 10000;
+    const string DEFAULT_DATE_FORMAT = 'Y-m-d';
+    const string DEFAULT_DATETIME_FORMAT = 'Y-m-d H:i:s';
 
 }
