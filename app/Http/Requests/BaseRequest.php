@@ -135,7 +135,7 @@ class BaseRequest extends FormRequest
         try {
             $data = $this->getInputAsString($key);
 
-            if (empty($data)) {
+            if (is_null($data)) {
                 return null;
             }
 
@@ -171,7 +171,7 @@ class BaseRequest extends FormRequest
         try {
             $data = $this->getInputAsString($key);
 
-            if (empty($data)) {
+            if (is_null($data)) {
                 return null;
             }
 
@@ -195,7 +195,7 @@ class BaseRequest extends FormRequest
         try {
             $data = $this->getInputAsString($key);
 
-            if (empty($data)) {
+            if (is_null($data)) {
                 return null;
             }
 
