@@ -132,19 +132,19 @@ class BaseRequest extends FormRequest
      */
     public function getInputAsCarbon(string $key): ?Carbon
     {
-        $dateTime = null;
-
         try {
-            $dateString = $this->getInputAsString($key);
+            $data = $this->getInputAsString($key);
 
-            if (!empty($dateString)) {
-                $dateTime = Carbon::parse($dateString);
+            if (empty($data)) {
+                return null;
             }
+
+            return Carbon::parse($data);
         } catch (InvalidFormatException $e) {
             Log::error("Failed to parse input as carbon datetime: {$e->getMessage()}");
-        }
 
-        return $dateTime;
+            return null;
+        }
     }
 
     /**
@@ -164,16 +164,22 @@ class BaseRequest extends FormRequest
      *
      * @param string $key
      *
-     * @return BigInteger
+     * @return BigInteger|null
      */
-    public function getInputAsBigInteger(string $key): BigInteger
+    public function getInputAsBigInteger(string $key): ?BigInteger
     {
         try {
-            return BigInteger::of($this->getInputAsString($key));
+            $data = $this->getInputAsString($key);
+
+            if (empty($data)) {
+                return null;
+            }
+
+            return BigInteger::of($data);
         } catch (MathException $e) {
             Log::error('Failed to parse input as BigInteger: ' . $e->getMessage());
 
-            return BigInteger::zero();
+            return null;
         }
     }
 
@@ -182,16 +188,22 @@ class BaseRequest extends FormRequest
      *
      * @param string $key
      *
-     * @return BigDecimal
+     * @return BigDecimal|null
      */
-    public function getInputAsBigDecimal(string $key): BigDecimal
+    public function getInputAsBigDecimal(string $key): ?BigDecimal
     {
         try {
-            return BigDecimal::of($this->getInputAsString($key));
+            $data = $this->getInputAsString($key);
+
+            if (empty($data)) {
+                return null;
+            }
+
+            return BigDecimal::of($data);
         } catch (MathException $e) {
             Log::error('Failed to parse input as BigDecimal: ' . $e->getMessage());
 
-            return BigDecimal::zero();
+            return null;
         }
     }
 
