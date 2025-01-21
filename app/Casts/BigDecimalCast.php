@@ -19,15 +19,15 @@ class BigDecimalCast implements CastsAttributes
      * @param mixed $value
      * @param array<string, mixed> $attributes
      *
-     * @return BigDecimal
+     * @return BigDecimal|null
      */
-    public function get(Model $model, string $key, mixed $value, array $attributes): BigDecimal
+    public function get(Model $model, string $key, mixed $value, array $attributes): ?BigDecimal
     {
-        if (is_null($value)) {
-            return BigDecimal::zero();
-        }
-
         try {
+            if (is_null($value)) {
+                return null;
+            }
+
             return BigDecimal::of($value);
         } catch (MathException $e) {
             Log::warning('BigDecimalCast:get', [
@@ -36,7 +36,7 @@ class BigDecimalCast implements CastsAttributes
                 'trace' => $e->getTraceAsString()
             ]);
 
-            return BigDecimal::zero();
+            return null;
         }
     }
 
@@ -48,28 +48,25 @@ class BigDecimalCast implements CastsAttributes
      * @param mixed $value
      * @param array<string, mixed> $attributes
      *
-     * @return string
+     * @return string|null
      */
-    public function set(Model $model, string $key, mixed $value, array $attributes): string
+    public function set(Model $model, string $key, mixed $value, array $attributes): ?string
     {
-        $newValue = 0;
-
-        if (is_null($value)) {
-            return (string) $newValue;
-        }
-
         try {
-            $newValue = BigDecimal::of($value);
+            if (is_null($value)) {
+                return null;
+            }
+
+            return BigDecimal::of($value)->__toString();
         } catch (MathException $e) {
             Log::warning('BigDecimalCast:set', [
                 'value' => $value,
                 'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-            $newValue = BigDecimal::zero();
-        }
 
-        return (string) $newValue;
+            return null;
+        }
     }
 
 }
