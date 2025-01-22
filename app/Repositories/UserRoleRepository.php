@@ -5,7 +5,7 @@ namespace App\Repositories;
 use Illuminate\Database\Eloquent\Model;
 use Spatie\Permission\Models\Role;
 
-class RoleRepository
+class UserRoleRepository
 {
 
     /**

@@ -70,18 +70,25 @@ class DeviceTokenRepository
      */
     public function getPaginated(DeviceTokenFilterData $deviceTokenFilterData): LengthAwarePaginator
     {
-        $deviceTokens = DeviceToken::with($deviceTokenFilterData->meta->relations);
+        $deviceTokenBuilder = DeviceToken::query();
 
-        if (!empty($deviceTokenFilterData->id)) {
-            $deviceTokens->where(function (Builder $queryBuilder) use ($deviceTokenFilterData) {
-                $queryBuilder->where('id', $deviceTokenFilterData->id);
-            });
+        if (!empty($deviceTokenFilterData->meta->relations)) {
+            $deviceTokenBuilder->with($deviceTokenFilterData->meta->relations);
         }
 
-        return $deviceTokens->orderBy(
-            $deviceTokenFilterData->meta->sortField,
-            $deviceTokenFilterData->meta->sortDirection
-        )->paginate($deviceTokenFilterData->meta->perPage);
+        if (!empty($deviceTokenFilterData->id)) {
+            $deviceTokenBuilder->where('id', $deviceTokenFilterData->id);
+        }
+
+        if (!empty($deviceTokenFilterData->meta->sortField)) {
+            if (empty($deviceTokenFilterData->meta->sortDirection)) {
+                $deviceTokenBuilder->orderBy($deviceTokenFilterData->meta->sortField);
+            } else {
+                $deviceTokenBuilder->orderBy($deviceTokenFilterData->meta->sortField, $deviceTokenFilterData->meta->sortDirection);
+            }
+        }
+
+        return $deviceTokenBuilder->paginate($deviceTokenFilterData->meta->perPage);
     }
 
     /**

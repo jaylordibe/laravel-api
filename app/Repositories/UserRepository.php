@@ -102,33 +102,36 @@ class UserRepository
      */
     public function getPaginated(UserFilterData $userFilterData): LengthAwarePaginator
     {
-        $searchQuery = $userFilterData->meta->search;
+        $userBuilder = User::query();
 
-        $users = User::with($userFilterData->meta->relations);
+        if (!empty($userFilterData->meta->relations)) {
+            $userBuilder->with($userFilterData->meta->relations);
+        }
 
         if (!empty($userFilterData->roles)) {
-            $users->whereHas('roles', function (Builder $roles) use ($userFilterData) {
+            $userBuilder->whereHas('roles', function (Builder $roles) use ($userFilterData) {
                 $roles->whereIn('name', $userFilterData->roles);
             });
         }
 
-        if (!empty($userFilterData->gender)) {
-            $users->where('gender', $userFilterData->gender);
-        }
-
-        if (!empty($searchQuery)) {
-            $users->where(function (Builder $searchBuilder) use ($searchQuery) {
-                $searchBuilder->where('first_name', 'LIKE', "%{$searchQuery}%")
-                    ->orWhere('last_name', 'LIKE', "%{$searchQuery}%")
-                    ->orWhere('username', 'LIKE', "%{$searchQuery}%")
-                    ->orWhere('email', 'LIKE', "%{$searchQuery}%");
+        if (!empty($userFilterData->meta->search)) {
+            $userBuilder->where(function (Builder $searchBuilder) use ($userFilterData) {
+                $searchBuilder->where('first_name', 'LIKE', "%{$userFilterData->meta->search}%")
+                    ->orWhere('last_name', 'LIKE', "%{$userFilterData->meta->search}%")
+                    ->orWhere('username', 'LIKE', "%{$userFilterData->meta->search}%")
+                    ->orWhere('email', 'LIKE', "%{$userFilterData->meta->search}%");
             });
         }
 
-        return $users->orderBy(
-            $userFilterData->meta->sortField,
-            $userFilterData->meta->sortDirection
-        )->paginate($userFilterData->meta->perPage);
+        if (!empty($userFilterData->meta->sortField)) {
+            if (empty($userFilterData->meta->sortDirection)) {
+                $userBuilder->orderBy($userFilterData->meta->sortField);
+            } else {
+                $userBuilder->orderBy($userFilterData->meta->sortField, $userFilterData->meta->sortDirection);
+            }
+        }
+
+        return $userBuilder->paginate($userFilterData->meta->perPage);
     }
 
     /**

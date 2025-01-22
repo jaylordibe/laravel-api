@@ -18,28 +18,37 @@ class ActivityRepository
      */
     public function getPaginated(ActivityFilterData $activityFilterData): LengthAwarePaginator
     {
-        $activities = Activity::with($activityFilterData->meta->relations);
+        $activityBuilder = Activity::query();
+
+        if (!empty($activityFilterData->meta->relations)) {
+            $activityBuilder->with($activityFilterData->meta->relations);
+        }
 
         if (!empty($activityFilterData->id)) {
-            $activities->where('id', $activityFilterData->id);
+            $activityBuilder->where('id', $activityFilterData->id);
         }
 
         if (!empty($activityFilterData->userId)) {
-            $activities->where('causer_id', $activityFilterData->userId);
+            $activityBuilder->where('causer_id', $activityFilterData->userId);
         }
 
         if (!empty($activityFilterData->startDate)) {
-            $activities->where('created_at', '>=', $activityFilterData->startDate);
+            $activityBuilder->where('created_at', '>=', $activityFilterData->startDate);
         }
 
         if (!empty($activityFilterData->endDate)) {
-            $activities->where('created_at', '<=', $activityFilterData->endDate);
+            $activityBuilder->where('created_at', '<=', $activityFilterData->endDate);
         }
 
-        return $activities->orderBy(
-            $activityFilterData->meta->sortField,
-            $activityFilterData->meta->sortDirection
-        )->paginate($activityFilterData->meta->perPage);
+        if (!empty($activityFilterData->meta->sortField)) {
+            if (empty($activityFilterData->meta->sortDirection)) {
+                $activityBuilder->orderBy($activityFilterData->meta->sortField);
+            } else {
+                $activityBuilder->orderBy($activityFilterData->meta->sortField, $activityFilterData->meta->sortDirection);
+            }
+        }
+
+        return $activityBuilder->paginate($activityFilterData->meta->perPage);
     }
 
 }

@@ -4,6 +4,7 @@ use App\Constants\RoutePatternConstant;
 use App\Http\Controllers\AddressController;
 use App\Http\Controllers\AppVersionController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ConstantController;
 use App\Http\Controllers\JobStatusController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
@@ -20,6 +21,17 @@ Route::get('email/verify/{id}', [UserController::class, 'verifyEmail'])->name('v
 Route::middleware('auth:api')->group(function () {
     // Auth
     Route::post('auth/sign-out', [AuthController::class, 'signOut']);
+
+    // Constant routes
+    Route::prefix('constants')->group(function () {
+        Route::get('/activity-log-type', [ConstantController::class, 'getActivityLogTypes']);
+        Route::get('/app-platform', [ConstantController::class, 'getAppPlatforms']);
+        Route::get('/device-os', [ConstantController::class, 'getDeviceOs']);
+        Route::get('/device-type', [ConstantController::class, 'getDeviceTypes']);
+        Route::get('/password-reset-status', [ConstantController::class, 'getPasswordResetStatuses']);
+        Route::get('/spreadsheet-reader-type', [ConstantController::class, 'getSpreadsheetReaderTypes']);
+        Route::get('/user-role', [ConstantController::class, 'getUserRoles']);
+    });
 
     // AppVersion routes
     Route::prefix('app-versions')->group(function () {
@@ -68,9 +80,9 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/{jobStatusId}', [JobStatusController::class, 'getById'])->where('jobStatusId', RoutePatternConstant::NUMERIC);
     });
 
-	// Activity routes
-	Route::prefix('activities')->group(function () {
-    	Route::post('/', [ActivityController::class, 'create']);
-    	Route::get('/', [ActivityController::class, 'getPaginated']);
-	});
+    // Activity routes
+    Route::prefix('activities')->group(function () {
+        Route::post('/', [ActivityController::class, 'create']);
+        Route::get('/', [ActivityController::class, 'getPaginated']);
+    });
 });

@@ -286,17 +286,17 @@ class BaseRequest extends FormRequest
     public function getMetaData(): MetaData
     {
         return new MetaData(
-            search: $this->getInputAsString('search', ''),
-            relations: $this->getRelations() ?? [],
+            search: $this->getInputAsString('search'),
+            relations: $this->getRelations(),
             columns: $this->getColumns() ?? ['*'],
-            groupBy: $this->getInputAsString('groupBy', ''),
-            sortField: $this->getInputAsString('sortField', 'id'),
-            sortDirection: $this->getInputAsString('sortDirection', 'asc'),
+            groupBy: $this->getInputAsString('groupBy'),
+            sortField: $this->getInputAsString('sortField'),
+            sortDirection: $this->getInputAsString('sortDirection'),
             page: $this->getPage(),
             perPage: $this->getPerPage(),
             offset: $this->getPageOffset(),
-            exact: $this->getInputAsBoolean('exact', false),
-            all: $this->getPerPage() < AppConstant::MAX_PER_PAGE ? $this->getInputAsBoolean('all', false) : false
+            exact: $this->getInputAsBoolean('exact'),
+            all: $this->getPerPage() < AppConstant::MAX_PER_PAGE ? $this->getInputAsBoolean('all') : null
         );
     }
 

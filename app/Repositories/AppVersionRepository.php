@@ -83,18 +83,25 @@ class AppVersionRepository
      */
     public function getPaginated(AppVersionFilterData $appVersionFilterData): LengthAwarePaginator
     {
-        $appVersions = AppVersion::with($appVersionFilterData->meta->relations);
+        $appVersionBuilder = AppVersion::query();
 
-        if (!empty($appVersionFilterData->id)) {
-            $appVersions->where(function (Builder $queryBuilder) use ($appVersionFilterData) {
-                $queryBuilder->where('id', $appVersionFilterData->id);
-            });
+        if (!empty($appVersionFilterData->meta->relations)) {
+            $appVersionBuilder->with($appVersionFilterData->meta->relations);
         }
 
-        return $appVersions->orderBy(
-            $appVersionFilterData->meta->sortField,
-            $appVersionFilterData->meta->sortDirection
-        )->paginate($appVersionFilterData->meta->perPage);
+        if (!empty($appVersionFilterData->id)) {
+            $appVersionBuilder->where('id', $appVersionFilterData->id);
+        }
+
+        if (!empty($appVersionFilterData->meta->sortField)) {
+            if (empty($appVersionFilterData->meta->sortDirection)) {
+                $appVersionBuilder->orderBy($appVersionFilterData->meta->sortField);
+            } else {
+                $appVersionBuilder->orderBy($appVersionFilterData->meta->sortField, $appVersionFilterData->meta->sortDirection);
+            }
+        }
+
+        return $appVersionBuilder->paginate($appVersionFilterData->meta->perPage);
     }
 
     /**

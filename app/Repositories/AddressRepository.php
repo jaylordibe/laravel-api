@@ -60,16 +60,25 @@ class AddressRepository
      */
     public function getPaginated(AddressFilterData $addressFilterData): LengthAwarePaginator
     {
-        $addresses = Address::with($addressFilterData->meta->relations);
+        $addressBuilder = Address::query();
 
-        if (!empty($addressFilterData->userId)) {
-            $addresses->where('user_id', $addressFilterData->userId);
+        if (!empty($addressFilterData->meta->relations)) {
+            $addressBuilder->with($addressFilterData->meta->relations);
         }
 
-        return $addresses->orderBy(
-            $addressFilterData->meta->sortField,
-            $addressFilterData->meta->sortDirection
-        )->paginate($addressFilterData->meta->perPage);
+        if (!empty($addressFilterData->userId)) {
+            $addressBuilder->where('user_id', $addressFilterData->userId);
+        }
+
+        if (!empty($addressFilterData->meta->sortField)) {
+            if (empty($addressFilterData->meta->sortDirection)) {
+                $addressBuilder->orderBy($addressFilterData->meta->sortField);
+            } else {
+                $addressBuilder->orderBy($addressFilterData->meta->sortField, $addressFilterData->meta->sortDirection);
+            }
+        }
+
+        return $addressBuilder->paginate($addressFilterData->meta->perPage);
     }
 
     /**
