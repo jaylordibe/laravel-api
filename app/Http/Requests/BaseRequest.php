@@ -124,6 +124,25 @@ class BaseRequest extends FormRequest
     }
 
     /**
+     * Transform comma-separated input value to array.
+     *
+     * @param string $key
+     * @param array|null $default
+     *
+     * @return array|null
+     */
+    public function getCommaSeparatedStringInputAsArray(string $key, ?array $default = null): ?array
+    {
+        $data = $this->getInputAsString($key);
+
+        if (is_null($data)) {
+            return null;
+        }
+
+        return explode(',', $data);
+    }
+
+    /**
      * Transform input value to carbon datetime.
      *
      * @param string $key
