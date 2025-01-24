@@ -124,7 +124,7 @@ class BaseRequest extends FormRequest
     }
 
     /**
-     * Transform comma-separated input value to array.
+     * Transform comma-separated string input value to array.
      *
      * @param string $key
      * @param array|null $default
