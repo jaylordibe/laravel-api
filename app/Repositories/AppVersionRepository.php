@@ -2,6 +2,7 @@
 
 namespace App\Repositories;
 
+use App\Constants\AppConstant;
 use App\Data\AppVersionData;
 use App\Data\AppVersionFilterData;
 use App\Models\AppVersion;
@@ -32,7 +33,7 @@ class AppVersionRepository
         $appVersion->force_update = $appVersionData->forceUpdate;
         $appVersion->save();
 
-        return $appVersion;
+        return $this->findById($appVersion->id);
     }
 
     /**
@@ -89,16 +90,16 @@ class AppVersionRepository
             $appVersionBuilder->with($appVersionFilterData->meta->relations);
         }
 
+        if (!empty($appVersionFilterData->meta->columns)) {
+            $appVersionBuilder->select($appVersionFilterData->meta->columns);
+        }
+
         if (!empty($appVersionFilterData->id)) {
             $appVersionBuilder->where('id', $appVersionFilterData->id);
         }
 
         if (!empty($appVersionFilterData->meta->sortField)) {
-            if (empty($appVersionFilterData->meta->sortDirection)) {
-                $appVersionBuilder->orderBy($appVersionFilterData->meta->sortField);
-            } else {
-                $appVersionBuilder->orderBy($appVersionFilterData->meta->sortField, $appVersionFilterData->meta->sortDirection);
-            }
+            $appVersionBuilder->orderBy($appVersionFilterData->meta->sortField, $appVersionFilterData->meta->sortDirection ?? AppConstant::DEFAULT_SORT_DIRECTION);
         }
 
         return $appVersionBuilder->paginate($appVersionFilterData->meta->perPage);

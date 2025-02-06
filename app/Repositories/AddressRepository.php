@@ -2,6 +2,7 @@
 
 namespace App\Repositories;
 
+use App\Constants\AppConstant;
 use App\Data\AddressData;
 use App\Data\AddressFilterData;
 use App\Models\Address;
@@ -50,7 +51,7 @@ class AddressRepository
         $address->country = $addressData->country;
         $address->save();
 
-        return $address;
+        return $this->findById($address->id);
     }
 
     /**
@@ -66,16 +67,16 @@ class AddressRepository
             $addressBuilder->with($addressFilterData->meta->relations);
         }
 
+        if (!empty($addressFilterData->meta->columns)) {
+            $addressBuilder->select($addressFilterData->meta->columns);
+        }
+
         if (!empty($addressFilterData->userId)) {
             $addressBuilder->where('user_id', $addressFilterData->userId);
         }
 
         if (!empty($addressFilterData->meta->sortField)) {
-            if (empty($addressFilterData->meta->sortDirection)) {
-                $addressBuilder->orderBy($addressFilterData->meta->sortField);
-            } else {
-                $addressBuilder->orderBy($addressFilterData->meta->sortField, $addressFilterData->meta->sortDirection);
-            }
+            $addressBuilder->orderBy($addressFilterData->meta->sortField, $addressFilterData->meta->sortDirection ?? AppConstant::DEFAULT_SORT_DIRECTION);
         }
 
         return $addressBuilder->paginate($addressFilterData->meta->perPage);

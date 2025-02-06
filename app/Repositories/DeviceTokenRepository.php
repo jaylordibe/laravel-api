@@ -2,6 +2,7 @@
 
 namespace App\Repositories;
 
+use App\Constants\AppConstant;
 use App\Data\DeviceTokenData;
 use App\Data\DeviceTokenFilterData;
 use App\Models\DeviceToken;
@@ -32,7 +33,7 @@ class DeviceTokenRepository
         $deviceToken->device_os_version = $deviceTokenData->deviceOsVersion;
         $deviceToken->save();
 
-        return $deviceToken;
+        return $this->findById($deviceToken->id);
     }
 
     /**
@@ -76,16 +77,16 @@ class DeviceTokenRepository
             $deviceTokenBuilder->with($deviceTokenFilterData->meta->relations);
         }
 
+        if (!empty($deviceTokenFilterData->meta->columns)) {
+            $deviceTokenBuilder->select($deviceTokenFilterData->meta->columns);
+        }
+
         if (!empty($deviceTokenFilterData->id)) {
             $deviceTokenBuilder->where('id', $deviceTokenFilterData->id);
         }
 
         if (!empty($deviceTokenFilterData->meta->sortField)) {
-            if (empty($deviceTokenFilterData->meta->sortDirection)) {
-                $deviceTokenBuilder->orderBy($deviceTokenFilterData->meta->sortField);
-            } else {
-                $deviceTokenBuilder->orderBy($deviceTokenFilterData->meta->sortField, $deviceTokenFilterData->meta->sortDirection);
-            }
+            $deviceTokenBuilder->orderBy($deviceTokenFilterData->meta->sortField, $deviceTokenFilterData->meta->sortDirection ?? AppConstant::DEFAULT_SORT_DIRECTION);
         }
 
         return $deviceTokenBuilder->paginate($deviceTokenFilterData->meta->perPage);

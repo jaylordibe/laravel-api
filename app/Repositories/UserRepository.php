@@ -2,6 +2,7 @@
 
 namespace App\Repositories;
 
+use App\Constants\AppConstant;
 use App\Data\UpdatePasswordData;
 use App\Data\UserData;
 use App\Data\UserFilterData;
@@ -49,7 +50,7 @@ class UserRepository
         $user->phone_number = $userData->phoneNumber;
         $user->save();
 
-        return $user;
+        return $this->findById($user->id);
     }
 
     /**
@@ -72,7 +73,7 @@ class UserRepository
         $user->gender = $userData->gender;
         $user->save();
 
-        return $user;
+        return $this->findById($user->id);
     }
 
     /**
@@ -108,6 +109,10 @@ class UserRepository
             $userBuilder->with($userFilterData->meta->relations);
         }
 
+        if (!empty($userFilterData->meta->columns)) {
+            $userBuilder->select($userFilterData->meta->columns);
+        }
+
         if (!empty($userFilterData->roles)) {
             $userBuilder->whereHas('roles', function (Builder $roles) use ($userFilterData) {
                 $roles->whereIn('name', $userFilterData->roles);
@@ -124,11 +129,7 @@ class UserRepository
         }
 
         if (!empty($userFilterData->meta->sortField)) {
-            if (empty($userFilterData->meta->sortDirection)) {
-                $userBuilder->orderBy($userFilterData->meta->sortField);
-            } else {
-                $userBuilder->orderBy($userFilterData->meta->sortField, $userFilterData->meta->sortDirection);
-            }
+            $userBuilder->orderBy($userFilterData->meta->sortField, $userFilterData->meta->sortDirection ?? AppConstant::DEFAULT_SORT_DIRECTION);
         }
 
         return $userBuilder->paginate($userFilterData->meta->perPage);
