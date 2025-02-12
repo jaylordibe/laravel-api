@@ -1,11 +1,13 @@
 # Set workflow name
-name: Deploy To Staging
+name: Pull Request Workflow
 
 # Set events that trigger the workflow
 on:
-  push:
+  pull_request:
     branches:
+      - main
       - staging
+      - develop
 
 # Set jobs to be executed in the workflow
 jobs:
@@ -17,13 +19,3 @@ jobs:
         uses: actions/checkout@v3
       - name: Run tests
         run: ./test-pipeline.sh
-  build:
-    needs: tests
-    name: Build And Deploy To Staging
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-      - name: Deploy to staging
-        run: |
-          echo 'Add staging deployment script here...'
