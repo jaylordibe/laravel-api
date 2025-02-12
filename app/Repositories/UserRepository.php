@@ -50,7 +50,7 @@ class UserRepository
         $user->phone_number = $userData->phoneNumber;
         $user->save();
 
-        return $this->findById($user->id);
+        return $user->refresh();
     }
 
     /**
@@ -73,7 +73,7 @@ class UserRepository
         $user->gender = $userData->gender;
         $user->save();
 
-        return $this->findById($user->id);
+        return $user->refresh();
     }
 
     /**

@@ -33,7 +33,7 @@ class DeviceTokenRepository
         $deviceToken->device_os_version = $deviceTokenData->deviceOsVersion;
         $deviceToken->save();
 
-        return $this->findById($deviceToken->id);
+        return $deviceToken->refresh();
     }
 
     /**

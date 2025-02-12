@@ -51,7 +51,7 @@ class AddressRepository
         $address->country = $addressData->country;
         $address->save();
 
-        return $this->findById($address->id);
+        return $address->refresh();
     }
 
     /**
