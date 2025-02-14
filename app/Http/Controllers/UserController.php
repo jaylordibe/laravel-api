@@ -245,7 +245,7 @@ class UserController extends Controller
     {
         Gate::authorize(PermissionConstant::READ_USER);
 
-        $serviceResponse = $this->userService->getById($userId);
+        $serviceResponse = $this->userService->getById($userId, $request->getRelations());
 
         if ($serviceResponse->failed()) {
             return ResponseUtil::error($serviceResponse->message);

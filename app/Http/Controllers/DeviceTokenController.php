@@ -67,8 +67,7 @@ class DeviceTokenController extends Controller
      */
     public function getById(GenericRequest $request, int $deviceTokenId): JsonResponse|JsonResource
     {
-        $relations = $request->getRelations();
-        $serviceResponse = $this->deviceTokenService->getById($deviceTokenId, $relations);
+        $serviceResponse = $this->deviceTokenService->getById($deviceTokenId, $request->getRelations());
 
         if ($serviceResponse->failed()) {
             return ResponseUtil::error($serviceResponse->message);

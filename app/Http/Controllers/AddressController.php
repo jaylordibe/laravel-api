@@ -61,7 +61,7 @@ class AddressController extends Controller
      */
     public function getById(GenericRequest $request, int $addressId): JsonResponse|JsonResource
     {
-        $serviceResponse = $this->addressService->getById($addressId);
+        $serviceResponse = $this->addressService->getById($addressId, $request->getRelations());
 
         if ($serviceResponse->failed()) {
             return ResponseUtil::error($serviceResponse->message);

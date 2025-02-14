@@ -67,8 +67,7 @@ class AppVersionController extends Controller
      */
     public function getById(GenericRequest $request, int $appVersionId): JsonResponse|JsonResource
     {
-        $relations = $request->getRelations();
-        $serviceResponse = $this->appVersionService->getById($appVersionId, $relations);
+        $serviceResponse = $this->appVersionService->getById($appVersionId, $request->getRelations());
 
         if ($serviceResponse->failed()) {
             return ResponseUtil::error($serviceResponse->message);
