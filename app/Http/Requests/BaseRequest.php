@@ -114,32 +114,27 @@ class BaseRequest extends FormRequest
         $data = $this->input($key);
         $value = $default;
 
-        if (is_string($data) && !empty($data)) {
-            $value = explode('|', $data);
-        } elseif (is_array($data) && !empty($data)) {
-            $value = $data;
+        if (!empty($data)) {
+            if (is_string($data)) {
+                $value = explode('|', $data);
+            } elseif (is_array($data)) {
+                $value = $data;
+            }
         }
 
         return $value;
     }
 
     /**
-     * Transform comma-separated string input value to array.
+     * Transform input value to url.
      *
      * @param string $key
-     * @param array|null $default
      *
-     * @return array|null
+     * @return string
      */
-    public function getCommaSeparatedStringInputAsArray(string $key, ?array $default = null): ?array
+    public function getInputAsUrl(string $key): string
     {
-        $data = $this->getInputAsString($key);
-
-        if (is_null($data)) {
-            return null;
-        }
-
-        return explode(',', $data);
+        return urldecode($this->getInputAsString($key));
     }
 
     /**
@@ -164,18 +159,6 @@ class BaseRequest extends FormRequest
 
             return null;
         }
-    }
-
-    /**
-     * Transform input value to url.
-     *
-     * @param string $key
-     *
-     * @return string
-     */
-    public function getInputAsUrl(string $key): string
-    {
-        return urldecode($this->getInputAsString($key));
     }
 
     /**
@@ -271,10 +254,12 @@ class BaseRequest extends FormRequest
         $data = $this->input('relations');
         $relations = [];
 
-        if (is_string($data) && !empty($data)) {
-            $relations = explode('|', $data);
-        } elseif (is_array($data) && !empty($data)) {
-            $relations = $data;
+        if (!empty($data)) {
+            if (is_string($data)) {
+                $relations = explode('|', $data);
+            } elseif (is_array($data)) {
+                $relations = $data;
+            }
         }
 
         return $relations;
@@ -289,10 +274,12 @@ class BaseRequest extends FormRequest
         $data = $this->input('columns');
         $columns = [];
 
-        if (is_string($data) && !empty($data)) {
-            $columns = explode(',', $data);
-        } elseif (is_array($data) && !empty($data)) {
-            $columns = $data;
+        if (!empty($data)) {
+            if (is_string($data)) {
+                $columns = explode(',', $data);
+            } elseif (is_array($data)) {
+                $columns = $data;
+            }
         }
 
         return $columns;
@@ -338,6 +325,8 @@ class BaseRequest extends FormRequest
             phoneNumber: $authUser->phone_number,
             birthday: $authUser->birthday,
             profilePhotoUrl: $authUser->profile_photo_url,
+            roles: $authUser->getRoleNames()->toArray(),
+            permissions: $authUser->getAllPermissions()->pluck('name')->toArray(),
             id: $authUser->id,
             createdAt: $authUser->created_at
         );
