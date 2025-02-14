@@ -292,6 +292,7 @@ class BaseRequest extends FormRequest
     public function getMetaData(): MetaData
     {
         return new MetaData(
+            ip: $this->ip(),
             search: $this->getInputAsString('search'),
             relations: $this->getRelations(),
             columns: $this->getColumns() ?? ['*'],

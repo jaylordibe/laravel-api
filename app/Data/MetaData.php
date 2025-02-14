@@ -8,6 +8,7 @@ class MetaData extends Data
 {
 
     public function __construct(
+        public ?string $ip = null, // The user's IP address
         public ?string $search = null, // The search query/filter/key that will be used for searching in the database
         public ?array $relations = null, // The database relations that will be used for a database query
         public ?array $columns = null, // The database columns that will be used for a database query
