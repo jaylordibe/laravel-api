@@ -128,6 +128,10 @@ class UserRepository
             });
         }
 
+        if (empty($userFilterData->meta->sortField)) {
+            $userFilterData->meta->sortField = 'first_name';
+        }
+
         if (!empty($userFilterData->meta->sortField)) {
             $userBuilder->orderBy($userFilterData->meta->sortField, $userFilterData->meta->sortDirection ?? AppConstant::DEFAULT_SORT_DIRECTION);
         }

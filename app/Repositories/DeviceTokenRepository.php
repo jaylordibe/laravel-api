@@ -81,10 +81,6 @@ class DeviceTokenRepository
             $deviceTokenBuilder->select($deviceTokenFilterData->meta->columns);
         }
 
-        if (!empty($deviceTokenFilterData->id)) {
-            $deviceTokenBuilder->where('id', $deviceTokenFilterData->id);
-        }
-
         if (!empty($deviceTokenFilterData->meta->sortField)) {
             $deviceTokenBuilder->orderBy($deviceTokenFilterData->meta->sortField, $deviceTokenFilterData->meta->sortDirection ?? AppConstant::DEFAULT_SORT_DIRECTION);
         }

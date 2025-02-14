@@ -94,10 +94,6 @@ class AppVersionRepository
             $appVersionBuilder->select($appVersionFilterData->meta->columns);
         }
 
-        if (!empty($appVersionFilterData->id)) {
-            $appVersionBuilder->where('id', $appVersionFilterData->id);
-        }
-
         if (!empty($appVersionFilterData->meta->sortField)) {
             $appVersionBuilder->orderBy($appVersionFilterData->meta->sortField, $appVersionFilterData->meta->sortDirection ?? AppConstant::DEFAULT_SORT_DIRECTION);
         }
