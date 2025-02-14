@@ -33,8 +33,18 @@ class ActivityRepository
             $activityBuilder->where('id', $activityFilterData->id);
         }
 
+        if (!empty($activityFilterData->type)) {
+            $activityBuilder->where('log_name', $activityFilterData->type);
+        }
+
         if (!empty($activityFilterData->userId)) {
             $activityBuilder->where('causer_id', $activityFilterData->userId);
+        }
+
+        if (!empty($activityFilterData->properties)) {
+            foreach ($activityFilterData->properties as $key => $value) {
+                $activityBuilder->where('properties->' . $key, $value);
+            }
         }
 
         if (!empty($activityFilterData->startDate)) {
@@ -50,6 +60,42 @@ class ActivityRepository
         }
 
         return $activityBuilder->paginate($activityFilterData->meta->perPage);
+    }
+
+    /**
+     * Count activities by type.
+     *
+     * @param ActivityFilterData $activityFilterData
+     *
+     * @return int
+     */
+    public function countByFilter(ActivityFilterData $activityFilterData): int
+    {
+        $activities = Activity::query();
+
+        if (!empty($activityFilterData->userId)) {
+            $activities->where('causer_id', $activityFilterData->userId);
+        }
+
+        if (!empty($activityFilterData->type)) {
+            $activities->where('log_name', $activityFilterData->type);
+        }
+
+        if (!empty($activityFilterData->properties)) {
+            foreach ($activityFilterData->properties as $key => $value) {
+                $activities->where('properties->' . $key, $value);
+            }
+        }
+
+        if (!empty($activityFilterData->startDate)) {
+            $activities->where('created_at', '>=', $activityFilterData->startDate);
+        }
+
+        if (!empty($activityFilterData->endDate)) {
+            $activities->where('created_at', '<=', $activityFilterData->endDate);
+        }
+
+        return $activities->count();
     }
 
 }
