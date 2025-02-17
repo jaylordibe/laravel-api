@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Utils\AppUtil;
 use App\Utils\DateUtil;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
@@ -24,7 +25,7 @@ class UserFeatureTest extends TestCase
             'firstName' => fake()->firstName(),
             'lastName' => fake()->lastName(),
             'phoneNumber' => fake()->phoneNumber(),
-            'email' => time() . fake()->unique()->safeEmail(),
+            'email' => AppUtil::generateUniqueToken() . fake()->unique()->safeEmail(),
             'password' => 'password',
             'passwordConfirmation' => 'password'
         ];
@@ -68,7 +69,7 @@ class UserFeatureTest extends TestCase
         /** @var User $user */
         $user = User::factory()->create();
         $token = $this->login($user->email);
-        $payload = ['username' => time() . fake()->unique()->userName()];
+        $payload = ['username' => AppUtil::generateUniqueToken() . fake()->unique()->userName()];
         $response = $this->withToken($token)->put("{$this->resource}/auth/username", $payload);
 
         $expected = [
@@ -91,7 +92,7 @@ class UserFeatureTest extends TestCase
         /** @var User $user */
         $user = User::factory()->create();
         $token = $this->login($user->email);
-        $payload = ['email' => time() . fake()->unique()->safeEmail()];
+        $payload = ['email' => AppUtil::generateUniqueToken() . fake()->unique()->safeEmail()];
         $response = $this->withToken($token)->put("{$this->resource}/auth/email", $payload);
 
         $expected = [
@@ -134,7 +135,7 @@ class UserFeatureTest extends TestCase
             'firstName' => fake()->firstName(),
             'lastName' => fake()->lastName(),
             'phoneNumber' => fake()->phoneNumber(),
-            'email' => time() . fake()->unique()->safeEmail(),
+            'email' => AppUtil::generateUniqueToken() . fake()->unique()->safeEmail(),
             'password' => 'password',
             'passwordConfirmation' => 'password'
         ];
