@@ -42,7 +42,6 @@ class BaseResource extends JsonResource
             $camelRelation = Str::camel($relation);
 
             if ($relationValue instanceof Model) {
-                // Since the relation is already loaded, we can pass it directly.
                 $data[$camelRelation] = new self($relationValue);
             } elseif ($relationValue instanceof Collection) {
                 $data[$camelRelation] = self::collection($relationValue);
