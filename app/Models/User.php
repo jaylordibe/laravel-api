@@ -140,7 +140,11 @@ class User extends Authenticatable implements MustVerifyEmail
     protected function fullName(): Attribute
     {
         return Attribute::make(
-            get: fn(mixed $value, array $attributes) => "{$attributes['first_name']} {$attributes['last_name']}"
+            get: fn(mixed $value, array $attributes) => implode(' ', array_filter([
+                $attributes['first_name'] ?? '',
+                $attributes['middle_name'] ?? '',
+                $attributes['last_name'] ?? ''
+            ], fn(string $component) => !empty($component)))
         );
     }
 

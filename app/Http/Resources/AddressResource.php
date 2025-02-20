@@ -22,6 +22,7 @@ class AddressResource extends JsonResource
             'createdAt' => $this->created_at,
             'updatedAt' => $this->updated_at,
             'userId' => $this->user_id,
+            'user' => new UserResource($this->whenLoaded('user')),
             'address' => $this->address,
             'villageOrBarangay' => $this->village_or_barangay,
             'cityOrMunicipality' => $this->city_or_municipality,

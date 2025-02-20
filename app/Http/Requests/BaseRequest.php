@@ -12,11 +12,13 @@ use Brick\Math\BigInteger;
 use Brick\Math\Exception\MathException;
 use Carbon\Exceptions\InvalidFormatException;
 use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class BaseRequest extends FormRequest
 {
@@ -255,10 +257,40 @@ class BaseRequest extends FormRequest
         $relations = [];
 
         if (!empty($data)) {
+            $relationItems = [];
+
             if (is_string($data)) {
-                $relations = explode('|', $data);
+                if (str_contains($data, '|')) {
+                    $relationItems = explode('|', $data);
+                } else {
+                    $relationItems = [$data];
+                }
             } elseif (is_array($data)) {
-                $relations = $data;
+                $relationItems = $data;
+            }
+
+            foreach ($relationItems as $relationItem) {
+                if (str_contains($relationItem, ':')) {
+                    $relationItemKey = Str::before($relationItem, ':');
+                    $relationItemColumnsString = Str::after($relationItem, ':');
+
+                    if (empty($relationItemColumnsString)) {
+                        $relations[] = $relationItemKey;
+                        continue;
+                    }
+
+                    $relationItemColumns = [$relationItemColumnsString];
+
+                    if (str_contains($relationItemColumnsString, ',')) {
+                        $relationItemColumns = explode(',', $relationItemColumnsString);
+                    }
+
+                    $relations[$relationItemKey] = function (Relation $queryBuilder) use ($relationItemColumns) {
+                        $queryBuilder->select($relationItemColumns);
+                    };
+                } else {
+                    $relations[] = $relationItem;
+                }
             }
         }
 
