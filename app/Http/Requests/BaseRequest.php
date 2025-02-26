@@ -286,7 +286,15 @@ class BaseRequest extends FormRequest
                     }
 
                     $relations[$relationItemKey] = function (Relation $queryBuilder) use ($relationItemColumns) {
-                        $queryBuilder->select($relationItemColumns);
+                        // Get the primary key of the related model
+                        $foreignKey = $queryBuilder->getRelated()->getKeyName();
+
+                        // Ensure the foreign key is included in the selected columns
+                        if (!in_array($foreignKey, $relationItemColumns)) {
+                            $relationItemColumns[] = $foreignKey;
+                        }
+
+                        $queryBuilder->addSelect($relationItemColumns);
                     };
                 } else {
                     $relations[] = $relationItem;

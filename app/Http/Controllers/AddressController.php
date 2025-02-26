@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\AddressRequest;
 use App\Http\Requests\GenericRequest;
 use App\Http\Resources\AddressResource;
+use App\Http\Resources\DynamicResource;
 use App\Services\AddressService;
 use App\Utils\ResponseUtil;
 use Illuminate\Http\JsonResponse;
@@ -50,7 +51,7 @@ class AddressController extends Controller
             return ResponseUtil::error($serviceResponse->message);
         }
 
-        return ResponseUtil::resource(AddressResource::class, $serviceResponse->data);
+        return ResponseUtil::resource(DynamicResource::class, $serviceResponse->data);
     }
 
     /**

@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Str;
 
-class BaseResource extends JsonResource
+class DynamicResource extends JsonResource
 {
 
     /**
