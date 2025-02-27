@@ -7,17 +7,17 @@ use App\Constants\AppPlatformConstant;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
-class ActivityFeatureTest extends TestCase
+class ActivityLogFeatureTest extends TestCase
 {
 
-    private string $resource = '/api/activities';
+    private string $resource = '/api/activity-logs';
 
     #[Test]
     public function testCreate(): void
     {
         $token = $this->loginSystemAdminUser();
         $payload = [
-            'type' => fake()->randomElement(ActivityLogTypeConstant::asList()),
+            'logName' => fake()->randomElement(ActivityLogTypeConstant::asList()),
             'description' => fake()->sentence,
             'properties' => [
                 'platform' => fake()->randomElement(AppPlatformConstant::asList())
@@ -26,7 +26,7 @@ class ActivityFeatureTest extends TestCase
         $response = $this->withToken($token)->post($this->resource, $payload);
 
         $expected = [
-            'type' => $payload['type'],
+            'logName' => $payload['logName'],
             'description' => $payload['description']
         ];
         $response->assertCreated()->assertJson($expected);

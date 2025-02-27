@@ -8,7 +8,7 @@ use App\Data\ActivityData;
 use App\Data\ActivityFilterData;
 use Illuminate\Validation\Rule;
 
-class ActivityRequest extends BaseRequest
+class ActivityLogRequest extends BaseRequest
 {
 
     /**
@@ -19,7 +19,7 @@ class ActivityRequest extends BaseRequest
     public function rules(): array
     {
         return [
-            'type' => ['required', 'string', Rule::in(ActivityLogTypeConstant::asList())],
+            'logName' => ['required', 'string', Rule::in(ActivityLogTypeConstant::asList())],
             'description' => ['required', 'string'],
             'properties' => ['required'],
             'properties.platform' => ['required', 'string', Rule::in(AppPlatformConstant::asList())]
@@ -45,7 +45,7 @@ class ActivityRequest extends BaseRequest
     {
         return new ActivityData(
             userId: $this->getAuthUserData()->id,
-            type: $this->getInputAsString('type'),
+            logName: $this->getInputAsString('logName'),
             description: $this->getInputAsString('description'),
             properties: $this->getInputAsArray('properties', []),
             id: $this->route('activityId'),

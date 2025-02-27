@@ -3,19 +3,19 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\GenericRequest;
-use App\Http\Requests\ActivityRequest;
-use App\Http\Resources\ActivityResource;
-use App\Services\ActivityService;
+use App\Http\Requests\ActivityLogRequest;
+use App\Http\Resources\ActivityLogResource;
+use App\Services\ActivityLogService;
 use App\Utils\ResponseUtil;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Routing\Controller;
 
-class ActivityController extends Controller
+class ActivityLogController extends Controller
 {
 
     public function __construct(
-        private readonly ActivityService $activityService
+        private readonly ActivityLogService $activityService
     )
     {
     }
@@ -23,11 +23,11 @@ class ActivityController extends Controller
     /**
      * Create activity.
      *
-     * @param ActivityRequest $request
+     * @param ActivityLogRequest $request
      *
      * @return JsonResponse|JsonResource
      */
-    public function create(ActivityRequest $request): JsonResponse|JsonResource
+    public function create(ActivityLogRequest $request): JsonResponse|JsonResource
     {
         $serviceResponse = $this->activityService->create($request->toData());
 
@@ -35,7 +35,7 @@ class ActivityController extends Controller
             return ResponseUtil::error($serviceResponse->message);
         }
 
-        return ResponseUtil::resource(ActivityResource::class, $serviceResponse->data);
+        return ResponseUtil::resource(ActivityLogResource::class, $serviceResponse->data);
     }
 
     /**
@@ -47,14 +47,14 @@ class ActivityController extends Controller
      */
     public function getPaginated(GenericRequest $request): JsonResponse|JsonResource
     {
-        $activityFilterData = ActivityRequest::createFrom($request)->toFilterData();
+        $activityFilterData = ActivityLogRequest::createFrom($request)->toFilterData();
         $serviceResponse = $this->activityService->getPaginated($activityFilterData);
 
         if ($serviceResponse->failed()) {
             return ResponseUtil::error($serviceResponse->message);
         }
 
-        return ResponseUtil::resource(ActivityResource::class, $serviceResponse->data);
+        return ResponseUtil::resource(ActivityLogResource::class, $serviceResponse->data);
     }
 
 }

@@ -4,7 +4,7 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 
-class AddressResource extends BaseResource
+class ActivityLogResource extends BaseResource
 {
 
     /**
@@ -20,7 +20,7 @@ class AddressResource extends BaseResource
         $data = $this->getLoadedAttributes();
 
         // Load the relations
-        $data['user'] = new UserResource($this->whenLoaded('user'));
+        $data['user'] = new UserResource($this->whenLoaded('causer'));
 
         return $data;
     }

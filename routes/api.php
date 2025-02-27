@@ -9,7 +9,7 @@ use App\Http\Controllers\JobStatusController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DeviceTokenController;
-use App\Http\Controllers\ActivityController;
+use App\Http\Controllers\ActivityLogController;
 
 // Public Routes
 Route::post('auth/sign-in', [AuthController::class, 'signIn']);
@@ -81,8 +81,8 @@ Route::middleware('auth:api')->group(function () {
     });
 
     // Activity routes
-    Route::prefix('activities')->group(function () {
-        Route::post('/', [ActivityController::class, 'create']);
-        Route::get('/', [ActivityController::class, 'getPaginated']);
+    Route::prefix('activity-logs')->group(function () {
+        Route::post('/', [ActivityLogController::class, 'create']);
+        Route::get('/', [ActivityLogController::class, 'getPaginated']);
     });
 });

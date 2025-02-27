@@ -5,14 +5,14 @@ namespace App\Services;
 use App\Data\ActivityData;
 use App\Data\ActivityFilterData;
 use App\Data\ServiceResponseData;
-use App\Repositories\ActivityRepository;
+use App\Repositories\ActivityLogRepository;
 use App\Utils\ServiceResponseUtil;
 
-class ActivityService
+class ActivityLogService
 {
 
     public function __construct(
-        private readonly ActivityRepository $activityRepository
+        private readonly ActivityLogRepository $activityRepository
     )
     {
     }
@@ -28,7 +28,7 @@ class ActivityService
     {
         $activity = activity()
             ->causedBy($activityData->userId)
-            ->useLog($activityData->type)
+            ->useLog($activityData->logName)
             ->withProperties($activityData->properties)
             ->log($activityData->description);
 

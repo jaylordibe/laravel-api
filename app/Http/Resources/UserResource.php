@@ -3,9 +3,8 @@
 namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\JsonResource;
 
-class UserResource extends JsonResource
+class UserResource extends BaseResource
 {
 
     /**
@@ -17,23 +16,21 @@ class UserResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        return [
-            'id' => $this->id,
-            'createdAt' => $this->created_at,
-            'updatedAt' => $this->updated_at,
-            'firstName' => $this->first_name,
-            'middleName' => $this->middle_name,
-            'lastName' => $this->last_name,
-            'fullName' => $this->full_name,
-            'username' => $this->username,
-            'email' => $this->email,
-            'roles' => $this->getRoleNames()->toArray(),
-            'permissions' => $this->getAllPermissions()->pluck('name')->toArray(),
-            'timezone' => $this->timezone,
-            'phoneNumber' => $this->phone_number,
-            'birthday' => $this->birthday,
-            'profilePhotoUrl' => $this->profile_photo_url ?: 'https://i.imgur.com/UJ0N2SN.jpg'
-        ];
+        // Load the attributes
+        $data = $this->getLoadedAttributes();
+
+        $includeAccessControl = filter_var($request->input('includeAccessControl', false), FILTER_VALIDATE_BOOLEAN);
+
+        if ($includeAccessControl) {
+            $data['roles'] = $this->getRoleNames()->toArray();
+            $data['permissions'] = $this->getAllPermissions()->pluck('name')->toArray();
+        }
+
+        $data['profilePhotoUrl'] = $this->profile_photo_url ?: 'https://i.imgur.com/UJ0N2SN.jpg';
+
+        // Load the relations
+
+        return $data;
     }
 
 }

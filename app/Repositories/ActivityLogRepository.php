@@ -7,7 +7,7 @@ use App\Data\ActivityFilterData;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Spatie\Activitylog\Models\Activity;
 
-class ActivityRepository
+class ActivityLogRepository
 {
 
     /**
