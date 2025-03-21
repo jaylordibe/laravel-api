@@ -335,7 +335,7 @@ class BaseRequest extends FormRequest
 
         if (!empty($data)) {
             if (is_string($data)) {
-                $columns = explode(',', $data);
+                $columns = explode('|', $data);
             } elseif (is_array($data)) {
                 $columns = $data;
             }
