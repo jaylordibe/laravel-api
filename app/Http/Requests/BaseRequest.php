@@ -248,57 +248,76 @@ class BaseRequest extends FormRequest
     }
 
     /**
-     * Get relations for database query.
-     * @return array
+     * Parses the 'relations' input and constructs an array of Eloquent relations with selected columns.
+     *
+     * This method processes a relations payload, which can be a string (pipe-separated) or an array,
+     * and transforms it into an array compatible with Laravel's `with()` method for eager loading.
+     * Each relation can specify columns to select, and the method ensures that columns are prefixed
+     * with their respective table names to avoid ambiguous column errors in the resulting SQL query.
+     * If a relation specifies columns, the related model's primary key is automatically included.
+     *
+     * Example input (string): "relation1:id,name|relation2:id,description"
+     * Example input (array): ["relation1:id,name", "relation2:id,description"]
+     * Example output: [
+     *     'relation1' => Closure(Relation) { $query->addSelect(['table1.id', 'table1.name']) },
+     *     'relation2' => Closure(Relation) { $query->addSelect(['table2.id', 'table2.description']) }
+     * ]
+     *
+     * @return array An array of relation names or relation closures for use with Eloquent's `with()` method.
      */
     public function getRelations(): array
     {
         $data = $this->input('relations');
         $relations = [];
 
-        if (!empty($data)) {
-            $relationItems = [];
+        if (empty($data)) {
+            return $relations;
+        }
 
-            if (is_string($data)) {
-                if (str_contains($data, '|')) {
-                    $relationItems = explode('|', $data);
-                } else {
-                    $relationItems = [$data];
+        $relationItems = [];
+
+        // Parse the input relations
+        if (is_string($data)) {
+            $relationItems = str_contains($data, '|') ? explode('|', $data) : [$data];
+        } elseif (is_array($data)) {
+            $relationItems = $data;
+        }
+
+        foreach ($relationItems as $relationItem) {
+            if (str_contains($relationItem, ':')) {
+                // Split relation name and columns
+                $relationKey = Str::before($relationItem, ':');
+                $columnsString = Str::after($relationItem, ':');
+
+                if (empty($columnsString)) {
+                    $relations[] = $relationKey;
+                    continue;
                 }
-            } elseif (is_array($data)) {
-                $relationItems = $data;
-            }
 
-            foreach ($relationItems as $relationItem) {
-                if (str_contains($relationItem, ':')) {
-                    $relationItemKey = Str::before($relationItem, ':');
-                    $relationItemColumnsString = Str::after($relationItem, ':');
+                // Parse columns into an array
+                $columns = str_contains($columnsString, ',') ? explode(',', $columnsString) : [$columnsString];
 
-                    if (empty($relationItemColumnsString)) {
-                        $relations[] = $relationItemKey;
-                        continue;
+                // Define the relation with a closure
+                $relations[$relationKey] = function (Relation $queryBuilder) use ($columns) {
+                    $relatedModel = $queryBuilder->getRelated();
+                    $tableName = $relatedModel->getTable();
+                    $primaryKey = $relatedModel->getKeyName();
+
+                    // Ensure the primary key is included
+                    if (!in_array($primaryKey, $columns)) {
+                        $columns[] = $primaryKey;
                     }
 
-                    $relationItemColumns = [$relationItemColumnsString];
+                    // Prefix each column with the table name to avoid ambiguity
+                    $qualifiedColumns = array_map(function (string $column) use ($tableName) {
+                        return "{$tableName}.{$column}";
+                    }, $columns);
 
-                    if (str_contains($relationItemColumnsString, ',')) {
-                        $relationItemColumns = explode(',', $relationItemColumnsString);
-                    }
-
-                    $relations[$relationItemKey] = function (Relation $queryBuilder) use ($relationItemColumns) {
-                        // Get the primary key of the related model
-                        $foreignKey = $queryBuilder->getRelated()->getKeyName();
-
-                        // Ensure the foreign key is included in the selected columns
-                        if (!in_array($foreignKey, $relationItemColumns)) {
-                            $relationItemColumns[] = $foreignKey;
-                        }
-
-                        $queryBuilder->addSelect($relationItemColumns);
-                    };
-                } else {
-                    $relations[] = $relationItem;
-                }
+                    $queryBuilder->addSelect($qualifiedColumns);
+                };
+            } else {
+                // If no columns specified, just add the relation
+                $relations[] = $relationItem;
             }
         }
 
