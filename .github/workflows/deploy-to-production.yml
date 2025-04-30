@@ -1,4 +1,4 @@
-# Set workflow name
+# Set the workflow name
 name: Deploy To Production
 
 # Set events that trigger the workflow
