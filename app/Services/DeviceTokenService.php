@@ -32,8 +32,6 @@ class DeviceTokenService
             return ServiceResponseUtil::error('Failed to create device token.');
         }
 
-        $deviceToken = $this->deviceTokenRepository->findById($deviceToken->id, $deviceTokenData->meta->relations);
-
         return ServiceResponseUtil::success('Device token successfully added.', $deviceToken);
     }
 
@@ -86,8 +84,6 @@ class DeviceTokenService
         if (empty($deviceToken)) {
             return ServiceResponseUtil::error('Failed to update device token.');
         }
-
-        $deviceToken = $this->deviceTokenRepository->findById($deviceToken->id, $deviceTokenData->meta->relations);
 
         return ServiceResponseUtil::success('Device token successfully updated.', $deviceToken);
     }

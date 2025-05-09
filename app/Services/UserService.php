@@ -143,8 +143,6 @@ class UserService
             return ServiceResponseUtil::error('Failed to update user.');
         }
 
-        $user = $this->userRepository->findById($user->id, $userData->meta->relations);
-
         return ServiceResponseUtil::success('User successfully updated.', $user);
     }
 

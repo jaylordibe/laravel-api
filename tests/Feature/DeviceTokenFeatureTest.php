@@ -36,7 +36,7 @@ class DeviceTokenFeatureTest extends TestCase
             'deviceOs' => $payload['deviceOs'],
             'deviceOsVersion' => $payload['deviceOsVersion']
         ];
-        $response->assertOk()->assertJson($expected);
+        $response->assertCreated()->assertJson($expected);
     }
 
     #[Test]
