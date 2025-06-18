@@ -17,7 +17,9 @@ class BaseResource extends JsonResource
     {
         $data = [];
         $attributes = $this->resource->getAttributes();
-        $excludedAttributes = ['deleted_at', 'created_by', 'updated_by', 'deleted_by'];
+        $modelHiddenAttributes = $this->resource->getHidden();
+        $customHiddenAttributes = ['deleted_at', 'created_by', 'updated_by', 'deleted_by'];
+        $excludedAttributes = array_merge($modelHiddenAttributes, $customHiddenAttributes);
 
         foreach (array_keys($attributes) as $key) {
             if (in_array($key, $excludedAttributes)) {
