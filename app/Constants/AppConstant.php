@@ -13,5 +13,6 @@ class AppConstant
     const int DEFAULT_NUMBER_OF_RECORDS_PER_SHEET = 10000;
     const string DEFAULT_DATE_FORMAT = 'Y-m-d';
     const string DEFAULT_DATETIME_FORMAT = 'Y-m-d H:i:s';
+    const int DEFAULT_SCALE = 3;
 
 }
