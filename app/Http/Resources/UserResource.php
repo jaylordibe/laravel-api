@@ -17,7 +17,7 @@ class UserResource extends BaseResource
     public function toArray(Request $request): array
     {
         // Load the attributes
-        $data = $this->getLoadedAttributes();
+        $data = parent::transformAttributes();
 
         $includeAccessControl = filter_var($request->input('includeAccessControl', false), FILTER_VALIDATE_BOOLEAN);
 

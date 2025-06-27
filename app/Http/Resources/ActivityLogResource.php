@@ -17,7 +17,7 @@ class ActivityLogResource extends BaseResource
     public function toArray(Request $request): array
     {
         // Load the attributes
-        $data = $this->getLoadedAttributes();
+        $data = parent::transformAttributes();
 
         // Load the relations
         $data['user'] = new UserResource($this->whenLoaded('causer'));
