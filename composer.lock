@@ -2995,12 +2995,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/jaylordibe/laravel-resource-generator.git",
-                "reference": "aa7ea7de4ab81bde455a8b713f307af524825fb9"
+                "reference": "ef7a7077204d3cd149fdcf5477bd3e5f6eb81fc5"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/jaylordibe/laravel-resource-generator/zipball/aa7ea7de4ab81bde455a8b713f307af524825fb9",
-                "reference": "aa7ea7de4ab81bde455a8b713f307af524825fb9",
+                "url": "https://api.github.com/repos/jaylordibe/laravel-resource-generator/zipball/ef7a7077204d3cd149fdcf5477bd3e5f6eb81fc5",
+                "reference": "ef7a7077204d3cd149fdcf5477bd3e5f6eb81fc5",
                 "shasum": ""
             },
             "require": {
@@ -3039,7 +3039,7 @@
                 "issues": "https://github.com/jaylordibe/laravel-resource-generator/issues",
                 "source": "https://github.com/jaylordibe/laravel-resource-generator/tree/v2.0.4"
             },
-            "time": "2025-07-07T14:14:04+00:00"
+            "time": "2025-07-07T14:24:13+00:00"
         },
         {
             "name": "kelunik/certificate",
