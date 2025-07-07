@@ -7,11 +7,9 @@ use App\Data\UpdatePasswordData;
 use App\Data\UserData;
 use App\Data\UserFilterData;
 use App\Models\User;
-use Exception;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Log;
 
 class UserRepository
 {
@@ -98,7 +96,7 @@ class UserRepository
     /**
      * @param UserFilterData $userFilterData
      *
-     * @return LengthAwarePaginator
+     * @return LengthAwarePaginator<User>
      */
     public function getPaginated(UserFilterData $userFilterData): LengthAwarePaginator
     {
@@ -147,19 +145,7 @@ class UserRepository
      */
     public function delete(int $id): bool
     {
-        $user = $this->findById($id);
-
-        if (empty($user)) {
-            return false;
-        }
-
-        try {
-            return (bool) $user->delete();
-        } catch (Exception $exception) {
-            Log::error("DeleteUserException: {$exception->getMessage()}");
-        }
-
-        return false;
+        return User::destroy($id) > 0;
     }
 
     /**

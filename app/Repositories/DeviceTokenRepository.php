@@ -6,9 +6,7 @@ use App\Constants\AppConstant;
 use App\Data\DeviceTokenData;
 use App\Data\DeviceTokenFilterData;
 use App\Models\DeviceToken;
-use Exception;
 use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Facades\Log;
 
 class DeviceTokenRepository
 {
@@ -66,7 +64,7 @@ class DeviceTokenRepository
      *
      * @param DeviceTokenFilterData $deviceTokenFilterData
      *
-     * @return LengthAwarePaginator
+     * @return LengthAwarePaginator<DeviceToken>
      */
     public function getPaginated(DeviceTokenFilterData $deviceTokenFilterData): LengthAwarePaginator
     {
@@ -96,19 +94,7 @@ class DeviceTokenRepository
      */
     public function delete(int $id): bool
     {
-        $deviceToken = $this->findById($id);
-
-        if (empty($deviceToken)) {
-            return false;
-        }
-
-        try {
-            return (bool) $deviceToken->delete();
-        } catch (Exception $e) {
-            Log::error("Delete Device Token Exception: {$e->getMessage()}");
-
-            return false;
-        }
+        return DeviceToken::destroy($id) > 0;
     }
 
 }

@@ -6,9 +6,7 @@ use App\Constants\AppConstant;
 use App\Data\AppVersionData;
 use App\Data\AppVersionFilterData;
 use App\Models\AppVersion;
-use Exception;
 use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Facades\Log;
 
 class AppVersionRepository
 {
@@ -79,7 +77,7 @@ class AppVersionRepository
      *
      * @param AppVersionFilterData $appVersionFilterData
      *
-     * @return LengthAwarePaginator
+     * @return LengthAwarePaginator<AppVersion>
      */
     public function getPaginated(AppVersionFilterData $appVersionFilterData): LengthAwarePaginator
     {
@@ -109,19 +107,7 @@ class AppVersionRepository
      */
     public function delete(int $id): bool
     {
-        $appVersion = $this->findById($id);
-
-        if (empty($appVersion)) {
-            return false;
-        }
-
-        try {
-            return (bool) $appVersion->delete();
-        } catch (Exception $e) {
-            Log::error("Delete App Version Exception: {$e->getMessage()}");
-
-            return false;
-        }
+        return AppVersion::destroy($id) > 0;
     }
 
     /**

@@ -55,7 +55,7 @@ class AddressRepository
     /**
      * @param AddressFilterData $addressFilterData
      *
-     * @return LengthAwarePaginator
+     * @return LengthAwarePaginator<Address>
      */
     public function getPaginated(AddressFilterData $addressFilterData): LengthAwarePaginator
     {

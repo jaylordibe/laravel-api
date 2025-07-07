@@ -15,7 +15,7 @@ class ActivityLogRepository
      *
      * @param ActivityFilterData $activityFilterData
      *
-     * @return LengthAwarePaginator
+     * @return LengthAwarePaginator<Activity>
      */
     public function getPaginated(ActivityFilterData $activityFilterData): LengthAwarePaginator
     {
