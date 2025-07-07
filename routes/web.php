@@ -1,13 +1,13 @@
 <?php
 
 use App\Utils\FileUtil;
-use App\Utils\ResponseUtil;
 use Barryvdh\Snappy\Facades\SnappyPdf;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 
 Route::get('/', function () {
-    return ResponseUtil::notFound();
+    return new RedirectResponse(config('custom.app_frontend_url'));
 });
 
 if (app()->environment('local')) {
