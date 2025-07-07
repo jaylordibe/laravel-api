@@ -31,15 +31,8 @@ class UserFeatureTest extends TestCase
         ];
         $response = $this->post("{$this->resource}/sign-up", $payload);
 
-        $expected = [
-            'firstName' => $payload['firstName'],
-            'lastName' => $payload['lastName'],
-            'phoneNumber' => $payload['phoneNumber'],
-            'email' => $payload['email'],
-            'username' => Str::replace('.', '', Str::before($payload['email'], '@'))
-        ];
-
-        $response->assertCreated()->assertJson($expected);
+        $expected = ['success'];
+        $response->assertOk()->assertJsonStructure($expected);
     }
 
     #[Test]

@@ -7,8 +7,7 @@ use App\Data\AppVersionData;
 use App\Data\AppVersionFilterData;
 use App\Models\AppVersion;
 use Exception;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Log;
 
 class AppVersionRepository

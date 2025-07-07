@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\BadRequestException;
 use App\Http\Requests\GenericRequest;
 use App\Http\Requests\DeviceTokenRequest;
 use App\Http\Resources\DeviceTokenResource;
@@ -26,16 +27,13 @@ class DeviceTokenController extends Controller
      * @param DeviceTokenRequest $request
      *
      * @return JsonResponse|JsonResource
+     * @throws BadRequestException
      */
     public function create(DeviceTokenRequest $request): JsonResponse|JsonResource
     {
-        $serviceResponse = $this->deviceTokenService->create($request->toData());
+        $deviceToken = $this->deviceTokenService->create($request->toData());
 
-        if ($serviceResponse->failed()) {
-            return ResponseUtil::error($serviceResponse->message);
-        }
-
-        return ResponseUtil::resource(DeviceTokenResource::class, $serviceResponse->data);
+        return ResponseUtil::resource(DeviceTokenResource::class, $deviceToken);
     }
 
     /**
@@ -48,13 +46,9 @@ class DeviceTokenController extends Controller
     public function getPaginated(GenericRequest $request): JsonResponse|JsonResource
     {
         $deviceTokenData = DeviceTokenRequest::createFrom($request)->toFilterData();
-        $serviceResponse = $this->deviceTokenService->getPaginated($deviceTokenData);
+        $deviceTokens = $this->deviceTokenService->getPaginated($deviceTokenData);
 
-        if ($serviceResponse->failed()) {
-            return ResponseUtil::error($serviceResponse->message);
-        }
-
-        return ResponseUtil::resource(DeviceTokenResource::class, $serviceResponse->data);
+        return ResponseUtil::resource(DeviceTokenResource::class, $deviceTokens);
     }
 
     /**
@@ -64,16 +58,13 @@ class DeviceTokenController extends Controller
      * @param int $deviceTokenId
      *
      * @return JsonResponse|JsonResource
+     * @throws BadRequestException
      */
     public function getById(GenericRequest $request, int $deviceTokenId): JsonResponse|JsonResource
     {
-        $serviceResponse = $this->deviceTokenService->getById($deviceTokenId, $request->getRelations());
+        $deviceToken = $this->deviceTokenService->getById($deviceTokenId, $request->getRelations());
 
-        if ($serviceResponse->failed()) {
-            return ResponseUtil::error($serviceResponse->message);
-        }
-
-        return ResponseUtil::resource(DeviceTokenResource::class, $serviceResponse->data);
+        return ResponseUtil::resource(DeviceTokenResource::class, $deviceToken);
     }
 
     /**
@@ -83,16 +74,13 @@ class DeviceTokenController extends Controller
      * @param int $deviceTokenId
      *
      * @return JsonResponse|JsonResource
+     * @throws BadRequestException
      */
     public function update(DeviceTokenRequest $request, int $deviceTokenId): JsonResponse|JsonResource
     {
-        $serviceResponse = $this->deviceTokenService->update($request->toData());
+        $deviceToken = $this->deviceTokenService->update($request->toData());
 
-        if ($serviceResponse->failed()) {
-            return ResponseUtil::error($serviceResponse->message);
-        }
-
-        return ResponseUtil::resource(DeviceTokenResource::class, $serviceResponse->data);
+        return ResponseUtil::resource(DeviceTokenResource::class, $deviceToken);
     }
 
     /**
@@ -102,16 +90,13 @@ class DeviceTokenController extends Controller
      * @param int $deviceTokenId
      *
      * @return JsonResponse
+     * @throws BadRequestException
      */
     public function delete(GenericRequest $request, int $deviceTokenId): JsonResponse
     {
-        $serviceResponse = $this->deviceTokenService->delete($deviceTokenId);
+        $this->deviceTokenService->delete($deviceTokenId);
 
-        if ($serviceResponse->failed()) {
-            return ResponseUtil::error($serviceResponse->message);
-        }
-
-        return ResponseUtil::success($serviceResponse->message);
+        return ResponseUtil::success('Device token deleted successfully.');
     }
 
 }

@@ -7,8 +7,7 @@ use App\Data\DeviceTokenData;
 use App\Data\DeviceTokenFilterData;
 use App\Models\DeviceToken;
 use Exception;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Log;
 
 class DeviceTokenRepository

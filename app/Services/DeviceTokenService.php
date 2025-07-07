@@ -4,9 +4,10 @@ namespace App\Services;
 
 use App\Data\DeviceTokenData;
 use App\Data\DeviceTokenFilterData;
-use App\Data\ServiceResponseData;
+use App\Exceptions\BadRequestException;
+use App\Models\DeviceToken;
 use App\Repositories\DeviceTokenRepository;
-use App\Utils\ServiceResponseUtil;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class DeviceTokenService
 {
@@ -22,17 +23,18 @@ class DeviceTokenService
      *
      * @param DeviceTokenData $deviceTokenData
      *
-     * @return ServiceResponseData
+     * @return DeviceToken|null
+     * @throws BadRequestException
      */
-    public function create(DeviceTokenData $deviceTokenData): ServiceResponseData
+    public function create(DeviceTokenData $deviceTokenData): ?DeviceToken
     {
         $deviceToken = $this->deviceTokenRepository->save($deviceTokenData);
 
         if (empty($deviceToken)) {
-            return ServiceResponseUtil::error('Failed to create device token.');
+            throw new BadRequestException('Failed to create device token.');
         }
 
-        return ServiceResponseUtil::success('Device token successfully added.', $deviceToken);
+        return $deviceToken;
     }
 
     /**
@@ -40,13 +42,11 @@ class DeviceTokenService
      *
      * @param DeviceTokenFilterData $deviceTokenFilterData
      *
-     * @return ServiceResponseData
+     * @return LengthAwarePaginator<DeviceToken>
      */
-    public function getPaginated(DeviceTokenFilterData $deviceTokenFilterData): ServiceResponseData
+    public function getPaginated(DeviceTokenFilterData $deviceTokenFilterData): LengthAwarePaginator
     {
-        return ServiceResponseUtil::map(
-            $this->deviceTokenRepository->getPaginated($deviceTokenFilterData)
-        );
+        return $this->deviceTokenRepository->getPaginated($deviceTokenFilterData);
     }
 
     /**
@@ -55,13 +55,18 @@ class DeviceTokenService
      * @param int $id
      * @param array $relations
      *
-     * @return ServiceResponseData
+     * @return DeviceToken|null
+     * @throws BadRequestException
      */
-    public function getById(int $id, array $relations = []): ServiceResponseData
+    public function getById(int $id, array $relations = []): ?DeviceToken
     {
-        return ServiceResponseUtil::map(
-            $this->deviceTokenRepository->findById($id, $relations)
-        );
+        $deviceToken = $this->deviceTokenRepository->findById($id, $relations);
+
+        if (empty($deviceToken)) {
+            throw new BadRequestException('Device token not found.');
+        }
+
+        return $deviceToken;
     }
 
     /**
@@ -69,23 +74,24 @@ class DeviceTokenService
      *
      * @param DeviceTokenData $deviceTokenData
      *
-     * @return ServiceResponseData
+     * @return DeviceToken|null
+     * @throws BadRequestException
      */
-    public function update(DeviceTokenData $deviceTokenData): ServiceResponseData
+    public function update(DeviceTokenData $deviceTokenData): ?DeviceToken
     {
         $deviceToken = $this->deviceTokenRepository->findById($deviceTokenData->id);
 
         if (empty($deviceToken)) {
-            return ServiceResponseUtil::error('Failed to update device token.');
+            throw new BadRequestException('Failed to update device token.');
         }
 
         $deviceToken = $this->deviceTokenRepository->save($deviceTokenData, $deviceToken);
 
         if (empty($deviceToken)) {
-            return ServiceResponseUtil::error('Failed to update device token.');
+            throw new BadRequestException('Failed to update device token.');
         }
 
-        return ServiceResponseUtil::success('Device token successfully updated.', $deviceToken);
+        return $deviceToken;
     }
 
     /**
@@ -93,23 +99,24 @@ class DeviceTokenService
      *
      * @param int $id
      *
-     * @return ServiceResponseData
+     * @return bool
+     * @throws BadRequestException
      */
-    public function delete(int $id): ServiceResponseData
+    public function delete(int $id): bool
     {
         $deviceToken = $this->deviceTokenRepository->findById($id);
 
         if (empty($deviceToken)) {
-            return ServiceResponseUtil::error('Failed to delete device token.');
+            throw new BadRequestException('Failed to delete device token.');
         }
 
         $isDeleted = $this->deviceTokenRepository->delete($id);
 
         if (!$isDeleted) {
-            return ServiceResponseUtil::error('Failed to delete device token.');
+            throw new BadRequestException('Failed to delete device token.');
         }
 
-        return ServiceResponseUtil::success('Device token successfully deleted.');
+        return true;
     }
 
 }

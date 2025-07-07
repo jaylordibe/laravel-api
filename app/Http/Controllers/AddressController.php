@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\BadRequestException;
 use App\Http\Requests\AddressRequest;
 use App\Http\Requests\GenericRequest;
 use App\Http\Resources\AddressResource;
@@ -24,16 +25,13 @@ class AddressController extends Controller
      * @param AddressRequest $request
      *
      * @return JsonResponse|JsonResource
+     * @throws BadRequestException
      */
     public function create(AddressRequest $request): JsonResponse|JsonResource
     {
-        $serviceResponse = $this->addressService->create($request->toData());
+        $address = $this->addressService->create($request->toData());
 
-        if ($serviceResponse->failed()) {
-            return ResponseUtil::error($serviceResponse->message);
-        }
-
-        return ResponseUtil::resource(AddressResource::class, $serviceResponse->data);
+        return ResponseUtil::resource(AddressResource::class, $address);
     }
 
     /**
@@ -44,13 +42,9 @@ class AddressController extends Controller
     public function getPaginated(GenericRequest $request): JsonResponse|JsonResource
     {
         $addressFilterData = AddressRequest::createFrom($request)->toFilterData();
-        $serviceResponse = $this->addressService->getPaginated($addressFilterData);
+        $addresses = $this->addressService->getPaginated($addressFilterData);
 
-        if ($serviceResponse->failed()) {
-            return ResponseUtil::error($serviceResponse->message);
-        }
-
-        return ResponseUtil::resource(AddressResource::class, $serviceResponse->data);
+        return ResponseUtil::resource(AddressResource::class, $addresses);
     }
 
     /**
@@ -58,16 +52,13 @@ class AddressController extends Controller
      * @param int $addressId
      *
      * @return JsonResponse|JsonResource
+     * @throws BadRequestException
      */
     public function getById(GenericRequest $request, int $addressId): JsonResponse|JsonResource
     {
-        $serviceResponse = $this->addressService->getById($addressId, $request->getRelations());
+        $address = $this->addressService->getById($addressId, $request->getRelations());
 
-        if ($serviceResponse->failed()) {
-            return ResponseUtil::error($serviceResponse->message);
-        }
-
-        return ResponseUtil::resource(AddressResource::class, $serviceResponse->data);
+        return ResponseUtil::resource(AddressResource::class, $address);
     }
 
     /**
@@ -75,16 +66,13 @@ class AddressController extends Controller
      * @param int $addressId
      *
      * @return JsonResponse|JsonResource
+     * @throws BadRequestException
      */
     public function update(AddressRequest $request, int $addressId): JsonResponse|JsonResource
     {
-        $serviceResponse = $this->addressService->update($request->toData());
+        $address = $this->addressService->update($request->toData());
 
-        if ($serviceResponse->failed()) {
-            return ResponseUtil::error($serviceResponse->message);
-        }
-
-        return ResponseUtil::resource(AddressResource::class, $serviceResponse->data);
+        return ResponseUtil::resource(AddressResource::class, $address);
     }
 
     /**
@@ -92,16 +80,13 @@ class AddressController extends Controller
      * @param int $addressId
      *
      * @return JsonResponse
+     * @throws BadRequestException
      */
     public function delete(GenericRequest $request, int $addressId): JsonResponse
     {
-        $serviceResponse = $this->addressService->delete($addressId);
+        $this->addressService->delete($addressId);
 
-        if ($serviceResponse->failed()) {
-            return ResponseUtil::error($serviceResponse->message);
-        }
-
-        return ResponseUtil::success($serviceResponse->message);
+        return ResponseUtil::success('Address deleted successfully.');
     }
 
 }

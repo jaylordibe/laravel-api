@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Constants\PermissionConstant;
+use App\Exceptions\BadRequestException;
 use App\Http\Requests\CreateUserRequest;
 use App\Http\Requests\GenericRequest;
 use App\Http\Requests\SignUpUserRequest;
@@ -15,7 +16,6 @@ use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Routing\Controller;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 
 class UserController extends Controller
@@ -33,16 +33,13 @@ class UserController extends Controller
      * @param SignUpUserRequest $request
      *
      * @return JsonResponse|JsonResource
+     * @throws BadRequestException
      */
     public function signUp(SignUpUserRequest $request): JsonResponse|JsonResource
     {
-        $serviceResponse = $this->userService->signUp($request->toData());
+        $this->userService->signUp($request->toData());
 
-        if ($serviceResponse->failed()) {
-            return ResponseUtil::error($serviceResponse->message);
-        }
-
-        return ResponseUtil::resource(UserResource::class, $serviceResponse->data);
+        return ResponseUtil::success('User created successfully.');
     }
 
     /**
@@ -52,6 +49,7 @@ class UserController extends Controller
      * @param int $userId
      *
      * @return JsonResponse|JsonResource
+     * @throws BadRequestException
      */
     public function verifyEmail(EmailVerificationRequest $request, int $userId): JsonResponse|JsonResource
     {
@@ -59,13 +57,9 @@ class UserController extends Controller
             return ResponseUtil::error('Invalid verification link.');
         }
 
-        $serviceResponse = $this->userService->verifyEmail($userId);
+        $this->userService->verifyEmail($userId);
 
-        if ($serviceResponse->failed()) {
-            return ResponseUtil::error($serviceResponse->message);
-        }
-
-        return ResponseUtil::success($serviceResponse->message);
+        return ResponseUtil::success('Email verified successfully.');
     }
 
     /**
@@ -74,17 +68,14 @@ class UserController extends Controller
      * @param GenericRequest $request
      *
      * @return JsonResponse|JsonResource
+     * @throws BadRequestException
      */
     public function getAuthUser(GenericRequest $request): JsonResponse|JsonResource
     {
         $relations = ['roles', 'permissions'];
-        $serviceResponse = $this->userService->getById(Auth::user()->id, $relations);
+        $user = $this->userService->getById($request->getAuthUserData()->id, $relations);
 
-        if ($serviceResponse->failed()) {
-            return ResponseUtil::error($serviceResponse->message);
-        }
-
-        return ResponseUtil::resource(UserResource::class, $serviceResponse->data);
+        return ResponseUtil::resource(UserResource::class, $user);
     }
 
     /**
@@ -93,6 +84,7 @@ class UserController extends Controller
      * @param GenericRequest $request
      *
      * @return JsonResponse|JsonResource
+     * @throws BadRequestException
      */
     public function updateAuthUsername(GenericRequest $request): JsonResponse|JsonResource
     {
@@ -102,13 +94,9 @@ class UserController extends Controller
             return ResponseUtil::error('Username is required.');
         }
 
-        $serviceResponse = $this->userService->updateUsername(Auth::user()->id, $username);
+        $user = $this->userService->updateUsername($request->getAuthUserData()->id, $username);
 
-        if ($serviceResponse->failed()) {
-            return ResponseUtil::error($serviceResponse->message);
-        }
-
-        return ResponseUtil::resource(UserResource::class, $serviceResponse->data);
+        return ResponseUtil::resource(UserResource::class, $user);
     }
 
     /**
@@ -117,6 +105,7 @@ class UserController extends Controller
      * @param GenericRequest $request
      *
      * @return JsonResponse|JsonResource
+     * @throws BadRequestException
      */
     public function updateAuthUserEmail(GenericRequest $request): JsonResponse|JsonResource
     {
@@ -126,13 +115,9 @@ class UserController extends Controller
             return ResponseUtil::error('Email is required.');
         }
 
-        $serviceResponse = $this->userService->updateEmail(Auth::user()->id, $email);
+        $user = $this->userService->updateEmail($request->getAuthUserData()->id, $email);
 
-        if ($serviceResponse->failed()) {
-            return ResponseUtil::error($serviceResponse->message);
-        }
-
-        return ResponseUtil::resource(UserResource::class, $serviceResponse->data);
+        return ResponseUtil::resource(UserResource::class, $user);
     }
 
     /**
@@ -141,16 +126,13 @@ class UserController extends Controller
      * @param UpdatePasswordRequest $request
      *
      * @return JsonResponse|JsonResource
+     * @throws BadRequestException
      */
     public function updateAuthUserPassword(UpdatePasswordRequest $request): JsonResponse|JsonResource
     {
-        $serviceResponse = $this->userService->updatePassword($request->toData());
+        $this->userService->updatePassword($request->toData());
 
-        if ($serviceResponse->failed()) {
-            return ResponseUtil::error($serviceResponse->message);
-        }
-
-        return ResponseUtil::success($serviceResponse->message);
+        return ResponseUtil::success('Password updated successfully.');
     }
 
     /**
@@ -160,18 +142,15 @@ class UserController extends Controller
      * @param int $userId
      *
      * @return JsonResponse|JsonResource
+     * @throws BadRequestException
      */
     public function updatePassword(UpdatePasswordRequest $request, int $userId): JsonResponse|JsonResource
     {
         $updatePasswordData = $request->toData();
         $updatePasswordData->userId = $userId;
-        $serviceResponse = $this->userService->updatePassword($updatePasswordData);
+        $this->userService->updatePassword($updatePasswordData);
 
-        if ($serviceResponse->failed()) {
-            return ResponseUtil::error($serviceResponse->message);
-        }
-
-        return ResponseUtil::success($serviceResponse->message);
+        return ResponseUtil::success('Password updated successfully.');
     }
 
     /**
@@ -180,6 +159,7 @@ class UserController extends Controller
      * @param GenericRequest $request
      *
      * @return JsonResponse|JsonResource
+     * @throws BadRequestException
      */
     public function updateAuthUserProfilePhoto(GenericRequest $request): JsonResponse|JsonResource
     {
@@ -189,31 +169,24 @@ class UserController extends Controller
             return ResponseUtil::error('Profile photo is required.');
         }
 
-        $serviceResponse = $this->userService->updateProfilePhoto(Auth::user()->id, $profilePhoto);
+        $user = $this->userService->updateProfilePhoto($request->getAuthUserData()->id, $profilePhoto);
 
-        if ($serviceResponse->failed()) {
-            return ResponseUtil::error($serviceResponse->message);
-        }
-
-        return ResponseUtil::resource(UserResource::class, $serviceResponse->data);
+        return ResponseUtil::resource(UserResource::class, $user);
     }
 
     /**
      * @param CreateUserRequest $request
      *
      * @return JsonResponse|JsonResource
+     * @throws BadRequestException
      */
     public function create(CreateUserRequest $request): JsonResponse|JsonResource
     {
         Gate::authorize(PermissionConstant::CREATE_USER);
 
-        $serviceResponse = $this->userService->create($request->toData());
+        $user = $this->userService->create($request->toData());
 
-        if ($serviceResponse->failed()) {
-            return ResponseUtil::error($serviceResponse->message);
-        }
-
-        return ResponseUtil::resource(UserResource::class, $serviceResponse->data);
+        return ResponseUtil::resource(UserResource::class, $user);
     }
 
     /**
@@ -226,13 +199,9 @@ class UserController extends Controller
         Gate::authorize(PermissionConstant::READ_USER);
 
         $userFilterData = UserRequest::createFrom($request)->toFilterData();
-        $serviceResponse = $this->userService->getPaginated($userFilterData);
+        $users = $this->userService->getPaginated($userFilterData);
 
-        if ($serviceResponse->failed()) {
-            return ResponseUtil::error($serviceResponse->message);
-        }
-
-        return ResponseUtil::resource(UserResource::class, $serviceResponse->data);
+        return ResponseUtil::resource(UserResource::class, $users);
     }
 
     /**
@@ -240,18 +209,15 @@ class UserController extends Controller
      * @param int $userId
      *
      * @return JsonResponse|JsonResource
+     * @throws BadRequestException
      */
     public function getById(GenericRequest $request, int $userId): JsonResponse|JsonResource
     {
         Gate::authorize(PermissionConstant::READ_USER);
 
-        $serviceResponse = $this->userService->getById($userId, $request->getRelations());
+        $user = $this->userService->getById($userId, $request->getRelations());
 
-        if ($serviceResponse->failed()) {
-            return ResponseUtil::error($serviceResponse->message);
-        }
-
-        return ResponseUtil::resource(UserResource::class, $serviceResponse->data);
+        return ResponseUtil::resource(UserResource::class, $user);
     }
 
     /**
@@ -259,18 +225,15 @@ class UserController extends Controller
      * @param int $userId
      *
      * @return JsonResponse|JsonResource
+     * @throws BadRequestException
      */
     public function update(UserRequest $request, int $userId): JsonResponse|JsonResource
     {
         Gate::authorize(PermissionConstant::UPDATE_USER);
 
-        $serviceResponse = $this->userService->update($request->toData());
+        $user = $this->userService->update($request->toData());
 
-        if ($serviceResponse->failed()) {
-            return ResponseUtil::error($serviceResponse->message);
-        }
-
-        return ResponseUtil::resource(UserResource::class, $serviceResponse->data);
+        return ResponseUtil::resource(UserResource::class, $user);
     }
 
     /**
@@ -278,18 +241,15 @@ class UserController extends Controller
      * @param int $userId
      *
      * @return JsonResponse
+     * @throws BadRequestException
      */
     public function delete(GenericRequest $request, int $userId): JsonResponse
     {
         Gate::authorize(PermissionConstant::DELETE_USER);
 
-        $serviceResponse = $this->userService->delete($userId);
+        $this->userService->delete($userId);
 
-        if ($serviceResponse->failed()) {
-            return ResponseUtil::error($serviceResponse->message);
-        }
-
-        return ResponseUtil::success($serviceResponse->message);
+        return ResponseUtil::success('User deleted successfully.');
     }
 
 }

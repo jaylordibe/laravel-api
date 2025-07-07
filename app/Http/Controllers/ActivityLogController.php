@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\BadRequestException;
 use App\Http\Requests\GenericRequest;
 use App\Http\Requests\ActivityLogRequest;
 use App\Http\Resources\ActivityLogResource;
@@ -26,16 +27,13 @@ class ActivityLogController extends Controller
      * @param ActivityLogRequest $request
      *
      * @return JsonResponse|JsonResource
+     * @throws BadRequestException
      */
     public function create(ActivityLogRequest $request): JsonResponse|JsonResource
     {
-        $serviceResponse = $this->activityService->create($request->toData());
+        $activity = $this->activityService->create($request->toData());
 
-        if ($serviceResponse->failed()) {
-            return ResponseUtil::error($serviceResponse->message);
-        }
-
-        return ResponseUtil::resource(ActivityLogResource::class, $serviceResponse->data);
+        return ResponseUtil::resource(ActivityLogResource::class, $activity);
     }
 
     /**
@@ -48,13 +46,9 @@ class ActivityLogController extends Controller
     public function getPaginated(GenericRequest $request): JsonResponse|JsonResource
     {
         $activityFilterData = ActivityLogRequest::createFrom($request)->toFilterData();
-        $serviceResponse = $this->activityService->getPaginated($activityFilterData);
+        $activities = $this->activityService->getPaginated($activityFilterData);
 
-        if ($serviceResponse->failed()) {
-            return ResponseUtil::error($serviceResponse->message);
-        }
-
-        return ResponseUtil::resource(ActivityLogResource::class, $serviceResponse->data);
+        return ResponseUtil::resource(ActivityLogResource::class, $activities);
     }
 
 }

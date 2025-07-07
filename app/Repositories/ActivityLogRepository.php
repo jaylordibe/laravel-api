@@ -4,7 +4,7 @@ namespace App\Repositories;
 
 use App\Constants\AppConstant;
 use App\Data\ActivityFilterData;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Spatie\Activitylog\Models\Activity;
 
 class ActivityLogRepository

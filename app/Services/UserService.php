@@ -4,17 +4,17 @@ namespace App\Services;
 
 use App\Constants\RoleConstant;
 use App\Data\CreateUserData;
-use App\Data\ServiceResponseData;
 use App\Data\SignUpUserData;
 use App\Data\UpdatePasswordData;
 use App\Data\UserData;
 use App\Data\UserFilterData;
+use App\Exceptions\BadRequestException;
 use App\Models\User;
 use App\Repositories\UserRepository;
 use App\Utils\AppUtil;
 use App\Utils\FileUtil;
-use App\Utils\ServiceResponseUtil;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 
@@ -30,9 +30,10 @@ class UserService
     /**
      * @param SignUpUserData $signUpUserData
      *
-     * @return ServiceResponseData
+     * @return User|null
+     * @throws BadRequestException
      */
-    public function signUp(SignUpUserData $signUpUserData): ServiceResponseData
+    public function signUp(SignUpUserData $signUpUserData): ?User
     {
         $userData = new UserData(
             firstName: $signUpUserData->firstName,
@@ -44,12 +45,12 @@ class UserService
         $user = $this->userRepository->create($userData, $signUpUserData->password);
 
         if (empty($user)) {
-            return ServiceResponseUtil::error('Sign up failed.');
+            throw new BadRequestException('Sign up failed.');
         }
 
         $user->sendEmailVerificationNotification();
 
-        return ServiceResponseUtil::success('Sign up successful.', $user);
+        return $user;
     }
 
     /**
@@ -57,31 +58,33 @@ class UserService
      *
      * @param int $userId
      *
-     * @return ServiceResponseData
+     * @return User|null
+     * @throws BadRequestException
      */
-    public function verifyEmail(int $userId): ServiceResponseData
+    public function verifyEmail(int $userId): ?User
     {
         $user = $this->userRepository->findById($userId);
 
         if (empty($user)) {
-            return ServiceResponseUtil::error('User not found.');
+            throw new BadRequestException('User not found.');
         }
 
         if ($user->hasVerifiedEmail()) {
-            return ServiceResponseUtil::error('Email already verified.');
+            throw new BadRequestException('Email already verified.');
         }
 
         $user->markEmailAsVerified();
 
-        return ServiceResponseUtil::success('Email verified.');
+        return $user;
     }
 
     /**
      * @param CreateUserData $createUserData
      *
-     * @return ServiceResponseData
+     * @return User|null
+     * @throws BadRequestException
      */
-    public function create(CreateUserData $createUserData): ServiceResponseData
+    public function create(CreateUserData $createUserData): ?User
     {
         $userData = new UserData(
             firstName: $createUserData->firstName,
@@ -93,57 +96,61 @@ class UserService
         $user = $this->userRepository->create($userData, $createUserData->rawPassword);
 
         if (empty($user)) {
-            return ServiceResponseUtil::error('Failed to create user.');
+            throw new BadRequestException('Failed to create user.');
         }
 
-        return ServiceResponseUtil::success('User successfully created.', $user);
+        return $user;
     }
 
     /**
      * @param UserFilterData $userFilterData
      *
-     * @return ServiceResponseData
+     * @return LengthAwarePaginator<User>
      */
-    public function getPaginated(UserFilterData $userFilterData): ServiceResponseData
+    public function getPaginated(UserFilterData $userFilterData): LengthAwarePaginator
     {
-        return ServiceResponseUtil::map(
-            $this->userRepository->getPaginated($userFilterData)
-        );
+        return $this->userRepository->getPaginated($userFilterData);
     }
 
     /**
      * @param int $id
      * @param array $relations
      *
-     * @return ServiceResponseData
+     * @return User|null
+     * @throws BadRequestException
      */
-    public function getById(int $id, array $relations = []): ServiceResponseData
+    public function getById(int $id, array $relations = []): ?User
     {
-        return ServiceResponseUtil::map(
-            $this->userRepository->findById($id, $relations)
-        );
+        $user = $this->userRepository->findById($id, $relations);
+
+        if (empty($user)) {
+            throw new BadRequestException('User not found.');
+        }
+
+        return $user;
     }
 
     /**
      * @param UserData $userData
      *
-     * @return ServiceResponseData
+     * @return User|null
+     * @throws BadRequestException
      */
-    public function update(UserData $userData): ServiceResponseData
+    public function update(UserData $userData): ?User
     {
         $user = $this->userRepository->findById($userData->id);
 
         if (empty($user)) {
-            return ServiceResponseUtil::error('User not found.');
+            throw new BadRequestException('User not found.');
         }
 
         $user = $this->userRepository->save($userData, $user);
 
         if (empty($user)) {
-            return ServiceResponseUtil::error('Failed to update user.');
+            throw new BadRequestException('Failed to update user.');
         }
 
-        return ServiceResponseUtil::success('User successfully updated.', $user);
+        return $user;
     }
 
     /**
@@ -151,17 +158,18 @@ class UserService
      *
      * @param int $id
      *
-     * @return ServiceResponseData
+     * @return bool
+     * @throws BadRequestException
      */
-    public function delete(int $id): ServiceResponseData
+    public function delete(int $id): bool
     {
         $isDeleted = $this->userRepository->delete($id);
 
         if (!$isDeleted) {
-            return ServiceResponseUtil::error('Failed to delete user.');
+            throw new BadRequestException('Failed to delete user.');
         }
 
-        return ServiceResponseUtil::success('User successfully deleted.');
+        return true;
     }
 
     /**
@@ -221,17 +229,18 @@ class UserService
      * @param int $id
      * @param string $username
      *
-     * @return ServiceResponseData
+     * @return User|null
+     * @throws BadRequestException
      */
-    public function updateUsername(int $id, string $username): ServiceResponseData
+    public function updateUsername(int $id, string $username): ?User
     {
         $user = $this->userRepository->updateUsername($id, $username);
 
         if (empty($user)) {
-            return ServiceResponseUtil::error('Failed to update username');
+            throw new BadRequestException('Failed to update username');
         }
 
-        return ServiceResponseUtil::map($user);
+        return $user;
     }
 
     /**
@@ -240,17 +249,18 @@ class UserService
      * @param int $id
      * @param string $email
      *
-     * @return ServiceResponseData
+     * @return User|null
+     * @throws BadRequestException
      */
-    public function updateEmail(int $id, string $email): ServiceResponseData
+    public function updateEmail(int $id, string $email): ?User
     {
         $user = $this->userRepository->updateEmail($id, $email);
 
         if (empty($user)) {
-            return ServiceResponseUtil::error('Failed to update email');
+            throw new BadRequestException('Failed to update email');
         }
 
-        return ServiceResponseUtil::map($user);
+        return $user;
     }
 
     /**
@@ -258,25 +268,26 @@ class UserService
      *
      * @param UpdatePasswordData $changePasswordData
      *
-     * @return ServiceResponseData
+     * @return User|null
+     * @throws BadRequestException
      */
-    public function updatePassword(UpdatePasswordData $changePasswordData): ServiceResponseData
+    public function updatePassword(UpdatePasswordData $changePasswordData): ?User
     {
         /** @var User $authUser */
         $authUser = Auth::user();
         $isAdmin = $authUser->hasRole([RoleConstant::SYSTEM_ADMIN, RoleConstant::APP_ADMIN]);
 
         if (!$isAdmin && $authUser->id !== $changePasswordData->userId) {
-            return ServiceResponseUtil::error('Unauthorized to update password.');
+            throw new BadRequestException('Unauthorized to update password.');
         }
 
         $user = $this->userRepository->updatePassword($changePasswordData);
 
         if (empty($user)) {
-            return ServiceResponseUtil::error('Failed to update password.');
+            throw new BadRequestException('Failed to update password.');
         }
 
-        return ServiceResponseUtil::success('Password successfully updated.');
+        return $user;
     }
 
     /**
@@ -285,19 +296,20 @@ class UserService
      * @param int $id
      * @param UploadedFile $profilePhoto
      *
-     * @return ServiceResponseData
+     * @return User|null
+     * @throws BadRequestException
      */
-    public function updateProfilePhoto(int $id, UploadedFile $profilePhoto): ServiceResponseData
+    public function updateProfilePhoto(int $id, UploadedFile $profilePhoto): ?User
     {
         $path = FileUtil::upload($profilePhoto);
         $profilePhotoUrl = FileUtil::getUrl($path);
         $user = $this->userRepository->updateProfilePhotoUrl($id, $profilePhotoUrl);
 
         if (empty($user)) {
-            return ServiceResponseUtil::error('Failed to update email');
+            throw new BadRequestException('Failed to update email');
         }
 
-        return ServiceResponseUtil::map($user);
+        return $user;
     }
 
 }

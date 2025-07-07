@@ -4,9 +4,10 @@ namespace App\Services;
 
 use App\Data\AppVersionData;
 use App\Data\AppVersionFilterData;
-use App\Data\ServiceResponseData;
+use App\Exceptions\BadRequestException;
+use App\Models\AppVersion;
 use App\Repositories\AppVersionRepository;
-use App\Utils\ServiceResponseUtil;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class AppVersionService
 {
@@ -18,27 +19,28 @@ class AppVersionService
     }
 
     /**
-     * Create app version.
+     * Create an app version.
      *
      * @param AppVersionData $appVersionData
      *
-     * @return ServiceResponseData
+     * @return AppVersion|null
+     * @throws BadRequestException
      */
-    public function create(AppVersionData $appVersionData): ServiceResponseData
+    public function create(AppVersionData $appVersionData): ?AppVersion
     {
         $isAppVersionExists = $this->appVersionRepository->existsByVersionAndPlatform($appVersionData->version, $appVersionData->platform);
 
         if ($isAppVersionExists) {
-            return ServiceResponseUtil::error("App version {$appVersionData->version} for platform {$appVersionData->platform} already exists.");
+            throw new BadRequestException("App version {$appVersionData->version} for platform {$appVersionData->platform} already exists.");
         }
 
         $appVersion = $this->appVersionRepository->save($appVersionData);
 
         if (empty($appVersion)) {
-            return ServiceResponseUtil::error('Failed to create app version.');
+            throw new BadRequestException('Failed to create app version.');
         }
 
-        return ServiceResponseUtil::success('App version successfully added.', $appVersion);
+        return $appVersion;
     }
 
     /**
@@ -46,28 +48,31 @@ class AppVersionService
      *
      * @param AppVersionFilterData $appVersionFilterData
      *
-     * @return ServiceResponseData
+     * @return LengthAwarePaginator<AppVersion>
      */
-    public function getPaginated(AppVersionFilterData $appVersionFilterData): ServiceResponseData
+    public function getPaginated(AppVersionFilterData $appVersionFilterData): LengthAwarePaginator
     {
-        return ServiceResponseUtil::map(
-            $this->appVersionRepository->getPaginated($appVersionFilterData)
-        );
+        return $this->appVersionRepository->getPaginated($appVersionFilterData);
     }
 
     /**
-     * Get app version by id.
+     * Get an app version by id.
      *
      * @param int $id
      * @param array $relations
      *
-     * @return ServiceResponseData
+     * @return AppVersion|null
+     * @throws BadRequestException
      */
-    public function getById(int $id, array $relations = []): ServiceResponseData
+    public function getById(int $id, array $relations = []): ?AppVersion
     {
-        return ServiceResponseUtil::map(
-            $this->appVersionRepository->findById($id, $relations)
-        );
+        $appVersion = $this->appVersionRepository->findById($id, $relations);
+
+        if (empty($appVersion)) {
+            throw new BadRequestException('App version not found.');
+        }
+
+        return $appVersion;
     }
 
     /**
@@ -75,31 +80,32 @@ class AppVersionService
      *
      * @param AppVersionData $appVersionData
      *
-     * @return ServiceResponseData
+     * @return AppVersion|null
+     * @throws BadRequestException
      */
-    public function update(AppVersionData $appVersionData): ServiceResponseData
+    public function update(AppVersionData $appVersionData): ?AppVersion
     {
         $appVersion = $this->appVersionRepository->findById($appVersionData->id);
 
         if (empty($appVersion)) {
-            return ServiceResponseUtil::error('Failed to update app version.');
+            throw new BadRequestException('Failed to update app version.');
         }
 
         if ($appVersionData->version !== $appVersion->version || $appVersionData->platform !== $appVersion->platform) {
             $isAppVersionExists = $this->appVersionRepository->existsByVersionAndPlatform($appVersionData->version, $appVersionData->platform);
 
             if ($isAppVersionExists) {
-                return ServiceResponseUtil::error("App version {$appVersionData->version} for platform {$appVersionData->platform} already exists.");
+                throw new BadRequestException("App version {$appVersionData->version} for platform {$appVersionData->platform} already exists.");
             }
         }
 
         $appVersion = $this->appVersionRepository->save($appVersionData, $appVersion);
 
         if (empty($appVersion)) {
-            return ServiceResponseUtil::error('Failed to update app version.');
+            throw new BadRequestException('Failed to update app version.');
         }
 
-        return ServiceResponseUtil::success('App version successfully updated.', $appVersion);
+        return $appVersion;
     }
 
     /**
@@ -107,23 +113,18 @@ class AppVersionService
      *
      * @param int $id
      *
-     * @return ServiceResponseData
+     * @return bool
+     * @throws BadRequestException
      */
-    public function delete(int $id): ServiceResponseData
+    public function delete(int $id): bool
     {
-        $appVersion = $this->appVersionRepository->findById($id);
-
-        if (empty($appVersion)) {
-            return ServiceResponseUtil::error('Failed to delete app version.');
-        }
-
         $isDeleted = $this->appVersionRepository->delete($id);
 
         if (!$isDeleted) {
-            return ServiceResponseUtil::error('Failed to delete app version.');
+            throw new BadRequestException('Failed to delete app version.');
         }
 
-        return ServiceResponseUtil::success('App version successfully deleted.');
+        return true;
     }
 
     /**
@@ -131,13 +132,11 @@ class AppVersionService
      *
      * @param string $platform
      *
-     * @return ServiceResponseData
+     * @return AppVersion|null
      */
-    public function getLatest(string $platform): ServiceResponseData
+    public function getLatest(string $platform): ?AppVersion
     {
-        return ServiceResponseUtil::map(
-            $this->appVersionRepository->getLatest($platform)
-        );
+        return $this->appVersionRepository->getLatest($platform);
     }
 
 }

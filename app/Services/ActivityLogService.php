@@ -4,9 +4,10 @@ namespace App\Services;
 
 use App\Data\ActivityData;
 use App\Data\ActivityFilterData;
-use App\Data\ServiceResponseData;
+use App\Exceptions\BadRequestException;
 use App\Repositories\ActivityLogRepository;
-use App\Utils\ServiceResponseUtil;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Spatie\Activitylog\Models\Activity;
 
 class ActivityLogService
 {
@@ -22,9 +23,10 @@ class ActivityLogService
      *
      * @param ActivityData $activityData
      *
-     * @return ServiceResponseData
+     * @return Activity|null
+     * @throws BadRequestException
      */
-    public function create(ActivityData $activityData): ServiceResponseData
+    public function create(ActivityData $activityData): ?Activity
     {
         $activity = activity()
             ->causedBy($activityData->userId)
@@ -33,10 +35,10 @@ class ActivityLogService
             ->log($activityData->description);
 
         if (empty($activity)) {
-            return ServiceResponseUtil::error('Failed to create activity.');
+            throw new BadRequestException('Failed to create activity.');
         }
 
-        return ServiceResponseUtil::success('Activity successfully added.', $activity);
+        return $activity;
     }
 
     /**
@@ -44,13 +46,11 @@ class ActivityLogService
      *
      * @param ActivityFilterData $activityFilterData
      *
-     * @return ServiceResponseData
+     * @return LengthAwarePaginator<Activity>
      */
-    public function getPaginated(ActivityFilterData $activityFilterData): ServiceResponseData
+    public function getPaginated(ActivityFilterData $activityFilterData): LengthAwarePaginator
     {
-        return ServiceResponseUtil::map(
-            $this->activityRepository->getPaginated($activityFilterData)
-        );
+        return $this->activityRepository->getPaginated($activityFilterData);
     }
 
 }

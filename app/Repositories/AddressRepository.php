@@ -6,9 +6,7 @@ use App\Constants\AppConstant;
 use App\Data\AddressData;
 use App\Data\AddressFilterData;
 use App\Models\Address;
-use Exception;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class AddressRepository
 {
@@ -91,19 +89,7 @@ class AddressRepository
      */
     public function delete(int $id): bool
     {
-        $address = $this->findById($id);
-
-        if (empty($address)) {
-            return false;
-        }
-
-        try {
-            return (bool) $address->delete();
-        } catch (Exception $exception) {
-            Log::error("DeleteAddressException: {$exception->getMessage()}");
-        }
-
-        return false;
+        return Address::destroy($id) > 0;
     }
 
 }

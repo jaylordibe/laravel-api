@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\BadRequestException;
 use App\Http\Requests\GenericRequest;
 use App\Http\Requests\AppVersionRequest;
 use App\Http\Resources\AppVersionResource;
@@ -21,21 +22,18 @@ class AppVersionController extends Controller
     }
 
     /**
-     * Create app version.
+     * Create an app version.
      *
      * @param AppVersionRequest $request
      *
      * @return JsonResponse|JsonResource
+     * @throws BadRequestException
      */
     public function create(AppVersionRequest $request): JsonResponse|JsonResource
     {
-        $serviceResponse = $this->appVersionService->create($request->toData());
+        $appVersion = $this->appVersionService->create($request->toData());
 
-        if ($serviceResponse->failed()) {
-            return ResponseUtil::error($serviceResponse->message);
-        }
-
-        return ResponseUtil::resource(AppVersionResource::class, $serviceResponse->data);
+        return ResponseUtil::resource(AppVersionResource::class, $appVersion);
     }
 
     /**
@@ -48,32 +46,25 @@ class AppVersionController extends Controller
     public function getPaginated(GenericRequest $request): JsonResponse|JsonResource
     {
         $appVersionData = AppVersionRequest::createFrom($request)->toFilterData();
-        $serviceResponse = $this->appVersionService->getPaginated($appVersionData);
+        $appVersions = $this->appVersionService->getPaginated($appVersionData);
 
-        if ($serviceResponse->failed()) {
-            return ResponseUtil::error($serviceResponse->message);
-        }
-
-        return ResponseUtil::resource(AppVersionResource::class, $serviceResponse->data);
+        return ResponseUtil::resource(AppVersionResource::class, $appVersions);
     }
 
     /**
-     * Get app version by id.
+     * Get an app version by id.
      *
      * @param GenericRequest $request
      * @param int $appVersionId
      *
      * @return JsonResponse|JsonResource
+     * @throws BadRequestException
      */
     public function getById(GenericRequest $request, int $appVersionId): JsonResponse|JsonResource
     {
-        $serviceResponse = $this->appVersionService->getById($appVersionId, $request->getRelations());
+        $appVersion = $this->appVersionService->getById($appVersionId, $request->getRelations());
 
-        if ($serviceResponse->failed()) {
-            return ResponseUtil::error($serviceResponse->message);
-        }
-
-        return ResponseUtil::resource(AppVersionResource::class, $serviceResponse->data);
+        return ResponseUtil::resource(AppVersionResource::class, $appVersion);
     }
 
     /**
@@ -83,16 +74,13 @@ class AppVersionController extends Controller
      * @param int $appVersionId
      *
      * @return JsonResponse|JsonResource
+     * @throws BadRequestException
      */
     public function update(AppVersionRequest $request, int $appVersionId): JsonResponse|JsonResource
     {
-        $serviceResponse = $this->appVersionService->update($request->toData());
+        $appVersion = $this->appVersionService->update($request->toData());
 
-        if ($serviceResponse->failed()) {
-            return ResponseUtil::error($serviceResponse->message);
-        }
-
-        return ResponseUtil::resource(AppVersionResource::class, $serviceResponse->data);
+        return ResponseUtil::resource(AppVersionResource::class, $appVersion);
     }
 
     /**
@@ -102,16 +90,13 @@ class AppVersionController extends Controller
      * @param int $appVersionId
      *
      * @return JsonResponse
+     * @throws BadRequestException
      */
     public function delete(GenericRequest $request, int $appVersionId): JsonResponse
     {
-        $serviceResponse = $this->appVersionService->delete($appVersionId);
+        $this->appVersionService->delete($appVersionId);
 
-        if ($serviceResponse->failed()) {
-            return ResponseUtil::error($serviceResponse->message);
-        }
-
-        return ResponseUtil::success($serviceResponse->message);
+        return ResponseUtil::success('App version deleted successfully.');
     }
 
     /**
@@ -129,13 +114,9 @@ class AppVersionController extends Controller
             return ResponseUtil::error('Platform is required.');
         }
 
-        $serviceResponse = $this->appVersionService->getLatest($platform);
+        $appVersion = $this->appVersionService->getLatest($platform);
 
-        if ($serviceResponse->failed()) {
-            return ResponseUtil::error($serviceResponse->message);
-        }
-
-        return ResponseUtil::resource(AppVersionResource::class, $serviceResponse->data);
+        return ResponseUtil::resource(AppVersionResource::class, $appVersion);
     }
 
 }

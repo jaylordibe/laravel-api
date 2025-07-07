@@ -4,9 +4,10 @@ namespace App\Services;
 
 use App\Data\AddressData;
 use App\Data\AddressFilterData;
-use App\Data\ServiceResponseData;
+use App\Exceptions\BadRequestException;
+use App\Models\Address;
 use App\Repositories\AddressRepository;
-use App\Utils\ServiceResponseUtil;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class AddressService
 {
@@ -20,64 +21,69 @@ class AddressService
     /**
      * @param AddressData $addressData
      *
-     * @return ServiceResponseData
+     * @return Address|null
+     * @throws BadRequestException
      */
-    public function create(AddressData $addressData): ServiceResponseData
+    public function create(AddressData $addressData): ?Address
     {
         $address = $this->addressRepository->save($addressData);
 
         if (empty($address)) {
-            return ServiceResponseUtil::error('Failed to create address.');
+            throw new BadRequestException('Failed to create address.');
         }
 
-        return ServiceResponseUtil::success('Address successfully created.', $address);
+        return $address;
     }
 
     /**
      * @param AddressFilterData $addressFilterData
      *
-     * @return ServiceResponseData
+     * @return LengthAwarePaginator<Address>
      */
-    public function getPaginated(AddressFilterData $addressFilterData): ServiceResponseData
+    public function getPaginated(AddressFilterData $addressFilterData): LengthAwarePaginator
     {
-        return ServiceResponseUtil::map(
-            $this->addressRepository->getPaginated($addressFilterData)
-        );
+        return $this->addressRepository->getPaginated($addressFilterData);
     }
 
     /**
      * @param int $id
      * @param array $relations
      *
-     * @return ServiceResponseData
+     * @return Address|null
+     * @throws BadRequestException
      */
-    public function getById(int $id, array $relations = []): ServiceResponseData
+    public function getById(int $id, array $relations = []): ?Address
     {
-        return ServiceResponseUtil::map(
-            $this->addressRepository->findById($id, $relations)
-        );
+        $address = $this->addressRepository->findById($id, $relations);
+
+        if (empty($address)) {
+            throw new BadRequestException('Address not found.');
+        }
+
+        return $address;
     }
 
     /**
      * @param AddressData $addressData
      *
-     * @return ServiceResponseData
+     * @return Address|null
+     * @throws BadRequestException
      */
-    public function update(AddressData $addressData): ServiceResponseData
+    public function update(AddressData $addressData): ?Address
     {
         $address = $this->addressRepository->findById($addressData->id);
 
         if (empty($address)) {
-            return ServiceResponseUtil::error('Address not found.');
+            throw new BadRequestException('Address not found.');
         }
 
         $address = $this->addressRepository->save($addressData, $address);
 
         if (empty($address)) {
-            return ServiceResponseUtil::error('Failed to update address.');
+            throw new BadRequestException('Failed to update address.');
         }
 
-        return ServiceResponseUtil::success('Address successfully updated.', $address);
+        return $address;
     }
 
     /**
@@ -85,17 +91,18 @@ class AddressService
      *
      * @param int $id
      *
-     * @return ServiceResponseData
+     * @return bool
+     * @throws BadRequestException
      */
-    public function delete(int $id): ServiceResponseData
+    public function delete(int $id): bool
     {
         $isDeleted = $this->addressRepository->delete($id);
 
         if (!$isDeleted) {
-            return ServiceResponseUtil::error('Failed to delete address.');
+            throw new BadRequestException('Failed to delete address.');
         }
 
-        return ServiceResponseUtil::success('Address successfully deleted.');
+        return true;
     }
 
 }

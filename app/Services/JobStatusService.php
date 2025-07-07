@@ -2,9 +2,9 @@
 
 namespace App\Services;
 
-use App\Data\ServiceResponseData;
+use App\Exceptions\BadRequestException;
 use App\Repositories\JobStatusRepository;
-use App\Utils\ServiceResponseUtil;
+use Imtigger\LaravelJobStatus\JobStatus;
 
 class JobStatusService
 {
@@ -20,13 +20,18 @@ class JobStatusService
      *
      * @param int $id
      *
-     * @return ServiceResponseData
+     * @return JobStatus|null
+     * @throws BadRequestException
      */
-    public function getById(int $id): ServiceResponseData
+    public function getById(int $id): ?JobStatus
     {
-        return ServiceResponseUtil::map(
-            $this->jobStatusRepository->findById($id)
-        );
+        $jobStatus = $this->jobStatusRepository->findById($id);
+
+        if (empty($jobStatus)) {
+            throw new BadRequestException('Job status not found.');
+        }
+
+        return $jobStatus;
     }
 
 }
