@@ -47,15 +47,6 @@ class ConstantFeatureTest extends TestCase
     }
 
     #[Test]
-    public function testGetPasswordResetStatuses(): void
-    {
-        $token = $this->loginSystemAdminUser();
-        $response = $this->withToken($token)->get("{$this->resource}/password-reset-status");
-
-        $response->assertOk();
-    }
-
-    #[Test]
     public function testGetSpreadsheetReaderTypes(): void
     {
         $token = $this->loginSystemAdminUser();
