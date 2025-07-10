@@ -6,7 +6,6 @@ use App\Enums\ActivityLogType;
 use App\Enums\AppPlatform;
 use App\Enums\DeviceOs;
 use App\Enums\DeviceType;
-use App\Enums\PasswordResetStatus;
 use App\Enums\SpreadsheetReaderType;
 use App\Enums\UserRole;
 use App\Utils\ResponseUtil;
@@ -54,16 +53,6 @@ class ConstantController extends Controller
     public function getDeviceTypes(): JsonResponse
     {
         return ResponseUtil::json(DeviceType::cases());
-    }
-
-    /**
-     * Get password reset statuses.
-     *
-     * @return JsonResponse
-     */
-    public function getPasswordResetStatuses(): JsonResponse
-    {
-        return ResponseUtil::json(PasswordResetStatus::cases());
     }
 
     /**

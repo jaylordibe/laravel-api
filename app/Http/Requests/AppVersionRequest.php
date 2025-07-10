@@ -2,9 +2,9 @@
 
 namespace App\Http\Requests;
 
-use App\Constants\AppPlatformConstant;
 use App\Data\AppVersionData;
 use App\Data\AppVersionFilterData;
+use App\Enums\AppPlatform;
 use App\Rules\UtcIsoStringRule;
 use Illuminate\Validation\Rule;
 
@@ -21,7 +21,7 @@ class AppVersionRequest extends BaseRequest
         return [
             'version' => ['required', 'string'],
             'description' => ['nullable', 'string'],
-            'platform' => ['required', 'string', Rule::in(AppPlatformConstant::asList())],
+            'platform' => ['required', 'string', Rule::enum(AppPlatform::class)],
             'releaseDate' => ['required', 'date', new UtcIsoStringRule()],
             'downloadUrl' => ['nullable', 'url'],
             'forceUpdate' => ['required', 'boolean']

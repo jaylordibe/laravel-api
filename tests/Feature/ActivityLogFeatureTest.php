@@ -2,8 +2,8 @@
 
 namespace Tests\Feature;
 
-use App\Constants\ActivityLogTypeConstant;
-use App\Constants\AppPlatformConstant;
+use App\Enums\ActivityLogType;
+use App\Enums\AppPlatform;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -17,10 +17,10 @@ class ActivityLogFeatureTest extends TestCase
     {
         $token = $this->loginSystemAdminUser();
         $payload = [
-            'logName' => fake()->randomElement(ActivityLogTypeConstant::asList()),
+            'logName' => fake()->randomElement(ActivityLogType::cases())->value,
             'description' => fake()->sentence,
             'properties' => [
-                'platform' => fake()->randomElement(AppPlatformConstant::asList())
+                'platform' => fake()->randomElement(AppPlatform::cases())->value
             ]
         ];
         $response = $this->withToken($token)->post($this->resource, $payload);

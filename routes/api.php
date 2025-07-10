@@ -28,7 +28,6 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/app-platform', [ConstantController::class, 'getAppPlatforms']);
         Route::get('/device-os', [ConstantController::class, 'getDeviceOs']);
         Route::get('/device-type', [ConstantController::class, 'getDeviceTypes']);
-        Route::get('/password-reset-status', [ConstantController::class, 'getPasswordResetStatuses']);
         Route::get('/spreadsheet-reader-type', [ConstantController::class, 'getSpreadsheetReaderTypes']);
         Route::get('/user-role', [ConstantController::class, 'getUserRoles']);
     });
@@ -50,7 +49,7 @@ Route::middleware('auth:api')->group(function () {
         Route::put('/auth/username', [UserController::class, 'updateAuthUsername']);
         Route::put('/auth/email', [UserController::class, 'updateAuthUserEmail']);
         Route::put('/auth/password', [UserController::class, 'updateAuthUserPassword']);
-        Route::post('/auth/profile-photo', [UserController::class, 'updateAuthUserProfilePhoto']);
+        Route::post('/auth/profile-image', [UserController::class, 'updateAuthUserProfileImage']);
         Route::put('/{userId}/password', [UserController::class, 'updatePassword'])->where('userId', RoutePatternConstant::NUMERIC);
         Route::get('/{userId}', [UserController::class, 'getById'])->where('userId', RoutePatternConstant::NUMERIC);
         Route::put('/{userId}', [UserController::class, 'update'])->where('userId', RoutePatternConstant::NUMERIC);

@@ -2,11 +2,11 @@
 
 namespace App\Http\Requests;
 
-use App\Constants\AppPlatformConstant;
-use App\Constants\DeviceOsConstant;
-use App\Constants\DeviceTypeConstant;
 use App\Data\DeviceTokenData;
 use App\Data\DeviceTokenFilterData;
+use App\Enums\AppPlatform;
+use App\Enums\DeviceOs;
+use App\Enums\DeviceType;
 use Illuminate\Validation\Rule;
 
 class DeviceTokenRequest extends BaseRequest
@@ -21,9 +21,9 @@ class DeviceTokenRequest extends BaseRequest
     {
         return [
             'token' => ['required', 'string'],
-            'appPlatform' => ['required', 'string', Rule::in(AppPlatformConstant::asList())],
-            'deviceType' => ['required', 'string', Rule::in(DeviceTypeConstant::asList())],
-            'deviceOs' => ['required', 'string', Rule::in(DeviceOsConstant::asList())],
+            'appPlatform' => ['required', 'string', Rule::enum(AppPlatform::class)],
+            'deviceType' => ['required', 'string', Rule::enum(DeviceType::class)],
+            'deviceOs' => ['required', 'string', Rule::enum(DeviceOs::class)],
             'deviceOsVersion' => ['required', 'string']
         ];
     }

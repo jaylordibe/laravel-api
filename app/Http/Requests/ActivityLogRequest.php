@@ -2,10 +2,10 @@
 
 namespace App\Http\Requests;
 
-use App\Constants\ActivityLogTypeConstant;
-use App\Constants\AppPlatformConstant;
 use App\Data\ActivityData;
 use App\Data\ActivityFilterData;
+use App\Enums\ActivityLogType;
+use App\Enums\AppPlatform;
 use Illuminate\Validation\Rule;
 
 class ActivityLogRequest extends BaseRequest
@@ -19,10 +19,10 @@ class ActivityLogRequest extends BaseRequest
     public function rules(): array
     {
         return [
-            'logName' => ['required', 'string', Rule::in(ActivityLogTypeConstant::asList())],
+            'logName' => ['required', 'string', Rule::enum(ActivityLogType::class)],
             'description' => ['required', 'string'],
             'properties' => ['required'],
-            'properties.platform' => ['required', 'string', Rule::in(AppPlatformConstant::asList())]
+            'properties.platform' => ['required', 'string', Rule::enum(AppPlatform::class)]
         ];
     }
 

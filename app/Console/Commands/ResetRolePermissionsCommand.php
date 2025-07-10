@@ -2,8 +2,8 @@
 
 namespace App\Console\Commands;
 
-use App\Constants\PermissionConstant;
-use App\Constants\RoleConstant;
+use App\Enums\UserPermission;
+use App\Enums\UserRole;
 use Illuminate\Console\Command;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -33,25 +33,22 @@ class ResetRolePermissionsCommand extends Command
         $this->info(PHP_EOL . "Resetting role permissions..." . PHP_EOL);
 
         // Create permissions
-        $permissions = PermissionConstant::asList();
-
-        foreach ($permissions as $permission) {
-            Permission::firstOrCreate(['name' => $permission, 'guard_name' => PermissionConstant::getApiGuard()]);
+        foreach (UserPermission::cases() as $permission) {
+            Permission::firstOrCreate(['name' => $permission->value, 'guard_name' => UserPermission::getApiGuardName()]);
         }
 
         // Delete old permissions that are not in the list
-        Permission::whereNotIn('name', $permissions)->where('guard_name', PermissionConstant::getApiGuard())->delete();
+        $permissionNames = collect(UserPermission::cases())->map(fn(UserPermission $userPermission) => $userPermission->value)->toArray();
+        Permission::whereNotIn('name', $permissionNames)->where('guard_name', UserPermission::getApiGuardName())->delete();
 
         // Create roles and assign existing permissions
-        $roles = RoleConstant::asList();
-
-        foreach ($roles as $role) {
-            $rolePermissions = PermissionConstant::fromRole($role);
-            Role::firstOrCreate(['name' => $role, 'guard_name' => PermissionConstant::getApiGuard()])->givePermissionTo($rolePermissions);
+        foreach (UserRole::cases() as $userRole) {
+            Role::firstOrCreate(['name' => $userRole->value, 'guard_name' => UserPermission::getApiGuardName()])->givePermissionTo(UserPermission::fromUserRole($userRole));
         }
 
         // Delete old roles that are not in the list
-        Role::whereNotIn('name', $roles)->where('guard_name', PermissionConstant::getApiGuard())->delete();
+        $roleNames = collect(UserRole::cases())->map(fn(UserRole $userRole) => $userRole->value)->toArray();
+        Role::whereNotIn('name', $roleNames)->where('guard_name', UserPermission::getApiGuardName())->delete();
 
         $this->info(PHP_EOL . "Done resetting role permissions" . PHP_EOL);
     }

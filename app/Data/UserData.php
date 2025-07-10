@@ -17,7 +17,7 @@ class UserData extends BaseData
         public ?string $phoneNumber = null,
         public ?Carbon $birthday = null,
         public ?string $gender = null,
-        public ?string $profilePhotoUrl = null,
+        public ?string $profileImage = null,
         public ?array $roles = null,
         public ?array $permissions = null,
         ...$args

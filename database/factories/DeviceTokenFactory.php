@@ -2,9 +2,9 @@
 
 namespace Database\Factories;
 
-use App\Constants\AppPlatformConstant;
-use App\Constants\DeviceOsConstant;
-use App\Constants\DeviceTypeConstant;
+use App\Enums\AppPlatform;
+use App\Enums\DeviceOs;
+use App\Enums\DeviceType;
 use App\Models\DeviceToken;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -25,9 +25,9 @@ class DeviceTokenFactory extends Factory
         return [
             'user_id' => User::factory()->create()->id,
             'token' => fake()->sha256(),
-            'app_platform' => fake()->randomElement(AppPlatformConstant::asList()),
-            'device_type' => fake()->randomElement(DeviceTypeConstant::asList()),
-            'device_os' => fake()->randomElement(DeviceOsConstant::asList()),
+            'app_platform' => fake()->randomElement(AppPlatform::cases())->value,
+            'device_type' => fake()->randomElement(DeviceType::cases())->value,
+            'device_os' => fake()->randomElement(DeviceOs::cases())->value,
             'device_os_version' => fake()->numerify('##.##.##')
         ];
     }

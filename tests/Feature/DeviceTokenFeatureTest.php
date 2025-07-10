@@ -2,9 +2,9 @@
 
 namespace Tests\Feature;
 
-use App\Constants\AppPlatformConstant;
-use App\Constants\DeviceOsConstant;
-use App\Constants\DeviceTypeConstant;
+use App\Enums\AppPlatform;
+use App\Enums\DeviceOs;
+use App\Enums\DeviceType;
 use App\Models\DeviceToken;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -21,9 +21,9 @@ class DeviceTokenFeatureTest extends TestCase
         $authUser = $this->getAuthUser($token);
         $payload = [
             'token' => fake()->sha256(),
-            'appPlatform' => fake()->randomElement(AppPlatformConstant::asList()),
-            'deviceType' => fake()->randomElement(DeviceTypeConstant::asList()),
-            'deviceOs' => fake()->randomElement(DeviceOsConstant::asList()),
+            'appPlatform' => fake()->randomElement(AppPlatform::cases())->value,
+            'deviceType' => fake()->randomElement(DeviceType::cases())->value,
+            'deviceOs' => fake()->randomElement(DeviceOs::cases())->value,
             'deviceOsVersion' => fake()->numerify('##.##.##')
         ];
         $response = $this->withToken($token)->post($this->resource, $payload);
@@ -88,9 +88,9 @@ class DeviceTokenFeatureTest extends TestCase
         $deviceToken = DeviceToken::factory()->create();
         $payload = [
             'token' => fake()->sha256(),
-            'appPlatform' => fake()->randomElement(AppPlatformConstant::asList()),
-            'deviceType' => fake()->randomElement(DeviceTypeConstant::asList()),
-            'deviceOs' => fake()->randomElement(DeviceOsConstant::asList()),
+            'appPlatform' => fake()->randomElement(AppPlatform::cases())->value,
+            'deviceType' => fake()->randomElement(DeviceType::cases())->value,
+            'deviceOs' => fake()->randomElement(DeviceOs::cases())->value,
             'deviceOsVersion' => fake()->numerify('##.##.##')
         ];
         $response = $this->withToken($token)->put("{$this->resource}/{$deviceToken->id}", $payload);

@@ -2,7 +2,7 @@
 
 namespace App\Providers;
 
-use App\Constants\PermissionConstant;
+use App\Enums\UserPermission;
 use App\Models\User;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -42,11 +42,9 @@ class AppServiceProvider extends ServiceProvider
         });
 
         // Define the gate permissions
-        $permissions = PermissionConstant::asList();
-
-        foreach ($permissions as $permission) {
+        foreach (UserPermission::cases() as $permission) {
             Gate::define($permission, function (User $user) use ($permission) {
-                return $user->hasPermissionTo($permission, PermissionConstant::getApiGuard());
+                return $user->hasPermissionTo($permission, UserPermission::getApiGuardName());
             });
         }
     }

@@ -41,7 +41,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property string|null $phone_number
  * @property Carbon|null $birthday
  * @property string|null $gender
- * @property string|null $profile_photo_url
+ * @property string|null $profile_image
  *
  * Model relationships
  * @property-read Collection|Role[]|null $roles

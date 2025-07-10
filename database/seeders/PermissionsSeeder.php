@@ -2,9 +2,8 @@
 
 namespace Database\Seeders;
 
-use App\Constants\PermissionConstant;
-use App\Constants\RoleConstant;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use App\Enums\UserPermission;
+use App\Enums\UserRole;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -22,18 +21,13 @@ class PermissionsSeeder extends Seeder
         app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
         // Create permissions
-        $permissions = PermissionConstant::asList();
-
-        foreach ($permissions as $permission) {
-            Permission::firstOrCreate(['name' => $permission, 'guard_name' => PermissionConstant::getApiGuard()]);
+        foreach (UserPermission::cases() as $permission) {
+            Permission::firstOrCreate(['name' => $permission->value, 'guard_name' => UserPermission::getApiGuardName()]);
         }
 
         // Create roles and assign existing permissions
-        $roles = RoleConstant::asList();
-
-        foreach ($roles as $role) {
-            $rolePermissions = PermissionConstant::fromRole($role);
-            Role::firstOrCreate(['name' => $role, 'guard_name' => PermissionConstant::getApiGuard()])->givePermissionTo($rolePermissions);
+        foreach (UserRole::cases() as $userRole) {
+            Role::firstOrCreate(['name' => $userRole->value, 'guard_name' => UserPermission::getApiGuardName()])->givePermissionTo(UserPermission::fromUserRole($userRole));
         }
     }
 

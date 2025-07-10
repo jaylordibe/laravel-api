@@ -230,14 +230,14 @@ class UserRepository
     }
 
     /**
-     * Update profile photo url.
+     * Update profile image.
      *
      * @param int $id
-     * @param string $profilePhotoUrl
+     * @param string $profileImage
      *
      * @return User|null
      */
-    public function updateProfilePhotoUrl(int $id, string $profilePhotoUrl): ?User
+    public function updateProfileImage(int $id, string $profileImage): ?User
     {
         $user = $this->findById($id);
 
@@ -245,7 +245,7 @@ class UserRepository
             return null;
         }
 
-        $user->profile_photo_url = $profilePhotoUrl;
+        $user->profile_image = $profileImage;
         $user->save();
 
         return $user;

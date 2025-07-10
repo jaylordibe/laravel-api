@@ -26,7 +26,7 @@ class UserResource extends BaseResource
             $data['permissions'] = $this->getAllPermissions()->pluck('name')->toArray();
         }
 
-        $data['profilePhotoUrl'] = $this->profile_photo_url ?: 'https://i.imgur.com/UJ0N2SN.jpg';
+        $data['profileImage'] = $this->profile_image ?: 'https://i.imgur.com/UJ0N2SN.jpg';
 
         // Load the relations
 

@@ -2,12 +2,12 @@
 
 namespace App\Services;
 
-use App\Constants\RoleConstant;
 use App\Data\CreateUserData;
 use App\Data\SignUpUserData;
 use App\Data\UpdatePasswordData;
 use App\Data\UserData;
 use App\Data\UserFilterData;
+use App\Enums\UserRole;
 use App\Exceptions\BadRequestException;
 use App\Models\User;
 use App\Repositories\UserRepository;
@@ -275,7 +275,7 @@ class UserService
     {
         /** @var User $authUser */
         $authUser = Auth::user();
-        $isAdmin = $authUser->hasRole([RoleConstant::SYSTEM_ADMIN, RoleConstant::APP_ADMIN]);
+        $isAdmin = $authUser->hasRole([UserRole::SYSTEM_ADMIN->value, UserRole::APP_ADMIN->value]);
 
         if (!$isAdmin && $authUser->id !== $changePasswordData->userId) {
             throw new BadRequestException('Unauthorized to update password.');
@@ -291,19 +291,19 @@ class UserService
     }
 
     /**
-     * Update profile photo.
+     * Update profile image.
      *
      * @param int $id
-     * @param UploadedFile $profilePhoto
+     * @param UploadedFile $profileImageFile
      *
      * @return User|null
      * @throws BadRequestException
      */
-    public function updateProfilePhoto(int $id, UploadedFile $profilePhoto): ?User
+    public function updateProfileImage(int $id, UploadedFile $profileImageFile): ?User
     {
-        $path = FileUtil::upload($profilePhoto);
-        $profilePhotoUrl = FileUtil::getUrl($path);
-        $user = $this->userRepository->updateProfilePhotoUrl($id, $profilePhotoUrl);
+        $path = FileUtil::upload($profileImageFile);
+        $profileImage = FileUtil::getUrl($path);
+        $user = $this->userRepository->updateProfileImage($id, $profileImage);
 
         if (empty($user)) {
             throw new BadRequestException('Failed to update email');

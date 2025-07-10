@@ -2,7 +2,7 @@
 
 namespace Database\Factories;
 
-use App\Constants\AppPlatformConstant;
+use App\Enums\AppPlatform;
 use App\Models\AppVersion;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -22,7 +22,7 @@ class AppVersionFactory extends Factory
         return [
             'version' => fake()->unique()->numerify('##.##.##'),
             'description' => fake()->text(),
-            'platform' => fake()->randomElement(AppPlatformConstant::asList()),
+            'platform' => fake()->randomElement(AppPlatform::cases())->value,
             'release_date' => now(),
             'download_url' => fake()->url(),
             'force_update' => fake()->boolean()

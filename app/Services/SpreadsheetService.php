@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Constants\SpreadsheetReaderTypeConstant;
+use App\Enums\SpreadsheetReaderType;
 use Exception;
 use Illuminate\Support\Facades\Log;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
@@ -13,14 +13,14 @@ class SpreadsheetService
     /**
      * Read the raw file and clean the data.
      *
-     * @param string $readerType
+     * @param SpreadsheetReaderType $readerType
      * @param string $filePath - the relative path of the file under the storage directory (storage/app/public)
      * @param int $sheetIndex
      *
      * @return array
      * @throws Exception
      */
-    public function readRawFileAndCleanData(string $readerType, string $filePath, int $sheetIndex = 0): array
+    public function readRawFileAndCleanData(SpreadsheetReaderType $readerType, string $filePath, int $sheetIndex = 0): array
     {
         $rows = $this->readRawFileAsArray($readerType, $filePath, $sheetIndex);
         // Remove empty rows - checking the first 3 columns for empty values
@@ -32,16 +32,16 @@ class SpreadsheetService
     }
 
     /**
-     * Read the raw file as array.
+     * Read the raw file as an array.
      *
-     * @param string $readerType
+     * @param SpreadsheetReaderType $readerType
      * @param string $filePath - the relative path of the file under the storage directory (storage/app/public)
      * @param int $sheetIndex
      *
      * @return array
      * @throws Exception
      */
-    public function readRawFileAsArray(string $readerType, string $filePath, int $sheetIndex = 0): array
+    public function readRawFileAsArray(SpreadsheetReaderType $readerType, string $filePath, int $sheetIndex = 0): array
     {
         $this->readRawFileAsWorkSheet($readerType, $filePath, $sheetIndex)->toArray();
 
@@ -63,21 +63,21 @@ class SpreadsheetService
     /**
      * Read the raw file as worksheet.
      *
-     * @param string $readerType
+     * @param SpreadsheetReaderType $readerType
      * @param string $filePath - the relative path of the file under the storage directory (storage/app/public)
      * @param int $sheetIndex
      *
      * @return Worksheet
      * @throws Exception
      */
-    public function readRawFileAsWorkSheet(string $readerType, string $filePath, int $sheetIndex = 0): Worksheet
+    public function readRawFileAsWorkSheet(SpreadsheetReaderType $readerType, string $filePath, int $sheetIndex = 0): Worksheet
     {
         if (!file_exists($filePath)) {
             Log::error("File not found: {$filePath}");
             throw new Exception('File not found');
         }
 
-        $reader = SpreadsheetReaderTypeConstant::getReader($readerType);
+        $reader = SpreadsheetReaderType::getReader($readerType);
         $reader->setReadEmptyCells(false);
         $reader->setIgnoreRowsWithNoCells(true);
         $reader->setReadDataOnly(true);

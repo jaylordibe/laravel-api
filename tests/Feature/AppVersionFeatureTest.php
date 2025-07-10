@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Constants\AppPlatformConstant;
+use App\Enums\AppPlatform;
 use App\Models\AppVersion;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -19,7 +19,7 @@ class AppVersionFeatureTest extends TestCase
         $payload = [
             'version' => fake()->unique()->numerify('##.##.##'),
             'description' => fake()->text(),
-            'platform' => fake()->randomElement(AppPlatformConstant::asList()),
+            'platform' => fake()->randomElement(AppPlatform::cases())->value,
             'releaseDate' => now()->millisecond(0)->toISOString(),
             'downloadUrl' => fake()->url(),
             'forceUpdate' => fake()->boolean()
@@ -78,7 +78,7 @@ class AppVersionFeatureTest extends TestCase
         $payload = [
             'version' => $appVersion->version,
             'description' => fake()->text(),
-            'platform' => fake()->randomElement(AppPlatformConstant::asList()),
+            'platform' => fake()->randomElement(AppPlatform::cases())->value,
             'releaseDate' => now()->millisecond(0)->toISOString(),
             'downloadUrl' => fake()->url(),
             'forceUpdate' => fake()->boolean()

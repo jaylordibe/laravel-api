@@ -10,6 +10,9 @@ services:
         volumes:
             - .:/var/www/html
         working_dir: /var/www/html
+        depends_on:
+            - laravel-db
+            - laravel-redis
         networks:
             - laravel-network
     laravel-db:

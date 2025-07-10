@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Constants\PermissionConstant;
+use App\Enums\UserPermission;
 use App\Exceptions\BadRequestException;
 use App\Http\Requests\CreateUserRequest;
 use App\Http\Requests\GenericRequest;
@@ -154,22 +154,22 @@ class UserController extends Controller
     }
 
     /**
-     * Update auth user's profile photo.
+     * Update auth user's profile image.
      *
      * @param GenericRequest $request
      *
      * @return JsonResponse|JsonResource
      * @throws BadRequestException
      */
-    public function updateAuthUserProfilePhoto(GenericRequest $request): JsonResponse|JsonResource
+    public function updateAuthUserProfileImage(GenericRequest $request): JsonResponse|JsonResource
     {
-        $profilePhoto = $request->file('profilePhoto');
+        $profileImageFile = $request->file('profileImage');
 
-        if (empty($profilePhoto)) {
+        if (empty($profileImageFile)) {
             return ResponseUtil::error('Profile photo is required.');
         }
 
-        $user = $this->userService->updateProfilePhoto($request->getAuthUserData()->id, $profilePhoto);
+        $user = $this->userService->updateProfileImage($request->getAuthUserData()->id, $profileImageFile);
 
         return ResponseUtil::resource(UserResource::class, $user);
     }
@@ -182,7 +182,7 @@ class UserController extends Controller
      */
     public function create(CreateUserRequest $request): JsonResponse|JsonResource
     {
-        Gate::authorize(PermissionConstant::CREATE_USER);
+        Gate::authorize(UserPermission::CREATE_USER);
 
         $user = $this->userService->create($request->toData());
 
@@ -196,7 +196,7 @@ class UserController extends Controller
      */
     public function getPaginated(GenericRequest $request): JsonResponse|JsonResource
     {
-        Gate::authorize(PermissionConstant::READ_USER);
+        Gate::authorize(UserPermission::READ_USER);
 
         $userFilterData = UserRequest::createFrom($request)->toFilterData();
         $users = $this->userService->getPaginated($userFilterData);
@@ -213,7 +213,7 @@ class UserController extends Controller
      */
     public function getById(GenericRequest $request, int $userId): JsonResponse|JsonResource
     {
-        Gate::authorize(PermissionConstant::READ_USER);
+        Gate::authorize(UserPermission::READ_USER);
 
         $user = $this->userService->getById($userId, $request->getRelations());
 
@@ -229,7 +229,7 @@ class UserController extends Controller
      */
     public function update(UserRequest $request, int $userId): JsonResponse|JsonResource
     {
-        Gate::authorize(PermissionConstant::UPDATE_USER);
+        Gate::authorize(UserPermission::UPDATE_USER);
 
         $user = $this->userService->update($request->toData());
 
@@ -245,7 +245,7 @@ class UserController extends Controller
      */
     public function delete(GenericRequest $request, int $userId): JsonResponse
     {
-        Gate::authorize(PermissionConstant::DELETE_USER);
+        Gate::authorize(UserPermission::DELETE_USER);
 
         $this->userService->delete($userId);
 
