@@ -31,8 +31,10 @@ class UserFeatureTest extends TestCase
         ];
         $response = $this->post("{$this->resource}/sign-up", $payload);
 
-        $expected = ['success'];
-        $response->assertOk()->assertJsonStructure($expected);
+        $expected = [
+            'success' => true
+        ];
+        $response->assertOk()->assertJson($expected);
     }
 
     #[Test]

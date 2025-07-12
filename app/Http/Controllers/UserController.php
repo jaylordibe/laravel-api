@@ -39,7 +39,7 @@ class UserController extends Controller
     {
         $this->userService->signUp($request->toData());
 
-        return ResponseUtil::success('User created successfully.');
+        return ResponseUtil::success('Sign up successful. Please check your email for verification link.');
     }
 
     /**
