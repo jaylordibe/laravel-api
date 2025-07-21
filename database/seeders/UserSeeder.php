@@ -69,8 +69,7 @@ class UserSeeder extends Seeder
                 'username' => $username,
                 'email' => "{$username}@" . config('custom.app_domain'),
                 'email_verified_at' => now(),
-                'password' => Hash::make('password'),
-                'branch_id' => 1
+                'password' => Hash::make('@password1!')
             ]);
 
             $role = Role::findByName($userRole->value, UserPermission::getApiGuardName());
