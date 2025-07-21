@@ -43,9 +43,7 @@ class UserSeeder extends Seeder
         $appAdminRole = Role::findByName(UserRole::APP_ADMIN->value, UserPermission::getApiGuardName());
         $appAdminUser->assignRole($appAdminRole);
 
-        if (!App::environment('production')) {
-            $this->createTestUsers();
-        }
+        $this->createTestUsers();
     }
 
     /**
