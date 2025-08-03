@@ -14,9 +14,6 @@ trim_trailing_whitespace = false
 [*.{yml,yaml}]
 indent_size = 2
 
-[docker-compose.yml]
-indent_size = 4
-
 [*.php]
 ij_php_blank_lines_after_class_header = 1
 ij_php_blank_lines_before_class_end = 1

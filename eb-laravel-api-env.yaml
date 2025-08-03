@@ -1,0 +1,20 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Laravel API
+
+Resources:
+  LaravelApiApp:
+    Type: AWS::ElasticBeanstalk::Application
+    Properties:
+      ApplicationName: laravel-api
+      Description: Laravel API
+
+  LaravelApiWebEnv:
+    Type: AWS::ElasticBeanstalk::Environment
+    Properties:
+      ApplicationName: !Ref LaravelApiApp
+      EnvironmentName: laravel-api-web
+      SolutionStackName: "64bit Amazon Linux 2 v3.6.5 running Docker"
+      OptionSettings:
+        - Namespace: aws:elasticbeanstalk:application:environment
+          OptionName: APP_ENV
+          Value: production

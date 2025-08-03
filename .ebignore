@@ -1,0 +1,12 @@
+.git
+.gitignore
+node_modules
+tests
+storage/logs/*
+storage/framework/cache/*
+storage/framework/views/*
+.env
+docker-compose.yml
+docker/
+vendor/bin/*
+*.md

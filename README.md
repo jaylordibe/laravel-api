@@ -32,6 +32,7 @@ This README would normally document whatever steps are necessary to get your app
     ```
 
 ### Enabled and ready to use packages ###
+
 1. [Laravel Resource Generator](https://github.com/jaylordibe/laravel-resource-generator)
 2. [Laravel Horizon](https://laravel.com/docs/8.x/horizon)
 3. [Laravel Snappy](https://github.com/barryvdh/laravel-snappy)
