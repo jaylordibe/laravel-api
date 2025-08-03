@@ -2,10 +2,13 @@
 
 namespace App\Enums;
 
+use App\Traits\EnumTrait;
 use UnitEnum;
 
 enum UserPermission: string
 {
+
+    use EnumTrait;
 
     case CREATE_USER = 'create_user';
     case READ_USER = 'read_user';

@@ -2,12 +2,15 @@
 
 namespace App\Enums;
 
+use App\Traits\EnumTrait;
 use Exception;
 use PhpOffice\PhpSpreadsheet\Reader\Xls;
 use PhpOffice\PhpSpreadsheet\Reader\Xlsx;
 
 enum SpreadsheetReaderType: string
 {
+
+    use EnumTrait;
 
     case XLS = 'xls';
     case XLSX = 'xlsx';
