@@ -56,7 +56,7 @@ class UserRequest extends BaseRequest
     }
 
     /**
-     * * Convert request to filter data.
+     * Convert request to filter data.
      *
      * @return UserFilterData
      */

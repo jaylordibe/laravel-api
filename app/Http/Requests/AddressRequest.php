@@ -58,7 +58,7 @@ class AddressRequest extends BaseRequest
     }
 
     /**
-     * * Convert request to filter data.
+     * Convert request to filter data.
      *
      * @return AddressFilterData
      */
