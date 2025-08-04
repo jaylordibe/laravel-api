@@ -232,6 +232,10 @@ class BaseRequest extends FormRequest
     {
         $perPage = $this->getInputAsInt('perPage') ?: AppConstant::DEFAULT_PER_PAGE;
 
+        if ($perPage === -1) {
+            return $maxPerPage;
+        }
+
         return $perPage > $maxPerPage ? AppConstant::DEFAULT_PER_PAGE : $perPage;
     }
 
