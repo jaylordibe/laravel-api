@@ -108,17 +108,18 @@ class BaseRequest extends FormRequest
      *
      * @param string $key
      * @param array|null $default
+     * @param string $separator - separator for string to array conversion (default is '|')
      *
      * @return array|null
      */
-    public function getInputAsArray(string $key, ?array $default = null): ?array
+    public function getInputAsArray(string $key, ?array $default = null, string $separator = '|'): ?array
     {
         $data = $this->input($key);
         $value = $default;
 
         if (!empty($data)) {
             if (is_string($data)) {
-                $value = explode('|', $data);
+                $value = explode($separator, $data);
             } elseif (is_array($data)) {
                 $value = $data;
             }
