@@ -44,9 +44,9 @@ use Spatie\Permission\Traits\HasRoles;
  * @property string|null $profile_image
  *
  * Model relationships
- * @property-read Collection|Role[]|null $roles
- * @property-read Collection|Permission[]|null $permissions
- * @property-read Collection|Address[]|null $addresses
+ * @property-read Collection<Role>|null $roles
+ * @property-read Collection<Permission>|null $permissions
+ * @property-read Collection<Address>|null $addresses
  *
  * @mixin Builder
  */
@@ -155,7 +155,7 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function addresses(): HasMany
     {
-        return $this->hasMany(Address::class);
+        return $this->hasMany(Address::class, 'user_id');
     }
 
 }

@@ -3,7 +3,7 @@
 namespace App\Models;
 
 use App\Constants\DatabaseTableConstant;
-use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * Model properties
@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string $device_os_version
  *
  * Model relationships
- * @property-read ...
+ * @property-read User|null $user
  */
 class DeviceToken extends BaseModel
 {
@@ -42,6 +42,16 @@ class DeviceToken extends BaseModel
     protected function casts(): array
     {
         return [];
+    }
+
+    /**
+     * The user that owns this address.
+     *
+     * @return BelongsTo
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 
 }
