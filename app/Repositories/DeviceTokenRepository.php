@@ -78,6 +78,18 @@ class DeviceTokenRepository
             $deviceTokenBuilder->select($deviceTokenFilterData->meta->columns);
         }
 
+        if (!empty($deviceTokenFilterData->appPlatform)) {
+            $deviceTokenBuilder->where('app_platform', $deviceTokenFilterData->appPlatform);
+        }
+
+        if (!empty($deviceTokenFilterData->deviceType)) {
+            $deviceTokenBuilder->where('device_type', $deviceTokenFilterData->deviceType);
+        }
+
+        if (!empty($deviceTokenFilterData->deviceOs)) {
+            $deviceTokenBuilder->where('device_os', $deviceTokenFilterData->deviceType);
+        }
+
         if (!empty($deviceTokenFilterData->meta->sortField)) {
             $deviceTokenBuilder->orderBy($deviceTokenFilterData->meta->sortField, $deviceTokenFilterData->meta->sortDirection ?? AppConstant::DEFAULT_SORT_DIRECTION);
         }

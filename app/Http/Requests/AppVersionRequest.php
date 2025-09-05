@@ -48,7 +48,7 @@ class AppVersionRequest extends BaseRequest
         return new AppVersionData(
             version: $this->getInputAsString('version'),
             description: $this->getInputAsString('description'),
-            platform: $this->getInputAsString('platform'),
+            platform: AppPlatform::from($this->getInputAsString('platform')),
             releaseDate: $this->getInputAsCarbon('releaseDate'),
             downloadUrl: $this->getInputAsString('downloadUrl'),
             forceUpdate: $this->getInputAsBoolean('forceUpdate'),
@@ -67,7 +67,7 @@ class AppVersionRequest extends BaseRequest
     {
         return new AppVersionFilterData(
             version: $this->getInputAsString('version'),
-            platform: $this->getInputAsString('platform'),
+            platform: AppPlatform::tryFrom($this->getInputAsString('platform')),
             releaseDateStart: $this->getInputAsCarbon('releaseDateStart'),
             releaseDateEnd: $this->getInputAsCarbon('releaseDateEnd'),
             forceUpdate: $this->getInputAsBoolean('forceUpdate'),

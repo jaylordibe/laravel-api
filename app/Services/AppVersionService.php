@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Data\AppVersionData;
 use App\Data\AppVersionFilterData;
+use App\Enums\AppPlatform;
 use App\Exceptions\BadRequestException;
 use App\Models\AppVersion;
 use App\Repositories\AppVersionRepository;
@@ -130,11 +131,11 @@ class AppVersionService
     /**
      * Get the latest app version.
      *
-     * @param string $platform
+     * @param AppPlatform $platform
      *
      * @return AppVersion|null
      */
-    public function getLatest(string $platform): ?AppVersion
+    public function getLatest(AppPlatform $platform): ?AppVersion
     {
         return $this->appVersionRepository->getLatest($platform);
     }

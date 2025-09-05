@@ -5,6 +5,7 @@ namespace App\Repositories;
 use App\Constants\AppConstant;
 use App\Data\AppVersionData;
 use App\Data\AppVersionFilterData;
+use App\Enums\AppPlatform;
 use App\Models\AppVersion;
 use Illuminate\Pagination\LengthAwarePaginator;
 
@@ -63,11 +64,11 @@ class AppVersionRepository
      * Checks if the app version exists by version and platform.
      *
      * @param string $version
-     * @param string $platform
+     * @param AppPlatform $platform
      *
      * @return bool
      */
-    public function existsByVersionAndPlatform(string $version, string $platform): bool
+    public function existsByVersionAndPlatform(string $version, AppPlatform $platform): bool
     {
         return AppVersion::where('version', $version)->where('platform', $platform)->exists();
     }
@@ -89,6 +90,10 @@ class AppVersionRepository
 
         if (!empty($appVersionFilterData->meta->columns)) {
             $appVersionBuilder->select($appVersionFilterData->meta->columns);
+        }
+
+        if (!empty($appVersionFilterData->platform)) {
+            $appVersionBuilder->where('platform', $appVersionFilterData->platform);
         }
 
         if (!empty($appVersionFilterData->meta->sortField)) {
@@ -113,11 +118,11 @@ class AppVersionRepository
     /**
      * Get latest app version.
      *
-     * @param string $platform
+     * @param AppPlatform $platform
      *
      * @return AppVersion|null
      */
-    public function getLatest(string $platform): ?AppVersion
+    public function getLatest(AppPlatform $platform): ?AppVersion
     {
         return AppVersion::where('platform', $platform)->orderBy('release_date', 'desc')->first();
     }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\AppPlatform;
 use App\Exceptions\BadRequestException;
 use App\Http\Requests\GenericRequest;
 use App\Http\Requests\AppVersionRequest;
@@ -108,7 +109,7 @@ class AppVersionController extends Controller
      */
     public function getLatest(GenericRequest $request): JsonResponse|JsonResource
     {
-        $platform = $request->getInputAsString('platform');
+        $platform = AppPlatform::tryFrom($request->getInputAsString('platform'));
 
         if (empty($platform)) {
             return ResponseUtil::error('Platform is required.');

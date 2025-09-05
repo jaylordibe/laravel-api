@@ -3,15 +3,18 @@
 namespace App\Models;
 
 use App\Constants\DatabaseTableConstant;
+use App\Enums\AppPlatform;
+use App\Enums\DeviceOs;
+use App\Enums\DeviceType;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * Model properties
  * @property int $user_id
  * @property string $token
- * @property string $app_platform
- * @property string $device_type
- * @property string $device_os
+ * @property AppPlatform $app_platform
+ * @property DeviceType $device_type
+ * @property DeviceOs $device_os
  * @property string $device_os_version
  *
  * Model relationships
@@ -41,7 +44,11 @@ class DeviceToken extends BaseModel
      */
     protected function casts(): array
     {
-        return [];
+        return [
+            'app_platform' => AppPlatform::class,
+            'device_type' => DeviceType::class,
+            'device_os' => DeviceOs::class
+        ];
     }
 
     /**

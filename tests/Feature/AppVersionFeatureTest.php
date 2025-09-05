@@ -64,8 +64,11 @@ class AppVersionFeatureTest extends TestCase
     #[Test]
     public function testGetLatestAppVersionByPlatform(): void
     {
-        $appVersion = AppVersion::factory()->create(['release_date' => now()->addMonth()]);
-        $response = $this->get("{$this->resource}/latest?platform={$appVersion->platform}");
+        /** @var AppVersion $appVersion */
+        $appVersion = AppVersion::factory()->create([
+            'release_date' => now()->addMonth()
+        ]);
+        $response = $this->get("{$this->resource}/latest?platform={$appVersion->platform->value}");
 
         $response->assertOk()->assertJson(['id' => $appVersion->id]);
     }

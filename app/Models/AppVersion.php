@@ -3,12 +3,13 @@
 namespace App\Models;
 
 use App\Constants\DatabaseTableConstant;
+use App\Enums\AppPlatform;
 use Illuminate\Support\Carbon;
 
 /**
  * @property string $version
  * @property string|null $description
- * @property string $platform
+ * @property AppPlatform $platform
  * @property Carbon $release_date
  * @property string|null $download_url
  * @property boolean $force_update
@@ -36,6 +37,7 @@ class AppVersion extends BaseModel
      * @var array
      */
     protected $casts = [
+        'platform' => AppPlatform::class,
         'release_date' => 'datetime',
         'force_update' => 'boolean'
     ];
