@@ -292,6 +292,28 @@ class FileUtil
     }
 
     /**
+     * Get the urls for the files at the given paths.
+     *
+     * @param array $paths
+     *
+     * @return array
+     */
+    public static function getUrls(array $paths): array
+    {
+        $urls = [];
+
+        foreach ($paths as $path) {
+            if (empty($path)) {
+                continue;
+            }
+
+            $urls[] = self::getUrl($path);
+        }
+
+        return $urls;
+    }
+
+    /**
      * Get the storage path for the file at the given path.
      *
      * @param string $path
