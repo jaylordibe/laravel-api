@@ -6,7 +6,7 @@ use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Translation\PotentiallyTranslatedString;
 
-class ValidModelIdRule implements ValidationRule
+class ModelIdRule implements ValidationRule
 {
 
     protected string $model;
