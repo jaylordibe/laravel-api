@@ -2,13 +2,22 @@
 
 namespace App\Rules;
 
-use App\Utils\AppUtil;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Translation\PotentiallyTranslatedString;
 
-class PhilippinePhoneNumberRule implements ValidationRule
+class ValidModelId implements ValidationRule
 {
+
+    protected string $model;
+
+    /**
+     * Create a new rule instance.
+     */
+    public function __construct(string $model)
+    {
+        $this->model = $model;
+    }
 
     /**
      * Run the validation rule.
@@ -17,8 +26,8 @@ class PhilippinePhoneNumberRule implements ValidationRule
      */
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
-        if (!AppUtil::isValidPhilippinePhoneNumber($value)) {
-            $fail('The :attribute field must be a valid Philipine phone number.');
+        if ($this->model::where('id', $value)->doesntExist()) {
+            $fail('The :attribute must be a valid id.');
         }
     }
 
