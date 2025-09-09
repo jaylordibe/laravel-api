@@ -45,6 +45,7 @@ class UserRepository
         $user->first_name = $userData->firstName;
         $user->last_name = $userData->lastName;
         $user->phone_number = $userData->phoneNumber;
+        $user->email_verified_at = now();
         $user->save();
 
         return $user->refresh();
