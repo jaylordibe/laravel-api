@@ -11,18 +11,22 @@ use App\Enums\UserRole;
 use App\Exceptions\BadRequestException;
 use App\Models\User;
 use App\Repositories\UserRepository;
+use App\Repositories\UserRoleRepository;
 use App\Utils\AppUtil;
 use App\Utils\FileUtil;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Throwable;
 
 class UserService
 {
 
     public function __construct(
-        private readonly UserRepository $userRepository
+        private readonly UserRepository $userRepository,
+        private readonly UserRoleRepository $userRoleRepository
     )
     {
     }
@@ -86,20 +90,34 @@ class UserService
      */
     public function create(CreateUserData $createUserData): ?User
     {
-        $userData = new UserData(
-            firstName: $createUserData->firstName,
-            lastName: $createUserData->lastName,
-            username: $this->generateUsername($createUserData->email),
-            email: $createUserData->email,
-            phoneNumber: $createUserData->phoneNumber
-        );
-        $user = $this->userRepository->create($userData, $createUserData->rawPassword);
+        try {
+            return DB::transaction(function () use ($createUserData) {
+                $userData = new UserData(
+                    firstName: $createUserData->firstName,
+                    lastName: $createUserData->lastName,
+                    username: $this->generateUsername($createUserData->email),
+                    email: $createUserData->email,
+                    phoneNumber: $createUserData->phoneNumber
+                );
+                $user = $this->userRepository->create($userData, $createUserData->password);
 
-        if (empty($user)) {
-            throw new BadRequestException('Failed to create user.');
+                if (empty($user)) {
+                    throw new BadRequestException('Failed to create user.');
+                }
+
+                $userRole = $this->userRoleRepository->findByName($createUserData->role->value);
+
+                if (empty($userRole)) {
+                    throw new BadRequestException('User role not found.');
+                }
+
+                $user->assignRole($userRole);
+
+                return $user;
+            });
+        } catch (Throwable $e) {
+            throw new BadRequestException($e->getMessage());
         }
-
-        return $user;
     }
 
     /**

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\UserRole;
 use App\Models\User;
 use App\Utils\AppUtil;
 use App\Utils\DateUtil;
@@ -132,7 +133,8 @@ class UserFeatureTest extends TestCase
             'phoneNumber' => fake()->phoneNumber(),
             'email' => AppUtil::generateUniqueToken() . fake()->unique()->safeEmail(),
             'password' => 'password',
-            'passwordConfirmation' => 'password'
+            'passwordConfirmation' => 'password',
+            'role' => fake()->randomElement(UserRole::cases())->value
         ];
         $response = $this->withToken($token)->post("{$this->resource}", $payload);
 

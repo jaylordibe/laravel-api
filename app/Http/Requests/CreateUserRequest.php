@@ -3,6 +3,8 @@
 namespace App\Http\Requests;
 
 use App\Data\CreateUserData;
+use App\Enums\UserRole;
+use Illuminate\Validation\Rule;
 
 class CreateUserRequest extends BaseRequest
 {
@@ -20,7 +22,8 @@ class CreateUserRequest extends BaseRequest
             'email' => ['required', 'email'],
             'phoneNumber' => ['required', 'string'],
             'password' => ['required', 'string', 'min:8'],
-            'passwordConfirmation' => ['required', 'same:password', 'min:8']
+            'passwordConfirmation' => ['required', 'same:password', 'min:8'],
+            'role' => ['required', 'string', Rule::enum(UserRole::class)]
         ];
     }
 
@@ -46,8 +49,8 @@ class CreateUserRequest extends BaseRequest
             lastName: $this->getInputAsString('lastName'),
             email: $this->getInputAsString('email'),
             phoneNumber: $this->getInputAsString('phoneNumber'),
-            rawPassword: $this->getInputAsString('password'),
-            rawPasswordConfirmation: $this->getInputAsString('passwordConfirmation')
+            password: $this->getInputAsString('password'),
+            role: UserRole::from($this->getInputAsString('role'))
         );
     }
 
