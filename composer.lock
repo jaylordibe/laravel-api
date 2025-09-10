@@ -2993,16 +2993,16 @@
         },
         {
             "name": "jaylordibe/laravel-resource-generator",
-            "version": "v2.0.5",
+            "version": "v2.0.7",
             "source": {
                 "type": "git",
                 "url": "https://github.com/jaylordibe/laravel-resource-generator.git",
-                "reference": "55ee4816fd425a7e30150a030b751014061771b0"
+                "reference": "52c786fea91280ae59d36eee7e4549281f49d92c"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/jaylordibe/laravel-resource-generator/zipball/55ee4816fd425a7e30150a030b751014061771b0",
-                "reference": "55ee4816fd425a7e30150a030b751014061771b0",
+                "url": "https://api.github.com/repos/jaylordibe/laravel-resource-generator/zipball/52c786fea91280ae59d36eee7e4549281f49d92c",
+                "reference": "52c786fea91280ae59d36eee7e4549281f49d92c",
                 "shasum": ""
             },
             "require": {
@@ -3039,9 +3039,9 @@
             "description": "A resource generator for Laravel projects.",
             "support": {
                 "issues": "https://github.com/jaylordibe/laravel-resource-generator/issues",
-                "source": "https://github.com/jaylordibe/laravel-resource-generator/tree/v2.0.5"
+                "source": "https://github.com/jaylordibe/laravel-resource-generator/tree/v2.0.7"
             },
-            "time": "2025-07-12T12:56:27+00:00"
+            "time": "2025-09-10T08:54:43+00:00"
         },
         {
             "name": "kelunik/certificate",
