@@ -62,7 +62,7 @@ class UserSeeder extends Seeder
 
             $user = User::factory()->create([
                 'first_name' => $nameParts[0],
-                'last_name' => $nameParts[1] ?? 'Test',
+                'last_name' => $nameParts[1] ?? 'User',
                 'username' => $username,
                 'email' => "{$username}@" . config('custom.app_domain'),
                 'email_verified_at' => now(),
