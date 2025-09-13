@@ -51,8 +51,6 @@ done
 
 if [ "$type" = "fresh" ]; then
     commands="
-    chmod -R 777 storage
-    chmod -R 777 bootstrap/cache
     composer update
     php artisan migrate:fresh --seed
     php artisan key:generate
@@ -60,6 +58,8 @@ if [ "$type" = "fresh" ]; then
     echo 'y' | php artisan passport:client --personal --name='API Personal Access Client'
     echo 'y' | php artisan passport:client --password --name='API Password Grant Client' --provider='users'
     php artisan storage:link
+    chmod -R 777 storage
+    chmod -R 777 bootstrap/cache
     "
 else
     commands="
@@ -70,7 +70,7 @@ else
     "
 fi
 
-docker exec -it laravel-api bash -c "$commands"
+docker exec -it $SERVICE_NAME-api bash -c "$commands"
 
 echo -e "\033[0m \033[1;35m Application is running at: \033[0m"
 echo -e "\033[0m \033[1;32m \t http://localhost:8000/ \033[0m"

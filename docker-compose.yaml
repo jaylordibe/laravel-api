@@ -1,7 +1,7 @@
 services:
-  laravel-api:
+  app-api:
     image: jaylordibe/laravel-php:8.4
-    container_name: laravel-api
+    container_name: ${SERVICE_NAME}-api
     restart: unless-stopped
     tty: true
     platform: linux/amd64
@@ -11,13 +11,13 @@ services:
       - .:/var/www/html
     working_dir: /var/www/html
     depends_on:
-      - laravel-db
-      - laravel-redis
+      - app-db
+      - app-redis
     networks:
-      - laravel-network
-  laravel-db:
+      - app-network
+  app-db:
     image: mysql:8.0.25
-    container_name: laravel-db
+    container_name: ${SERVICE_NAME}-db
     restart: unless-stopped
     tty: true
     platform: linux/amd64
@@ -31,23 +31,23 @@ services:
     volumes:
       - ./docker/database/data:/var/lib/mysql
     networks:
-      - laravel-network
-  laravel-db-gui-admin:
+      - app-network
+  app-db-gui-admin:
     image: phpmyadmin/phpmyadmin:latest
-    container_name: laravel-db-gui-admin
+    container_name: ${SERVICE_NAME}-db-gui-admin
     restart: unless-stopped
     tty: true
     platform: linux/amd64
     ports:
       - "8001:80"
     environment:
-      PMA_HOST: laravel-db
+      PMA_HOST: app-db
       UPLOAD_LIMIT: 300M
     networks:
-      - laravel-network
-  laravel-db-test:
+      - app-network
+  app-db-test:
     image: mysql:8.0.25
-    container_name: laravel-db-test
+    container_name: ${SERVICE_NAME}-db-test
     restart: unless-stopped
     tty: true
     platform: linux/amd64
@@ -61,27 +61,27 @@ services:
     volumes:
       - ./docker/database/test-data:/var/lib/mysql
     networks:
-      - laravel-network
-  laravel-db-test-gui-admin:
+      - app-network
+  app-db-test-gui-admin:
     image: phpmyadmin/phpmyadmin:latest
-    container_name: laravel-db-test-gui-admin
+    container_name: ${SERVICE_NAME}-db-test-gui-admin
     restart: unless-stopped
     tty: true
     platform: linux/amd64
     ports:
       - "8002:80"
     environment:
-      PMA_HOST: laravel-db-test
+      PMA_HOST: app-db-test
       UPLOAD_LIMIT: 300M
     networks:
-      - laravel-network
-  laravel-redis:
+      - app-network
+  app-redis:
     image: redis:latest
-    container_name: laravel-redis
+    container_name: ${SERVICE_NAME}-redis
     ports:
       - "6379:6379"
     networks:
-      - laravel-network
+      - app-network
 networks:
-  laravel-network:
+  app-network:
     driver: bridge

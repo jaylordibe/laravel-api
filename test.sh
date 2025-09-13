@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -e
+set -a
 
 echo -e "\033[0m \033[1;35m Running tests... \033[0m"
 
@@ -20,4 +21,4 @@ else
     "
 fi
 
-docker exec -it laravel-api bash -c "$commands"
+docker exec -it $SERVICE_NAME-api bash -c "$commands"
