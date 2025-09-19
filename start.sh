@@ -2,6 +2,11 @@
 set -e
 set -a
 
+# Usage:
+# ./start.sh fresh - to start fresh (removes .env, vendor, database data)
+# ./start.sh reset - to reset the database (keeps .env and vendor)
+# ./start.sh - to start normally (keeps everything)
+
 type=$1
 
 if [[ -f ".env" ]]; then
@@ -49,7 +54,7 @@ while ! docker exec $DB_HOST mysql -u$DB_USERNAME -p$DB_PASSWORD -e "SELECT 1" >
     sleep 1
 done
 
-if [ "$type" = "fresh" ]; then
+if [[ "$type" = "fresh" || "$type" = "reset" ]]; then
     commands="
     composer update
     php artisan migrate:fresh --seed
