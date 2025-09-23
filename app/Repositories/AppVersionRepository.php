@@ -2,7 +2,6 @@
 
 namespace App\Repositories;
 
-use App\Constants\AppConstant;
 use App\Data\AppVersionData;
 use App\Data\AppVersionFilterData;
 use App\Enums\AppPlatform;
@@ -97,7 +96,7 @@ class AppVersionRepository
         }
 
         if (!empty($appVersionFilterData->meta->sortField)) {
-            $appVersionBuilder->orderBy($appVersionFilterData->meta->sortField, $appVersionFilterData->meta->sortDirection ?? AppConstant::DEFAULT_SORT_DIRECTION);
+            $appVersionBuilder->orderBy($appVersionFilterData->meta->sortField, $appVersionFilterData->meta->sortDirection);
         }
 
         return $appVersionBuilder->paginate($appVersionFilterData->meta->perPage);

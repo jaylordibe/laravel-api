@@ -2,7 +2,6 @@
 
 namespace App\Repositories;
 
-use App\Constants\AppConstant;
 use App\Data\AddressData;
 use App\Data\AddressFilterData;
 use App\Models\Address;
@@ -74,7 +73,7 @@ class AddressRepository
         }
 
         if (!empty($addressFilterData->meta->sortField)) {
-            $addressBuilder->orderBy($addressFilterData->meta->sortField, $addressFilterData->meta->sortDirection ?? AppConstant::DEFAULT_SORT_DIRECTION);
+            $addressBuilder->orderBy($addressFilterData->meta->sortField, $addressFilterData->meta->sortDirection);
         }
 
         return $addressBuilder->paginate($addressFilterData->meta->perPage);

@@ -88,9 +88,9 @@ class UserController extends Controller
      */
     public function updateAuthUsername(GenericRequest $request): JsonResponse|JsonResource
     {
-        $username = $request->getInputAsString('username');
+        $username = $request->string('username');
 
-        if (empty($username)) {
+        if ($username->isEmpty()) {
             return ResponseUtil::error('Username is required.');
         }
 
@@ -109,9 +109,9 @@ class UserController extends Controller
      */
     public function updateAuthUserEmail(GenericRequest $request): JsonResponse|JsonResource
     {
-        $email = $request->getInputAsString('email');
+        $email = $request->string('email');
 
-        if (empty($email)) {
+        if ($email->isEmpty()) {
             return ResponseUtil::error('Email is required.');
         }
 

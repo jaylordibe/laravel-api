@@ -18,6 +18,7 @@
 */
 
 return [
+    'numeric_regex' => '[0-9]+',
     'app_domain' => env('APP_DOMAIN'),
     'app_frontend_url' => env('APP_FRONTEND_URL'),
     'sysad_email' => env('SYSAD_EMAIL'),

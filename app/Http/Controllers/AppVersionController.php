@@ -109,7 +109,7 @@ class AppVersionController extends Controller
      */
     public function getLatest(GenericRequest $request): JsonResponse|JsonResource
     {
-        $platform = AppPlatform::tryFrom($request->getInputAsString('platform'));
+        $platform = $request->enum('platform', AppPlatform::class);
 
         if (empty($platform)) {
             return ResponseUtil::error('Platform is required.');

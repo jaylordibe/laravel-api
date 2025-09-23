@@ -1,6 +1,5 @@
 <?php
 
-use App\Constants\RoutePatternConstant;
 use App\Http\Controllers\AddressController;
 use App\Http\Controllers\AppVersionController;
 use App\Http\Controllers\AuthController;
@@ -36,9 +35,9 @@ Route::middleware('auth:api')->group(function () {
     Route::prefix('app-versions')->group(function () {
         Route::post('/', [AppVersionController::class, 'create']);
         Route::get('/', [AppVersionController::class, 'getPaginated']);
-        Route::get('/{appVersionId}', [AppVersionController::class, 'getById'])->where('appVersionId', RoutePatternConstant::NUMERIC);
-        Route::put('/{appVersionId}', [AppVersionController::class, 'update'])->where('appVersionId', RoutePatternConstant::NUMERIC);
-        Route::delete('/{appVersionId}', [AppVersionController::class, 'delete'])->where('appVersionId', RoutePatternConstant::NUMERIC);
+        Route::get('/{appVersionId}', [AppVersionController::class, 'getById'])->where('appVersionId', config('custom.numeric_regex'));
+        Route::put('/{appVersionId}', [AppVersionController::class, 'update'])->where('appVersionId', config('custom.numeric_regex'));
+        Route::delete('/{appVersionId}', [AppVersionController::class, 'delete'])->where('appVersionId', config('custom.numeric_regex'));
     });
 
     // User routes
@@ -50,33 +49,33 @@ Route::middleware('auth:api')->group(function () {
         Route::put('/auth/email', [UserController::class, 'updateAuthUserEmail']);
         Route::put('/auth/password', [UserController::class, 'updateAuthUserPassword']);
         Route::post('/auth/profile-image', [UserController::class, 'updateAuthUserProfileImage']);
-        Route::put('/{userId}/password', [UserController::class, 'updatePassword'])->where('userId', RoutePatternConstant::NUMERIC);
-        Route::get('/{userId}', [UserController::class, 'getById'])->where('userId', RoutePatternConstant::NUMERIC);
-        Route::put('/{userId}', [UserController::class, 'update'])->where('userId', RoutePatternConstant::NUMERIC);
-        Route::delete('/{userId}', [UserController::class, 'delete'])->where('userId', RoutePatternConstant::NUMERIC);
+        Route::put('/{userId}/password', [UserController::class, 'updatePassword'])->where('userId', config('custom.numeric_regex'));
+        Route::get('/{userId}', [UserController::class, 'getById'])->where('userId', config('custom.numeric_regex'));
+        Route::put('/{userId}', [UserController::class, 'update'])->where('userId', config('custom.numeric_regex'));
+        Route::delete('/{userId}', [UserController::class, 'delete'])->where('userId', config('custom.numeric_regex'));
     });
 
     // Address routes
     Route::prefix('addresses')->group(function () {
         Route::post('/', [AddressController::class, 'create']);
         Route::get('/', [AddressController::class, 'getPaginated']);
-        Route::get('/{addressId}', [AddressController::class, 'getById'])->where('addressId', RoutePatternConstant::NUMERIC);
-        Route::put('/{addressId}', [AddressController::class, 'update'])->where('addressId', RoutePatternConstant::NUMERIC);
-        Route::delete('/{addressId}', [AddressController::class, 'delete'])->where('addressId', RoutePatternConstant::NUMERIC);
+        Route::get('/{addressId}', [AddressController::class, 'getById'])->where('addressId', config('custom.numeric_regex'));
+        Route::put('/{addressId}', [AddressController::class, 'update'])->where('addressId', config('custom.numeric_regex'));
+        Route::delete('/{addressId}', [AddressController::class, 'delete'])->where('addressId', config('custom.numeric_regex'));
     });
 
     // DeviceToken routes
     Route::prefix('device-tokens')->group(function () {
         Route::post('/', [DeviceTokenController::class, 'create']);
         Route::get('/', [DeviceTokenController::class, 'getPaginated']);
-        Route::get('/{deviceTokenId}', [DeviceTokenController::class, 'getById'])->where('deviceTokenId', RoutePatternConstant::NUMERIC);
-        Route::put('/{deviceTokenId}', [DeviceTokenController::class, 'update'])->where('deviceTokenId', RoutePatternConstant::NUMERIC);
-        Route::delete('/{deviceTokenId}', [DeviceTokenController::class, 'delete'])->where('deviceTokenId', RoutePatternConstant::NUMERIC);
+        Route::get('/{deviceTokenId}', [DeviceTokenController::class, 'getById'])->where('deviceTokenId', config('custom.numeric_regex'));
+        Route::put('/{deviceTokenId}', [DeviceTokenController::class, 'update'])->where('deviceTokenId', config('custom.numeric_regex'));
+        Route::delete('/{deviceTokenId}', [DeviceTokenController::class, 'delete'])->where('deviceTokenId', config('custom.numeric_regex'));
     });
 
     // JobStatus routes
     Route::prefix('job-statuses')->group(function () {
-        Route::get('/{jobStatusId}', [JobStatusController::class, 'getById'])->where('jobStatusId', RoutePatternConstant::NUMERIC);
+        Route::get('/{jobStatusId}', [JobStatusController::class, 'getById'])->where('jobStatusId', config('custom.numeric_regex'));
     });
 
     // Activity routes

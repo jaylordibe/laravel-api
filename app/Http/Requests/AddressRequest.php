@@ -45,12 +45,12 @@ class AddressRequest extends BaseRequest
     {
         return new AddressData(
             userId: Auth::user()->id,
-            address: $this->getInputAsString('address'),
-            villageOrBarangay: $this->getInputAsString('villageOrBarangay'),
-            cityOrMunicipality: $this->getInputAsString('cityOrMunicipality'),
-            stateOrProvince: $this->getInputAsString('stateOrProvince'),
-            zipOrPostalCode: $this->getInputAsString('zipOrPostalCode'),
-            country: $this->getInputAsString('country'),
+            address: $this->string('address'),
+            villageOrBarangay: $this->string('villageOrBarangay'),
+            cityOrMunicipality: $this->string('cityOrMunicipality'),
+            stateOrProvince: $this->string('stateOrProvince'),
+            zipOrPostalCode: $this->string('zipOrPostalCode'),
+            country: $this->string('country'),
             id: $this->route('addressId'),
             authUser: $this->getAuthUserData(),
             meta: $this->getMetaData()
@@ -66,12 +66,12 @@ class AddressRequest extends BaseRequest
     {
         return new AddressFilterData(
             userId: Auth::user()->id,
-            villageOrBarangay: $this->getInputAsString('villageOrBarangay'),
-            cityOrMunicipality: $this->getInputAsString('cityOrMunicipality'),
-            stateOrProvince: $this->getInputAsString('stateOrProvince'),
-            zipOrPostalCode: $this->getInputAsString('zipOrPostalCode'),
-            country: $this->getInputAsString('country'),
-            id: $this->getInputAsInt('id'),
+            villageOrBarangay: $this->string('villageOrBarangay'),
+            cityOrMunicipality: $this->string('cityOrMunicipality'),
+            stateOrProvince: $this->string('stateOrProvince'),
+            zipOrPostalCode: $this->string('zipOrPostalCode'),
+            country: $this->string('country'),
+            id: $this->integer('id'),
             authUser: $this->getAuthUserData(),
             meta: $this->getMetaData()
         );

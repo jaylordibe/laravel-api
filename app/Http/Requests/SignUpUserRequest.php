@@ -42,11 +42,11 @@ class SignUpUserRequest extends BaseRequest
     public function toData(): SignUpUserData
     {
         return new SignUpUserData(
-            firstName: $this->getInputAsString('firstName'),
-            lastName: $this->getInputAsString('lastName'),
-            email: $this->getInputAsString('email'),
-            phoneNumber: $this->getInputAsString('phoneNumber'),
-            password: $this->getInputAsString('password')
+            firstName: $this->string('firstName'),
+            lastName: $this->string('lastName'),
+            email: $this->string('email'),
+            phoneNumber: $this->string('phoneNumber'),
+            password: $this->string('password')
         );
     }
 

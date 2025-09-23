@@ -8,14 +8,13 @@ use App\Data\UserData;
 use App\Models\User;
 use App\Utils\ResponseUtil;
 use Brick\Math\BigDecimal;
-use Brick\Math\BigInteger;
-use Brick\Math\Exception\MathException;
-use Carbon\Exceptions\InvalidFormatException;
+use Brick\Math\Exception\DivisionByZeroException;
+use Brick\Math\Exception\NumberFormatException;
+use Brick\Math\Exception\RoundingNecessaryException;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -44,169 +43,25 @@ class BaseRequest extends FormRequest
     }
 
     /**
-     * Transform input value to string.
-     *
-     * @param string $key
-     * @param string|null $default
-     *
-     * @return string|null
-     */
-    public function getInputAsString(string $key, ?string $default = null): ?string
-    {
-        $data = $this->input($key);
-
-        return is_null($data) ? $default : (string) $data;
-    }
-
-    /**
-     * Transform input value to int.
-     *
-     * @param string $key
-     * @param int|null $default
-     *
-     * @return int|null
-     */
-    public function getInputAsInt(string $key, ?int $default = null): ?int
-    {
-        $data = $this->input($key);
-
-        return is_null($data) ? $default : (int) $data;
-    }
-
-    /**
-     * Transform input value to float.
-     *
-     * @param string $key
-     * @param float|null $default
-     *
-     * @return float|null
-     */
-    public function getInputAsFloat(string $key, ?float $default = null): ?float
-    {
-        $data = $this->input($key);
-
-        return is_null($data) ? $default : (float) $data;
-    }
-
-    /**
-     * Transform input value to boolean.
-     *
-     * @param string $key
-     * @param bool|null $default
-     *
-     * @return bool|null
-     */
-    public function getInputAsBoolean(string $key, ?bool $default = null): ?bool
-    {
-        $data = $this->input($key);
-
-        return is_null($data) ? $default : filter_var($data, FILTER_VALIDATE_BOOLEAN);
-    }
-
-    /**
-     * Transform input value to array.
-     *
-     * @param string $key
-     * @param array|null $default
-     * @param string|null $separator - separator for string to array conversion
-     *
-     * @return array|null
-     */
-    public function getInputAsArray(string $key, ?array $default = null, ?string $separator = null): ?array
-    {
-        $data = $this->input($key);
-        $value = $default;
-
-        if (!empty($data)) {
-            if (is_string($data)) {
-                $value = explode($separator ?? '|', $data);
-            } elseif (is_array($data)) {
-                $value = $data;
-            }
-        }
-
-        return $value;
-    }
-
-    /**
-     * Transform input value to url.
-     *
-     * @param string $key
-     *
-     * @return string
-     */
-    public function getInputAsUrl(string $key): string
-    {
-        return urldecode($this->getInputAsString($key));
-    }
-
-    /**
-     * Transform input value to carbon datetime.
-     *
-     * @param string $key
-     *
-     * @return Carbon|null
-     */
-    public function getInputAsCarbon(string $key): ?Carbon
-    {
-        try {
-            $data = $this->getInputAsString($key);
-
-            if (is_null($data)) {
-                return null;
-            }
-
-            return Carbon::parse($data);
-        } catch (InvalidFormatException $e) {
-            Log::error("Failed to parse input as carbon datetime: {$e->getMessage()}");
-
-            return null;
-        }
-    }
-
-    /**
-     * Transform input value to brick/math BigInteger.
-     *
-     * @param string $key
-     *
-     * @return BigInteger|null
-     */
-    public function getInputAsBigInteger(string $key): ?BigInteger
-    {
-        try {
-            $data = $this->getInputAsString($key);
-
-            if (is_null($data)) {
-                return null;
-            }
-
-            return BigInteger::of($data);
-        } catch (MathException $e) {
-            Log::error('Failed to parse input as BigInteger: ' . $e->getMessage());
-
-            return null;
-        }
-    }
-
-    /**
      * Transform input value to brick/math BigDecimal.
      *
      * @param string $key
+     * @param BigDecimal|null $default
      *
      * @return BigDecimal|null
      */
-    public function getInputAsBigDecimal(string $key): ?BigDecimal
+    public function bigDecimal(string $key, ?BigDecimal $default = null): ?BigDecimal
     {
         try {
-            $data = $this->getInputAsString($key);
+            $data = $this->string($key);
 
             if (is_null($data)) {
-                return null;
+                return $default;
             }
 
             return BigDecimal::of($data);
-        } catch (MathException $e) {
-            Log::error('Failed to parse input as BigDecimal: ' . $e->getMessage());
+        } catch (DivisionByZeroException|NumberFormatException|RoundingNecessaryException $exception) {
+            Log::error('Failed to parse input as BigDecimal: ' . $exception->getMessage());
 
             return null;
         }
@@ -219,7 +74,7 @@ class BaseRequest extends FormRequest
      */
     public function getPage(): int
     {
-        return $this->getInputAsInt('page') ?: AppConstant::DEFAULT_PAGE;
+        return $this->integer('page') ?: 1;
     }
 
     /**
@@ -229,15 +84,15 @@ class BaseRequest extends FormRequest
      *
      * @return int
      */
-    public function getPerPage(int $maxPerPage = AppConstant::MAX_PER_PAGE): int
+    public function getPerPage(int $maxPerPage = 1000): int
     {
-        $perPage = $this->getInputAsInt('perPage') ?: AppConstant::DEFAULT_PER_PAGE;
+        $perPage = $this->integer('perPage') ?: 10;
 
         if ($perPage === -1) {
             return $maxPerPage;
         }
 
-        return $perPage > $maxPerPage ? AppConstant::DEFAULT_PER_PAGE : $perPage;
+        return $perPage > $maxPerPage ? 10 : $perPage;
     }
 
     /**
@@ -247,7 +102,7 @@ class BaseRequest extends FormRequest
      */
     public function getPageOffset(): int
     {
-        $offset = $this->getInputAsInt('offset');
+        $offset = $this->integer('offset');
 
         return $offset ?: ($this->getPage() - 1) * $this->getPerPage();
     }
@@ -357,17 +212,15 @@ class BaseRequest extends FormRequest
     {
         return new MetaData(
             ip: $this->ip(),
-            search: $this->getInputAsString('search'),
+            search: $this->string('search'),
             relations: $this->getRelations(),
             columns: $this->getColumns() ?? ['*'],
-            groupBy: $this->getInputAsString('groupBy'),
-            sortField: $this->getInputAsString('sortField'),
-            sortDirection: $this->getInputAsString('sortDirection'),
+            groupBy: $this->string('groupBy'),
+            sortField: $this->string('sortField'),
+            sortDirection: $this->string('sortDirection', 'asc'),
             page: $this->getPage(),
             perPage: $this->getPerPage(),
-            offset: $this->getPageOffset(),
-            exact: $this->getInputAsBoolean('exact'),
-            all: $this->getPerPage() < AppConstant::MAX_PER_PAGE ? $this->getInputAsBoolean('all') : null
+            offset: $this->getPageOffset()
         );
     }
 

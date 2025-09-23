@@ -45,9 +45,9 @@ class ActivityLogRequest extends BaseRequest
     {
         return new ActivityData(
             userId: $this->getAuthUserData()->id,
-            logName: $this->getInputAsString('logName'),
-            description: $this->getInputAsString('description'),
-            properties: $this->getInputAsArray('properties', []),
+            logName: $this->string('logName'),
+            description: $this->string('description'),
+            properties: $this->array('properties'),
             id: $this->route('activityId'),
             authUser: $this->getAuthUserData(),
             meta: $this->getMetaData()
@@ -62,11 +62,11 @@ class ActivityLogRequest extends BaseRequest
     public function toFilterData(): ActivityFilterData
     {
         return new ActivityFilterData(
-            userId: $this->getInputAsInt('userId', $this->getAuthUserData()->id),
-            type: $this->getInputAsString('type'),
-            startDate: $this->getInputAsCarbon('startDate'),
-            endDate: $this->getInputAsCarbon('endDate'),
-            id: $this->getInputAsInt('id'),
+            userId: $this->integer('userId', $this->getAuthUserData()->id),
+            type: $this->string('type'),
+            startDate: $this->date('startDate'),
+            endDate: $this->date('endDate'),
+            id: $this->integer('id'),
             authUser: $this->getAuthUserData(),
             meta: $this->getMetaData()
         );

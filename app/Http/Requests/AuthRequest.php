@@ -41,9 +41,9 @@ class AuthRequest extends BaseRequest
     public function toData(): AuthData
     {
         return new AuthData(
-            identifier: $this->getInputAsString('identifier'),
-            password: $this->getInputAsString('password'),
-            remember: $this->getInputAsBoolean('remember', false)
+            identifier: $this->string('identifier'),
+            password: $this->string('password'),
+            remember: $this->boolean('remember')
         );
     }
 

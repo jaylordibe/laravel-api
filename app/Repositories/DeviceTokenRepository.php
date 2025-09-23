@@ -2,7 +2,6 @@
 
 namespace App\Repositories;
 
-use App\Constants\AppConstant;
 use App\Data\DeviceTokenData;
 use App\Data\DeviceTokenFilterData;
 use App\Models\DeviceToken;
@@ -91,7 +90,7 @@ class DeviceTokenRepository
         }
 
         if (!empty($deviceTokenFilterData->meta->sortField)) {
-            $deviceTokenBuilder->orderBy($deviceTokenFilterData->meta->sortField, $deviceTokenFilterData->meta->sortDirection ?? AppConstant::DEFAULT_SORT_DIRECTION);
+            $deviceTokenBuilder->orderBy($deviceTokenFilterData->meta->sortField, $deviceTokenFilterData->meta->sortDirection);
         }
 
         return $deviceTokenBuilder->paginate($deviceTokenFilterData->meta->perPage);

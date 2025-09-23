@@ -2,7 +2,7 @@
 
 namespace App\Constants;
 
-class DatabaseTableConstant extends BaseConstant
+class DatabaseTableConstant
 {
 
     const string USERS = 'users';

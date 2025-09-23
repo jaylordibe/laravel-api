@@ -46,12 +46,12 @@ class AppVersionRequest extends BaseRequest
     public function toData(): AppVersionData
     {
         return new AppVersionData(
-            version: $this->getInputAsString('version'),
-            description: $this->getInputAsString('description'),
-            platform: AppPlatform::from($this->getInputAsString('platform')),
-            releaseDate: $this->getInputAsCarbon('releaseDate'),
-            downloadUrl: $this->getInputAsString('downloadUrl'),
-            forceUpdate: $this->getInputAsBoolean('forceUpdate'),
+            version: $this->string('version'),
+            description: $this->string('description'),
+            platform: AppPlatform::from($this->string('platform')),
+            releaseDate: $this->date('releaseDate'),
+            downloadUrl: $this->string('downloadUrl'),
+            forceUpdate: $this->boolean('forceUpdate'),
             id: $this->route('appVersionId'),
             authUser: $this->getAuthUserData(),
             meta: $this->getMetaData()
@@ -66,12 +66,12 @@ class AppVersionRequest extends BaseRequest
     public function toFilterData(): AppVersionFilterData
     {
         return new AppVersionFilterData(
-            version: $this->getInputAsString('version'),
-            platform: AppPlatform::tryFrom($this->getInputAsString('platform')),
-            releaseDateStart: $this->getInputAsCarbon('releaseDateStart'),
-            releaseDateEnd: $this->getInputAsCarbon('releaseDateEnd'),
-            forceUpdate: $this->getInputAsBoolean('forceUpdate'),
-            id: $this->getInputAsInt('id'),
+            version: $this->string('version'),
+            platform: AppPlatform::tryFrom($this->string('platform')),
+            releaseDateStart: $this->date('releaseDateStart'),
+            releaseDateEnd: $this->date('releaseDateEnd'),
+            forceUpdate: $this->boolean('forceUpdate'),
+            id: $this->integer('id'),
             authUser: $this->getAuthUserData(),
             meta: $this->getMetaData()
         );

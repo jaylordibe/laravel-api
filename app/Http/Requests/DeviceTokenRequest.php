@@ -47,11 +47,11 @@ class DeviceTokenRequest extends BaseRequest
     {
         return new DeviceTokenData(
             userId: $this->getAuthUserData()->id,
-            token: $this->getInputAsString('token'),
-            appPlatform: AppPlatform::from($this->getInputAsString('appPlatform')),
-            deviceType: DeviceType::from($this->getInputAsString('deviceType')),
-            deviceOs: DeviceOs::from($this->getInputAsString('deviceOs')),
-            deviceOsVersion: $this->getInputAsString('deviceOsVersion'),
+            token: $this->string('token'),
+            appPlatform: AppPlatform::from($this->string('appPlatform')),
+            deviceType: DeviceType::from($this->string('deviceType')),
+            deviceOs: DeviceOs::from($this->string('deviceOs')),
+            deviceOsVersion: $this->string('deviceOsVersion'),
             id: $this->route('deviceTokenId'),
             authUser: $this->getAuthUserData(),
             meta: $this->getMetaData()
@@ -67,11 +67,11 @@ class DeviceTokenRequest extends BaseRequest
     {
         return new DeviceTokenFilterData(
             userId: $this->getAuthUserData()->id,
-            appPlatform: AppPlatform::tryFrom($this->getInputAsString('appPlatform')),
-            deviceType: DeviceType::tryFrom($this->getInputAsString('deviceType')),
-            deviceOs: DeviceOs::tryFrom($this->getInputAsString('deviceOs')),
-            deviceOsVersion: $this->getInputAsString('deviceOsVersion'),
-            id: $this->getInputAsInt('id'),
+            appPlatform: AppPlatform::tryFrom($this->string('appPlatform')),
+            deviceType: DeviceType::tryFrom($this->string('deviceType')),
+            deviceOs: DeviceOs::tryFrom($this->string('deviceOs')),
+            deviceOsVersion: $this->string('deviceOsVersion'),
+            id: $this->integer('id'),
             authUser: $this->getAuthUserData(),
             meta: $this->getMetaData()
         );

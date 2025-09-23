@@ -41,14 +41,14 @@ class UserRequest extends BaseRequest
     public function toData(): UserData
     {
         return new UserData(
-            firstName: $this->getInputAsString('firstName'),
-            lastName: $this->getInputAsString('lastName'),
-            username: $this->getInputAsString('username', ''),
-            email: $this->getInputAsString('email', ''),
-            middleName: $this->getInputAsString('middleName'),
-            timezone: $this->getInputAsString('timezone'),
-            phoneNumber: $this->getInputAsString('phoneNumber'),
-            birthday: $this->getInputAsCarbon('birthday'),
+            firstName: $this->string('firstName'),
+            lastName: $this->string('lastName'),
+            username: $this->string('username', ''),
+            email: $this->string('email', ''),
+            middleName: $this->string('middleName'),
+            timezone: $this->string('timezone'),
+            phoneNumber: $this->string('phoneNumber'),
+            birthday: $this->date('birthday'),
             id: $this->route('userId'),
             meta: $this->getMetaData(),
             authUser: $this->getAuthUserData()
@@ -64,7 +64,7 @@ class UserRequest extends BaseRequest
     {
         return new UserFilterData(
             // Add UserFilterData properties here
-            id: $this->getInputAsInt('id'),
+            id: $this->integer('id'),
             meta: $this->getMetaData(),
             authUser: $this->getAuthUserData()
         );

@@ -39,8 +39,8 @@ class UpdatePasswordRequest extends BaseRequest
     {
         return new UpdatePasswordData(
             userId: $this->getAuthUserData()->id,
-            password: $this->getInputAsString('password'),
-            passwordConfirmation: $this->getInputAsString('passwordConfirmation'),
+            password: $this->string('password'),
+            passwordConfirmation: $this->string('passwordConfirmation'),
         );
     }
 

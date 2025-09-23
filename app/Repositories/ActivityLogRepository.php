@@ -2,7 +2,6 @@
 
 namespace App\Repositories;
 
-use App\Constants\AppConstant;
 use App\Data\ActivityFilterData;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Spatie\Activitylog\Models\Activity;
@@ -56,7 +55,7 @@ class ActivityLogRepository
         }
 
         if (!empty($activityFilterData->meta->sortField)) {
-            $activityBuilder->orderBy($activityFilterData->meta->sortField, $activityFilterData->meta->sortDirection ?? AppConstant::DEFAULT_SORT_DIRECTION);
+            $activityBuilder->orderBy($activityFilterData->meta->sortField, $activityFilterData->meta->sortDirection);
         }
 
         return $activityBuilder->paginate($activityFilterData->meta->perPage);
