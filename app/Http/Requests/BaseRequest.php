@@ -2,7 +2,6 @@
 
 namespace App\Http\Requests;
 
-use App\Constants\AppConstant;
 use App\Data\MetaData;
 use App\Data\UserData;
 use App\Models\User;
