@@ -1,5 +1,7 @@
 <?php
 
+use App\Utils\ResponseUtil;
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -12,8 +14,13 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        //
+        // Prevent from redirecting to login page (which triggers RouteNotFoundException)
+        $middleware->redirectGuestsTo(function ($request) {
+            return null;
+        });
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        //
+        $exceptions->render(function (AuthenticationException $e, $request) {
+            return ResponseUtil::unauthorized();
+        });
     })->create();
