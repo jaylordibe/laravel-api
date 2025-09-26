@@ -109,7 +109,7 @@ class ResponseUtil
      */
     public static function unauthorized(string $message = 'Request is unauthorized'): JsonResponse
     {
-        return response()->json(['success' => false, 'message' => $message], SymfonyResponse::HTTP_UNAUTHORIZED);
+        return response()->json(['message' => $message], SymfonyResponse::HTTP_UNAUTHORIZED);
     }
 
     /**
@@ -121,7 +121,7 @@ class ResponseUtil
      */
     public static function notFound(string $message = 'Request not found'): JsonResponse
     {
-        return response()->json(['success' => false, 'message' => $message], SymfonyResponse::HTTP_NOT_FOUND);
+        return response()->json(['message' => $message], SymfonyResponse::HTTP_NOT_FOUND);
     }
 
 }
