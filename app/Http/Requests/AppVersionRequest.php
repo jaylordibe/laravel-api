@@ -48,7 +48,7 @@ class AppVersionRequest extends BaseRequest
         return new AppVersionData(
             version: $this->string('version'),
             description: $this->string('description'),
-            platform: AppPlatform::from($this->string('platform')),
+            platform: $this->enum('platform', AppPlatform::class),
             releaseDate: $this->date('releaseDate'),
             downloadUrl: $this->string('downloadUrl'),
             forceUpdate: $this->boolean('forceUpdate'),
@@ -67,7 +67,7 @@ class AppVersionRequest extends BaseRequest
     {
         return new AppVersionFilterData(
             version: $this->string('version'),
-            platform: AppPlatform::tryFrom($this->string('platform')),
+            platform: $this->enum('platform', AppPlatform::class),
             releaseDateStart: $this->date('releaseDateStart'),
             releaseDateEnd: $this->date('releaseDateEnd'),
             forceUpdate: $this->boolean('forceUpdate'),

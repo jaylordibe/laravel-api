@@ -50,7 +50,7 @@ class CreateUserRequest extends BaseRequest
             email: $this->string('email'),
             phoneNumber: $this->string('phoneNumber'),
             password: $this->string('password'),
-            role: UserRole::from($this->string('role'))
+            role: $this->enum('role', UserRole::class)
         );
     }
 
