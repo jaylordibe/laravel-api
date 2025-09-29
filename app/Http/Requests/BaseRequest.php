@@ -67,6 +67,32 @@ class BaseRequest extends FormRequest
     }
 
     /**
+     * Get array of ids from a string input separated by a given separator.
+     *
+     * @param string $key The input key to retrieve the string from.
+     * @param string $separator The character that separates the ids in the string.
+     * @param array|null $default The default value to return if the input is empty or not present.
+     *
+     * @return array|null An array of unique integer ids, or the default value if input is empty.
+     */
+    public function arrayIds(string $key, string $separator = ',', ?array $default = null): ?array
+    {
+        $data = $this->string($key);
+
+        if ($data->isEmpty()) {
+            return $default;
+        }
+
+        return collect(explode($separator, $data))
+            ->map(fn(string $id) => trim($id))
+            ->filter()
+            ->unique()
+            ->map(fn(string $id) => (int) $id)
+            ->values()
+            ->all();
+    }
+
+    /**
      * For pagination. Get the requested page number.
      *
      * @return int
