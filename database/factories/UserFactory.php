@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\Gender;
 use App\Models\User;
 use App\Utils\AppUtil;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -37,9 +38,11 @@ class UserFactory extends Factory
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
-            'timezone' => fake()->timezone(),
             'phone_number' => fake()->phoneNumber(),
-            'birthdate' => now()->subYears(random_int(1, 20))
+            'gender' => fake()->randomElement(Gender::cases()),
+            'birthdate' => now()->subYears(random_int(1, 20)),
+            'timezone' => fake()->timezone(),
+            'profile_image' => fake()->imageUrl()
         ];
     }
 
