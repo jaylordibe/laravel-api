@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\Gender;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Constants\DatabaseTableConstant;
 use Illuminate\Database\Eloquent\Builder;
@@ -14,6 +15,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 use Laravel\Passport\HasApiTokens;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -31,17 +33,19 @@ use Spatie\Permission\Traits\HasRoles;
  * @property string $first_name
  * @property string|null $middle_name
  * @property string $last_name
- * @property-read string|null $full_name
  * @property string $username
  * @property string $email
  * @property Carbon|null $email_verified_at
  * @property string $password
  * @property string|null $remember_token
- * @property string|null $timezone
  * @property string|null $phone_number
- * @property Carbon|null $birthday
- * @property string|null $gender
+ * @property Gender|null $gender
+ * @property Carbon|null $birthdate
+ * @property string|null $timezone
  * @property string|null $profile_image
+ *
+ * Appended properties
+ * @property string $full_name
  *
  * Model relationships
  * @property-read Collection<Role>|null $roles
@@ -89,7 +93,7 @@ class User extends Authenticatable implements MustVerifyEmail
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
-            'birthday' => 'datetime'
+            'birthdate' => 'datetime'
         ];
     }
 
@@ -140,11 +144,8 @@ class User extends Authenticatable implements MustVerifyEmail
     protected function fullName(): Attribute
     {
         return Attribute::make(
-            get: fn(mixed $value, array $attributes) => implode(' ', array_filter([
-                $attributes['first_name'] ?? '',
-                $attributes['middle_name'] ?? '',
-                $attributes['last_name'] ?? ''
-            ], fn(string $component) => !empty($component)))
+//            get: fn(mixed $value, array $attributes) => "{$attributes['first_name']} " . strtoupper(Str::substr($attributes['middle_name'], 0, 1)) . '.' . " {$attributes['last_name']}"
+            get: fn(mixed $value, array $attributes) => "{$attributes['last_name']}, {$attributes['first_name']} " . strtoupper(Str::substr($attributes['middle_name'], 0, 1)) . '.'
         );
     }
 

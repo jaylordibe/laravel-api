@@ -2,6 +2,7 @@
 
 namespace App\Data;
 
+use App\Enums\Gender;
 use Illuminate\Support\Carbon;
 
 class UserData extends BaseData
@@ -9,15 +10,16 @@ class UserData extends BaseData
 
     public function __construct(
         public string $firstName,
+        public ?string $middleName,
         public string $lastName,
         public string $username,
         public string $email,
-        public ?string $middleName = null,
-        public ?string $timezone = null,
-        public ?string $phoneNumber = null,
-        public ?Carbon $birthday = null,
-        public ?string $gender = null,
-        public ?string $profileImage = null,
+        public ?Carbon $emailVerifiedAt,
+        public ?string $phoneNumber,
+        public ?Gender $gender,
+        public ?Carbon $birthdate,
+        public ?string $timezone,
+        public ?string $profileImage,
         public ?array $roles = null,
         public ?array $permissions = null,
         ...$args

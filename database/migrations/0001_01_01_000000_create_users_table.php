@@ -29,10 +29,10 @@ return new class extends Migration {
             $table->dateTime('email_verified_at')->nullable();
             $table->string('password');
             $table->rememberToken();
-            $table->string('timezone')->nullable();
             $table->string('phone_number')->nullable();
-            $table->dateTime('birthday')->nullable();
             $table->string('gender')->nullable();
+            $table->dateTime('birthdate')->nullable();
+            $table->string('timezone')->nullable();
             $table->text('profile_image')->nullable();
         });
 

@@ -262,18 +262,21 @@ class BaseRequest extends FormRequest
 
         return new UserData(
             firstName: $authUser->first_name,
+            middleName: $authUser->middle_name,
             lastName: $authUser->last_name,
             username: $authUser->username,
             email: $authUser->email,
-            middleName: $authUser->middle_name,
-            timezone: $authUser->timezone,
+            emailVerifiedAt: $authUser->email_verified_at,
             phoneNumber: $authUser->phone_number,
-            birthday: $authUser->birthday,
+            gender: $authUser->gender,
+            birthdate: $authUser->birthdate,
+            timezone: $authUser->timezone,
             profileImage: $authUser->profile_image,
             roles: $authUser->getRoleNames()->toArray(),
             permissions: $authUser->getAllPermissions()->pluck('name')->toArray(),
             id: $authUser->id,
-            createdAt: $authUser->created_at
+            createdAt: $authUser->created_at,
+            updatedAt: $authUser->updated_at
         );
     }
 

@@ -54,7 +54,7 @@ class UserFeatureTest extends TestCase
             'email' => $userData->email,
             'timezone' => $userData->timezone,
             'phoneNumber' => $userData->phoneNumber,
-            'birthday' => $userData->birthday
+            'birthdate' => $userData->birthdate
         ];
         $response->assertOk()->assertJson($expected);
     }
@@ -77,7 +77,7 @@ class UserFeatureTest extends TestCase
             'email' => $user->email,
             'timezone' => $user->timezone,
             'phoneNumber' => $user->phone_number,
-            'birthday' => $user->birthday->toISOString()
+            'birthdate' => $user->birthdate->toISOString()
         ];
         $response->assertOk()->assertJson($expected);
     }
@@ -100,7 +100,7 @@ class UserFeatureTest extends TestCase
             'email' => $payload['email'],
             'timezone' => $user->timezone,
             'phoneNumber' => $user->phone_number,
-            'birthday' => $user->birthday->toISOString()
+            'birthdate' => $user->birthdate->toISOString()
         ];
         $response->assertOk()->assertJson($expected);
     }
@@ -180,7 +180,7 @@ class UserFeatureTest extends TestCase
             'email' => $user->email,
             'timezone' => $user->timezone,
             'phoneNumber' => $user->phone_number,
-            'birthday' => $user->birthday->toISOString()
+            'birthdate' => $user->birthdate->toISOString()
         ];
         $response->assertOk()->assertJson($expected);
     }
@@ -197,7 +197,7 @@ class UserFeatureTest extends TestCase
             'lastName' => fake()->lastName(),
             'timezone' => fake()->timezone(),
             'phoneNumber' => fake()->phoneNumber(),
-            'birthday' => now()->subYears(25)->startOfDay()->toISOString()
+            'birthdate' => now()->subYears(25)->startOfDay()->toISOString()
         ];
         $response = $this->withToken($token)->put("{$this->resource}/{$user->id}", $payload);
 
@@ -208,7 +208,7 @@ class UserFeatureTest extends TestCase
             'lastName' => $payload['lastName'],
             'timezone' => $payload['timezone'],
             'phoneNumber' => $payload['phoneNumber'],
-            'birthday' => DateUtil::stripMilliseconds($payload['birthday'])
+            'birthdate' => DateUtil::stripMilliseconds($payload['birthdate'])
         ];
 
         $response->assertOk()->assertJson($expected);

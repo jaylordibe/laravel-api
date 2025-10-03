@@ -41,10 +41,16 @@ class UserService
     {
         $userData = new UserData(
             firstName: $signUpUserData->firstName,
+            middleName: null,
             lastName: $signUpUserData->lastName,
             username: $this->generateUsername($signUpUserData->email),
             email: $signUpUserData->email,
-            phoneNumber: $signUpUserData->phoneNumber
+            emailVerifiedAt: null,
+            phoneNumber: $signUpUserData->phoneNumber,
+            gender: null,
+            birthdate: null,
+            timezone: null,
+            profileImage: null
         );
         $user = $this->userRepository->create($userData, $signUpUserData->password);
 
@@ -94,10 +100,16 @@ class UserService
             return DB::transaction(function () use ($createUserData) {
                 $userData = new UserData(
                     firstName: $createUserData->firstName,
+                    middleName: null,
                     lastName: $createUserData->lastName,
                     username: $this->generateUsername($createUserData->email),
                     email: $createUserData->email,
-                    phoneNumber: $createUserData->phoneNumber
+                    emailVerifiedAt: null,
+                    phoneNumber: $createUserData->phoneNumber,
+                    gender: null,
+                    birthdate: null,
+                    timezone: null,
+                    profileImage: null
                 );
                 $user = $this->userRepository->create($userData, $createUserData->password);
 

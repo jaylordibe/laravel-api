@@ -3,6 +3,7 @@
 namespace Tests;
 
 use App\Data\UserData;
+use App\Enums\Gender;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Support\Carbon;
 
@@ -52,16 +53,19 @@ abstract class TestCase extends BaseTestCase
 
         return new UserData(
             firstName: $authUser['firstName'],
+            middleName: $authUser['middleName'],
             lastName: $authUser['lastName'],
             username: $authUser['username'],
             email: $authUser['email'],
-            middleName: $authUser['middleName'],
-            timezone: $authUser['timezone'],
+            emailVerifiedAt: empty($authUser['emailVerifiedAt']) ? null : Carbon::parse($authUser['emailVerifiedAt']),
             phoneNumber: $authUser['phoneNumber'],
-            birthday: $authUser['birthday'],
+            gender: Gender::tryFrom($authUser['gender'] ?? null),
+            birthdate: $authUser['birthdate'],
+            timezone: $authUser['timezone'],
             profileImage: $authUser['profileImage'],
             id: $authUser['id'],
-            createdAt: Carbon::parse($authUser['createdAt'])
+            createdAt: Carbon::parse($authUser['createdAt']),
+            updatedAt: Carbon::parse($authUser['updatedAt'])
         );
     }
 

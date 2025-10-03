@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Data\UserData;
 use App\Data\UserFilterData;
+use App\Enums\Gender;
 
 class UserRequest extends BaseRequest
 {
@@ -19,7 +20,7 @@ class UserRequest extends BaseRequest
             'firstName' => ['required', 'string'],
             'lastName' => ['required', 'string'],
             'phoneNumber' => ['required', 'string'],
-            'birthday' => ['required', 'string']
+            'birthdate' => ['required', 'string']
         ];
     }
 
@@ -42,13 +43,16 @@ class UserRequest extends BaseRequest
     {
         return new UserData(
             firstName: $this->string('firstName'),
+            middleName: $this->string('middleName'),
             lastName: $this->string('lastName'),
             username: $this->string('username', ''),
             email: $this->string('email', ''),
-            middleName: $this->string('middleName'),
-            timezone: $this->string('timezone'),
+            emailVerifiedAt: $this->date('emailVerifiedAt'),
             phoneNumber: $this->string('phoneNumber'),
-            birthday: $this->date('birthday'),
+            gender: $this->enum('gender', Gender::class),
+            birthdate: $this->date('birthdate'),
+            timezone: $this->string('timezone'),
+            profileImage: $this->string('profileImage'),
             id: $this->route('userId'),
             meta: $this->getMetaData(),
             authUser: $this->getAuthUserData()
@@ -63,7 +67,6 @@ class UserRequest extends BaseRequest
     public function toFilterData(): UserFilterData
     {
         return new UserFilterData(
-            // Add UserFilterData properties here
             id: $this->integer('id'),
             meta: $this->getMetaData(),
             authUser: $this->getAuthUserData()

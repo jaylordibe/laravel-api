@@ -38,13 +38,17 @@ class UserRepository
     public function create(UserData $userData, string $password): ?User
     {
         $user = new User();
-        $user->email = $userData->email;
-        $user->username = $userData->username;
-        $user->password = Hash::make($password);
         $user->first_name = $userData->firstName;
+        $user->middle_name = $userData->middleName;
         $user->last_name = $userData->lastName;
+        $user->username = $userData->username;
+        $user->email = $userData->email;
+        $user->email_verified_at = $userData->emailVerifiedAt;
+        $user->password = Hash::make($password);
         $user->phone_number = $userData->phoneNumber;
-        $user->email_verified_at = now();
+        $user->gender = $userData->gender;
+        $user->birthdate = $userData->birthdate;
+        $user->timezone = $userData->timezone;
         $user->save();
 
         return $user->refresh();
@@ -64,10 +68,10 @@ class UserRepository
         $user->first_name = $userData->firstName;
         $user->middle_name = $userData->middleName;
         $user->last_name = $userData->lastName;
-        $user->timezone = $userData->timezone;
         $user->phone_number = $userData->phoneNumber;
-        $user->birthday = $userData->birthday;
         $user->gender = $userData->gender;
+        $user->birthdate = $userData->birthdate;
+        $user->timezone = $userData->timezone;
         $user->save();
 
         return $user->refresh();

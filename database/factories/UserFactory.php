@@ -39,7 +39,7 @@ class UserFactory extends Factory
             'remember_token' => Str::random(10),
             'timezone' => fake()->timezone(),
             'phone_number' => fake()->phoneNumber(),
-            'birthday' => now()->subYears(random_int(1, 20))
+            'birthdate' => now()->subYears(random_int(1, 20))
         ];
     }
 
