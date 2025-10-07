@@ -134,7 +134,11 @@ class User extends Authenticatable implements MustVerifyEmail
                 $model->newQuery()
                     ->withTrashed()
                     ->where($model->getKeyName(), $model->getKey())
-                    ->update(['deleted_by' => Auth::id()]);
+                    ->update([
+                        'username' => $model->username . '_deleted_' . now()->format('YmdHis'),
+                        'email' => $model->email . '_deleted_' . now()->format('YmdHis'),
+                        'deleted_by' => Auth::id()
+                    ]);
             }
         });
     }
