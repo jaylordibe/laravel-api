@@ -71,7 +71,7 @@ class AddressRequest extends BaseRequest
             stateOrProvince: $this->string('stateOrProvince'),
             zipOrPostalCode: $this->string('zipOrPostalCode'),
             country: $this->string('country'),
-            id: $this->integer('id'),
+            id: $this->integer('id', null),
             authUser: $this->getAuthUserData(),
             meta: $this->getMetaData()
         );

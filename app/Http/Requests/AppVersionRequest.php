@@ -70,8 +70,8 @@ class AppVersionRequest extends BaseRequest
             platform: $this->enum('platform', AppPlatform::class),
             releaseDateStart: $this->date('releaseDateStart'),
             releaseDateEnd: $this->date('releaseDateEnd'),
-            forceUpdate: $this->boolean('forceUpdate'),
-            id: $this->integer('id'),
+            forceUpdate: $this->boolean('forceUpdate', null),
+            id: $this->integer('id', null),
             authUser: $this->getAuthUserData(),
             meta: $this->getMetaData()
         );
