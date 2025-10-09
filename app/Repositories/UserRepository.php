@@ -130,7 +130,7 @@ class UserRepository
         }
 
         if (empty($userFilterData->meta->sortField)) {
-            $userFilterData->meta->sortField = 'first_name';
+            $userFilterData->meta->sortField = 'last_name';
         }
 
         if (!empty($userFilterData->meta->sortField)) {
