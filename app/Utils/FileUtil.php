@@ -23,9 +23,7 @@ class FileUtil
      */
     public static function upload(UploadedFile $file, string $path = ''): string
     {
-        $fileName = time() . '_' . Str::uuid() . '_' . $file->getClientOriginalName();
-
-        return Storage::disk(self::DISK)->putFileAs($path, $file, $fileName);
+        return $file->store($path, self::DISK);
     }
 
     /**
