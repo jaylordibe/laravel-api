@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Enums\Gender;
+use App\Enums\UserRole;
 use App\Models\User;
 use App\Utils\AppUtil;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -54,6 +55,19 @@ class UserFactory extends Factory
         return $this->state(fn(array $attributes) => [
             'email_verified_at' => null,
         ]);
+    }
+
+    /**
+     * Assign a specific role.
+     *
+     * Usage:
+     * User::factory()->withRole(UserRole::APP_ADMIN)->create();
+     */
+    public function withRole(UserRole $role): static
+    {
+        return $this->afterCreating(function (User $user) use ($role) {
+            $user->assignRole($role);
+        });
     }
 
 }
