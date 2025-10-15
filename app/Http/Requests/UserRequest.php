@@ -67,7 +67,7 @@ class UserRequest extends BaseRequest
     public function toFilterData(): UserFilterData
     {
         return new UserFilterData(
-            id: $this->integer('id', null),
+            id: $this->has('id') ? $this->integer('id') : null,
             meta: $this->getMetaData(),
             authUser: $this->getAuthUserData()
         );

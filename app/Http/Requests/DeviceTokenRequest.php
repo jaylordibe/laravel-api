@@ -71,7 +71,7 @@ class DeviceTokenRequest extends BaseRequest
             deviceType: $this->enum('deviceType', DeviceType::class),
             deviceOs: $this->enum('deviceOs', DeviceOs::class),
             deviceOsVersion: $this->string('deviceOsVersion'),
-            id: $this->integer('id', null),
+            id: $this->has('id') ? $this->integer('id') : null,
             authUser: $this->getAuthUserData(),
             meta: $this->getMetaData()
         );

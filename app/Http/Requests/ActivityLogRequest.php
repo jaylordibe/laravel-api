@@ -66,7 +66,7 @@ class ActivityLogRequest extends BaseRequest
             type: $this->string('type'),
             startDate: $this->date('startDate'),
             endDate: $this->date('endDate'),
-            id: $this->integer('id', null),
+            id: $this->has('id') ? $this->integer('id') : null,
             authUser: $this->getAuthUserData(),
             meta: $this->getMetaData()
         );

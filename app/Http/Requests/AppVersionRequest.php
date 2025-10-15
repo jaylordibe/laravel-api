@@ -71,7 +71,7 @@ class AppVersionRequest extends BaseRequest
             releaseDateStart: $this->date('releaseDateStart'),
             releaseDateEnd: $this->date('releaseDateEnd'),
             forceUpdate: $this->boolean('forceUpdate', null),
-            id: $this->integer('id', null),
+            id: $this->has('id') ? $this->integer('id') : null,
             authUser: $this->getAuthUserData(),
             meta: $this->getMetaData()
         );
