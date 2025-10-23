@@ -52,11 +52,11 @@ class BaseRequest extends FormRequest
     public function bigDecimal(string $key, ?BigDecimal $default = null): ?BigDecimal
     {
         try {
-            $data = $this->string($key);
-
-            if (is_null($data)) {
+            if (!$this->has($key)) {
                 return $default;
             }
+
+            $data = $this->string($key);
 
             return BigDecimal::of($data);
         } catch (DivisionByZeroException|NumberFormatException|RoundingNecessaryException $exception) {
@@ -77,11 +77,11 @@ class BaseRequest extends FormRequest
      */
     public function arrayIds(string $key, string $separator = ',', ?array $default = null): ?array
     {
-        $data = $this->string($key);
-
-        if ($data->isEmpty()) {
+        if (!$this->has($key)) {
             return $default;
         }
+
+        $data = $this->string($key);
 
         return collect(explode($separator, $data))
             ->map(fn(string $id) => trim($id))
