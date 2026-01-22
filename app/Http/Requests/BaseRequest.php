@@ -56,9 +56,7 @@ class BaseRequest extends FormRequest
                 return $default;
             }
 
-            $data = $this->string($key);
-
-            return BigDecimal::of($data);
+            return BigDecimal::of($this->string($key));
         } catch (DivisionByZeroException|NumberFormatException|RoundingNecessaryException $exception) {
             Log::error('Failed to parse input as BigDecimal: ' . $exception->getMessage());
 
@@ -81,9 +79,7 @@ class BaseRequest extends FormRequest
             return $default;
         }
 
-        $data = $this->string($key);
-
-        return collect(explode($separator, $data))
+        return collect(explode($separator, $this->string($key)))
             ->map(fn(string $id) => trim($id))
             ->filter()
             ->unique()

@@ -42,10 +42,14 @@ class AppUtil
      *
      * @param string $phoneNumber
      *
-     * @return string
+     * @return string|null
      */
-    public static function transformPhilippinePhoneNumberToInternationalFormat(string $phoneNumber): string
+    public static function transformPhilippinePhoneNumberToInternationalFormat(string $phoneNumber): ?string
     {
+        if (empty($phoneNumber)) {
+            return null;
+        }
+
         // Remove any non-digit characters except the leading '+'
         $phoneNumber = preg_replace('/[^\d+]/', '', $phoneNumber);
 
