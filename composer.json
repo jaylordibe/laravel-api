@@ -8,6 +8,7 @@
         "php": "^8.4",
         "ext-json": "*",
         "ext-zip": "*",
+        "ext-pdo": "*",
         "barryvdh/laravel-snappy": "^1.0",
         "brick/math": "^0.12.1",
         "google/apiclient": "^2.17",
