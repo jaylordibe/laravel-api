@@ -1,6 +1,6 @@
 services:
   app-api:
-    image: jaylordibe/laravel-php:8.4
+    image: jaylordibe/laravel-php:8.5
     container_name: ${SERVICE_NAME}-api
     restart: unless-stopped
     tty: true
@@ -32,9 +32,9 @@ services:
       - ./docker/database/data:/var/lib/mysql
     networks:
       - app-network
-  app-db-gui-admin:
+  app-db-gui:
     image: phpmyadmin/phpmyadmin:latest
-    container_name: ${SERVICE_NAME}-db-gui-admin
+    container_name: ${SERVICE_NAME}-db-gui
     restart: unless-stopped
     tty: true
     platform: linux/amd64
@@ -62,9 +62,9 @@ services:
       - ./docker/database/test-data:/var/lib/mysql
     networks:
       - app-network
-  app-db-test-gui-admin:
+  app-db-test-gui:
     image: phpmyadmin/phpmyadmin:latest
-    container_name: ${SERVICE_NAME}-db-test-gui-admin
+    container_name: ${SERVICE_NAME}-db-test-gui
     restart: unless-stopped
     tty: true
     platform: linux/amd64
@@ -79,7 +79,7 @@ services:
     image: redis:latest
     container_name: ${SERVICE_NAME}-redis
     ports:
-      - "6379:6379"
+      - "6378:6379"
     networks:
       - app-network
 networks:
