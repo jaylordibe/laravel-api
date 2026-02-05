@@ -12,7 +12,7 @@ use Illuminate\Support\Carbon;
  * @property AppPlatform $platform
  * @property Carbon $release_date
  * @property string|null $download_url
- * @property boolean $force_update
+ * @property bool $force_update
  */
 class AppVersion extends BaseModel
 {
