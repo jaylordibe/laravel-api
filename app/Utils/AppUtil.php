@@ -22,12 +22,16 @@ class AppUtil
     /**
      * Check if a Philippine phone number is valid.
      *
-     * @param string $phoneNumber
+     * @param string|null $phoneNumber
      *
      * @return bool
      */
-    public static function isValidPhilippinePhoneNumber(string $phoneNumber): bool
+    public static function isValidPhilippinePhoneNumber(?string $phoneNumber): bool
     {
+        if (empty($phoneNumber)) {
+            return false;
+        }
+
         // Remove any non-digit characters except the leading '+'
         $phoneNumber = preg_replace('/[^\d+]/', '', $phoneNumber);
 
@@ -40,11 +44,11 @@ class AppUtil
     /**
      * Transform a Philippine phone number to international format.
      *
-     * @param string $phoneNumber
+     * @param string|null $phoneNumber
      *
      * @return string|null
      */
-    public static function transformPhilippinePhoneNumberToInternationalFormat(string $phoneNumber): ?string
+    public static function transformPhilippinePhoneNumberToInternationalFormat(?string $phoneNumber): ?string
     {
         if (empty($phoneNumber)) {
             return null;
