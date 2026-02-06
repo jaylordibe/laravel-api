@@ -228,6 +228,30 @@ class UserService
      *
      * @return string
      */
+    public function generateEmail(string $text, int $count = 0): string
+    {
+        $email = strtolower(str_replace(' ', '', $text));
+
+        if (!empty($count)) {
+            $email .= $count;
+        }
+
+        $email .= config('custom.app_domain');
+        $isEmailExists = $this->isEmailExists($email);
+
+        if ($isEmailExists) {
+            $email = $this->generateEmail($text, ++$count);
+        }
+
+        return $email;
+    }
+
+    /**
+     * @param string $text
+     * @param int $count
+     *
+     * @return string
+     */
     public function generateUsername(string $text, int $count = 0): string
     {
         // Remove spaces
