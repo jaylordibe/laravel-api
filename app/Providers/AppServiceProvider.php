@@ -31,14 +31,53 @@ class AppServiceProvider extends ServiceProvider
         // Disable the wrapping of the outermost resource
         JsonResource::withoutWrapping();
 
-        // Set Passport token expiration
-        Passport::tokensExpireIn(now()->addDays(15));
+        /**
+         * Passport token lifetimes
+         * - Access tokens: used on every request
+         * - Refresh tokens: used to rotate access tokens
+         * - Personal access tokens: “API key” style, higher risk if leaked
+         */
+        Passport::tokensExpireIn(now()->addHours(8));
         Passport::refreshTokensExpireIn(now()->addDays(30));
-        Passport::personalAccessTokensExpireIn(now()->addMonths(6));
+        Passport::personalAccessTokensExpireIn(now()->addDays(90));
 
-        // Configure the rate limiters for the application
+        /**
+         * API rate limiting
+         * Primary key: token -> user -> ip
+         * IP limit is intentionally higher to avoid punishing NAT/mobile/shared networks.
+         */
         RateLimiter::for('api', function (Request $request) {
-            return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
+            $user = $request->user();
+            $tokenId = $user?->token()?->id;
+            $userId = $user?->id;
+            $ip = $request->ip();
+
+            $tokenKey = $tokenId ? "token:$tokenId" : "ip:$ip";
+            $userKey = $userId ? "user:$userId" : "ip:$ip";
+
+            return [
+                // Limits one stolen token hard
+                Limit::perMinute(60)->by($tokenKey),
+
+                // Prevents many tokens for one user hammering
+                Limit::perMinute(120)->by($userKey),
+
+                // Backstop only (kept higher to reduce NAT collateral damage)
+                Limit::perMinute(300)->by("ip:$ip"),
+            ];
+        });
+
+        /**
+         * Stricter limiter for resource-intensive / sensitive endpoints
+         */
+        RateLimiter::for('heavy', function (Request $request) {
+            $user = $request->user();
+            $tokenId = $user?->token()?->id;
+            $ip = $request->ip();
+
+            return [
+                Limit::perMinute(10)->by($tokenId ? "token:$tokenId" : "ip:$ip"),
+            ];
         });
 
         // Define the gate permissions

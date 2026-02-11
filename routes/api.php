@@ -17,7 +17,7 @@ Route::get('app-versions/latest', [AppVersionController::class, 'getLatest']);
 Route::get('email/verify/{id}', [UserController::class, 'verifyEmail'])->name('verification.verify');
 
 // Authenticated Routes
-Route::middleware('auth:api')->group(function () {
+Route::middleware(['auth:api', 'throttle:api'])->group(function () {
     // Auth
     Route::post('auth/sign-out', [AuthController::class, 'signOut']);
 

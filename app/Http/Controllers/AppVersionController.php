@@ -109,6 +109,9 @@ class AppVersionController extends Controller
      */
     public function getLatest(GenericRequest $request): JsonResponse|JsonResource
     {
+        \Log::info('Origin seen by Laravel', [
+            'origin' => request()->header('Origin'),
+        ]);
         $platform = $request->enum('platform', AppPlatform::class);
 
         if (empty($platform)) {
