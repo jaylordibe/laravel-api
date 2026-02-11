@@ -31,35 +31,24 @@ class AppServiceProvider extends ServiceProvider
         // Disable the wrapping of the outermost resource
         JsonResource::withoutWrapping();
 
-        /**
-         * Passport token lifetimes
-         * - Access tokens: used on every request
-         * - Refresh tokens: used to rotate access tokens
-         * - Personal access tokens: “API key” style, higher risk if leaked
-         */
+        // Access tokens: used on every request
         Passport::tokensExpireIn(now()->addHours(8));
+        // Refresh tokens: used to rotate access tokens
         Passport::refreshTokensExpireIn(now()->addDays(30));
+        // Personal access tokens: used for long-lived tokens (e.g. for CLI or third-party integrations)
         Passport::personalAccessTokensExpireIn(now()->addDays(90));
 
-        /**
-         * Public limiter for unauthenticated endpoints
-         */
+        // Public limiter for unauthenticated endpoints
         RateLimiter::for('public', function (Request $request) {
             return Limit::perMinute(60)->by('ip:' . $request->ip());
         });
 
-        /**
-         * Very strict limiter for highly sensitive endpoints
-         */
+        // Very strict limiter for highly sensitive endpoints
         RateLimiter::for('sensitive', function (Request $request) {
             return Limit::perMinute(5)->by('ip:' . $request->ip());
         });
 
-        /**
-         * API rate limiting
-         * Primary key: token -> user -> ip
-         * IP limit is intentionally higher to avoid punishing NAT/mobile/shared networks.
-         */
+        // Primary limiter for authenticated endpoints, with multiple layers to mitigate different abuse scenarios
         RateLimiter::for('api', function (Request $request) {
             $user = $request->user();
             $tokenId = $user?->token()?->id;
@@ -81,9 +70,7 @@ class AppServiceProvider extends ServiceProvider
             ];
         });
 
-        /**
-         * Stricter limiter for resource-intensive endpoints
-         */
+        // Stricter limiter for resource-intensive endpoints
         RateLimiter::for('heavy', function (Request $request) {
             $user = $request->user();
             $tokenId = $user?->token()?->id;
