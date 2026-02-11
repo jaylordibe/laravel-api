@@ -82,7 +82,7 @@ class AppServiceProvider extends ServiceProvider
         });
 
         /**
-         * Stricter limiter for resource-intensive / sensitive endpoints
+         * Stricter limiter for resource-intensive endpoints
          */
         RateLimiter::for('heavy', function (Request $request) {
             $user = $request->user();
