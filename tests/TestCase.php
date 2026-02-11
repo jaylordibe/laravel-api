@@ -5,10 +5,19 @@ namespace Tests;
 use App\Data\UserData;
 use App\Enums\Gender;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Illuminate\Routing\Middleware\ThrottleRequests;
 use Illuminate\Support\Carbon;
 
 abstract class TestCase extends BaseTestCase
 {
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Disable rate limiting for tests (important for parallel tests)
+        $this->withoutMiddleware(ThrottleRequests::class);
+    }
 
     /**
      * Login.
