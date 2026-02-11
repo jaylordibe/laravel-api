@@ -11,10 +11,16 @@ use App\Http\Controllers\DeviceTokenController;
 use App\Http\Controllers\ActivityLogController;
 
 // Public Routes
-Route::post('auth/sign-in', [AuthController::class, 'signIn']);
-Route::post('users/sign-up', [UserController::class, 'signUp']);
-Route::get('app-versions/latest', [AppVersionController::class, 'getLatest']);
-Route::get('email/verify/{id}', [UserController::class, 'verifyEmail'])->name('verification.verify');
+Route::middleware(['throttle:public'])->group(function () {
+    Route::get('app-versions/latest', [AppVersionController::class, 'getLatest']);
+});
+
+// Sensitive Routes
+Route::middleware(['throttle:sensitive'])->group(function () {
+    Route::post('auth/sign-in', [AuthController::class, 'signIn']);
+    Route::post('users/sign-up', [UserController::class, 'signUp']);
+    Route::get('email/verify/{id}', [UserController::class, 'verifyEmail'])->name('verification.verify');
+});
 
 // Authenticated Routes
 Route::middleware(['auth:api', 'throttle:api'])->group(function () {

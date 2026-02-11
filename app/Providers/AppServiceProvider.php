@@ -42,6 +42,20 @@ class AppServiceProvider extends ServiceProvider
         Passport::personalAccessTokensExpireIn(now()->addDays(90));
 
         /**
+         * Public limiter for unauthenticated endpoints
+         */
+        RateLimiter::for('public', function (Request $request) {
+            return Limit::perMinute(60)->by('ip:' . $request->ip());
+        });
+
+        /**
+         * Very strict limiter for highly sensitive endpoints
+         */
+        RateLimiter::for('sensitive', function (Request $request) {
+            return Limit::perMinute(5)->by('ip:' . $request->ip());
+        });
+
+        /**
          * API rate limiting
          * Primary key: token -> user -> ip
          * IP limit is intentionally higher to avoid punishing NAT/mobile/shared networks.
