@@ -239,8 +239,8 @@ class BaseRequest extends FormRequest
             relations: $this->getRelations(),
             columns: $this->getColumns() ?? ['*'],
             groupBy: $this->string('groupBy'),
-            sortField: $this->string('sortField'),
-            sortDirection: $this->string('sortDirection', 'asc'),
+            sortField: $this->string('sortField', 'created_at'),
+            sortDirection: $this->string('sortDirection', 'desc'),
             page: $this->getPage(),
             perPage: $this->getPerPage(),
             offset: $this->getPageOffset()
