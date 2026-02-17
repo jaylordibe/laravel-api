@@ -113,6 +113,18 @@ class ResponseUtil
     }
 
     /**
+     * Returns an error message with 403(Forbidden) status code.
+     *
+     * @param string $message
+     *
+     * @return JsonResponse
+     */
+    public static function forbidden(string $message = 'Request is forbidden'): JsonResponse
+    {
+        return response()->json(['message' => $message], SymfonyResponse::HTTP_FORBIDDEN);
+    }
+
+    /**
      * Returns an error message with 401(Unauthorized) status code.
      *
      * @param string $message
