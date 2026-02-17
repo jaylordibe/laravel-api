@@ -249,12 +249,17 @@ class BaseRequest extends FormRequest
 
     /**
      * Get auth user data.
-     * @return UserData
+     *
+     * @return UserData|null
      */
-    public function getAuthUserData(): UserData
+    public function getAuthUserData(): ?UserData
     {
         /** @var User $authUser */
         $authUser = Auth::user();
+
+        if (empty($authUser)) {
+            return null;
+        }
 
         return new UserData(
             firstName: $authUser->first_name,
