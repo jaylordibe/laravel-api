@@ -19,9 +19,7 @@ class UserResource extends BaseResource
         // Load the attributes
         $data = parent::transformAttributes();
 
-        $includeAccessControl = filter_var($request->input('includeAccessControl', false), FILTER_VALIDATE_BOOLEAN);
-
-        if ($includeAccessControl) {
+        if ($request->boolean('includeAccessControl')) {
             $data['roles'] = $this->getRoleNames()->toArray();
             $data['permissions'] = $this->getAllPermissions()->pluck('name')->toArray();
         } else {
