@@ -19,7 +19,7 @@
         "jaylordibe/laravel-resource-generator": "^2.0",
         "laravel/framework": "^12.0",
         "laravel/horizon": "^5.30",
-        "laravel/passport": "^12.0",
+        "laravel/passport": "^13.4",
         "laravel/tinker": "^2.9",
         "phpoffice/phpspreadsheet": "^3.3",
         "spatie/laravel-activitylog": "^4.9",
