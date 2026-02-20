@@ -63,8 +63,9 @@ if [[ "$type" = "fresh" || "$type" = "reset" ]]; then
     php artisan passport:client --personal --name='API Personal Access Client' --provider=users --no-interaction
     php artisan passport:client --password --name='API Password Grant Client' --provider=users --no-interaction
     php artisan storage:link
-    chmod -R 777 bootstrap/cache
-    chmod -R 777 storage
+    chmod -R 775 bootstrap/cache
+    chmod -R 775 storage
+    chown -R www-data:www-data storage
     chmod 600 storage/oauth-private.key storage/oauth-public.key 2>/dev/null || true
     "
 else
