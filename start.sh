@@ -66,7 +66,8 @@ if [[ "$type" = "fresh" || "$type" = "reset" ]]; then
     chmod -R 775 bootstrap/cache
     chmod -R 775 storage
     chown -R www-data:www-data storage
-    chmod 600 storage/oauth-private.key storage/oauth-public.key 2>/dev/null || true
+    chmod 600 storage/oauth-private.key
+    chmod 600 storage/oauth-public.key
     "
 else
     commands="
