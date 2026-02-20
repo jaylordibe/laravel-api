@@ -11,11 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('oauth_auth_codes', function (Blueprint $table) {
-            $table->string('id', 100)->primary();
-            $table->unsignedBigInteger('user_id')->index();
-            $table->unsignedBigInteger('client_id');
-            $table->text('scopes')->nullable();
+        Schema::create('oauth_refresh_tokens', function (Blueprint $table) {
+            $table->char('id', 80)->primary();
+            $table->char('access_token_id', 80)->index();
             $table->boolean('revoked');
             $table->dateTime('expires_at')->nullable();
         });
@@ -26,6 +24,14 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('oauth_auth_codes');
+        Schema::dropIfExists('oauth_refresh_tokens');
+    }
+
+    /**
+     * Get the migration connection name.
+     */
+    public function getConnection(): ?string
+    {
+        return $this->connection ?? config('passport.connection');
     }
 };
