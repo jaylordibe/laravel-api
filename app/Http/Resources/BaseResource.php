@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use Brick\Math\BigDecimal;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Str;
@@ -24,6 +25,11 @@ class BaseResource extends JsonResource
         foreach ($allAttributes as $key => $value) {
             if (in_array($key, $customHiddenAttributes)) {
                 continue;
+            }
+
+            // If the value is a BigDecimal, strip trailing zeros for cleaner output.
+            if ($value instanceof BigDecimal) {
+                $value = $value->stripTrailingZeros();
             }
 
             // Convert the key to camelCase and assign the value.
