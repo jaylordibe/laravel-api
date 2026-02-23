@@ -21,7 +21,8 @@ commands="
     php artisan key:generate
     php artisan migrate:fresh --seed --env=testing
     php artisan passport:keys --force
-    echo -e '\n' | php artisan passport:client --personal --env=testing
+    php artisan passport:client --personal --name='API Personal Access Client' --provider=users --no-interaction --env=testing
+    php artisan passport:client --password --name='API Password Grant Client' --provider=users --no-interaction --env=testing
     php artisan test --parallel
 "
 
