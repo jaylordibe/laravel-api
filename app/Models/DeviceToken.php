@@ -52,7 +52,7 @@ class DeviceToken extends BaseModel
     }
 
     /**
-     * The user that owns this address.
+     * The user that owns this device token.
      *
      * @return BelongsTo
      */

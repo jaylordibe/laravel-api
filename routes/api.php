@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Controllers\AddressController;
 use App\Http\Controllers\AppVersionController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ConstantController;
@@ -59,15 +58,6 @@ Route::middleware(['auth:api', 'throttle:api'])->group(function () {
         Route::get('/{userId}', [UserController::class, 'getById'])->where('userId', config('custom.numeric_regex'));
         Route::put('/{userId}', [UserController::class, 'update'])->where('userId', config('custom.numeric_regex'));
         Route::delete('/{userId}', [UserController::class, 'delete'])->where('userId', config('custom.numeric_regex'));
-    });
-
-    // Address routes
-    Route::prefix('addresses')->group(function () {
-        Route::post('/', [AddressController::class, 'create']);
-        Route::get('/', [AddressController::class, 'getPaginated']);
-        Route::get('/{addressId}', [AddressController::class, 'getById'])->where('addressId', config('custom.numeric_regex'));
-        Route::put('/{addressId}', [AddressController::class, 'update'])->where('addressId', config('custom.numeric_regex'));
-        Route::delete('/{addressId}', [AddressController::class, 'delete'])->where('addressId', config('custom.numeric_regex'));
     });
 
     // DeviceToken routes

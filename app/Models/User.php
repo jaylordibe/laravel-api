@@ -50,7 +50,6 @@ use Spatie\Permission\Traits\HasRoles;
  * Model relationships
  * @property-read Collection<Role>|null $roles
  * @property-read Collection<Permission>|null $permissions
- * @property-read Collection<Address>|null $addresses
  *
  * @mixin Builder
  */
@@ -159,16 +158,6 @@ class User extends Authenticatable implements MustVerifyEmail
                 return $fullName;
             }
         );
-    }
-
-    /**
-     * The addresses of this user.
-     *
-     * @return HasMany
-     */
-    public function addresses(): HasMany
-    {
-        return $this->hasMany(Address::class, 'user_id');
     }
 
 }

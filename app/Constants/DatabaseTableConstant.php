@@ -7,7 +7,6 @@ class DatabaseTableConstant
 
     const string USERS = 'users';
     const string APP_VERSIONS = 'app_versions';
-    const string ADDRESSES = 'addresses';
 	const string DEVICE_TOKENS = 'device_tokens';
 
 }
