@@ -53,6 +53,7 @@ class UserRequest extends BaseRequest
             birthdate: $this->date('birthdate'),
             timezone: $this->string('timezone'),
             profileImage: $this->string('profileImage'),
+            address: $this->string('address'),
             id: $this->route('userId'),
             meta: $this->getMetaData(),
             authUser: $this->getAuthUserData()

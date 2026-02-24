@@ -72,6 +72,7 @@ abstract class TestCase extends BaseTestCase
             birthdate: $authUser['birthdate'],
             timezone: $authUser['timezone'],
             profileImage: $authUser['profileImage'],
+            address: $authUser['address'],
             id: $authUser['id'],
             createdAt: Carbon::parse($authUser['createdAt']),
             updatedAt: Carbon::parse($authUser['updatedAt'])

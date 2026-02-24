@@ -50,7 +50,8 @@ class UserService
             gender: null,
             birthdate: null,
             timezone: null,
-            profileImage: null
+            profileImage: null,
+            address: null
         );
         $user = $this->userRepository->create($userData, $signUpUserData->password);
 
@@ -109,7 +110,8 @@ class UserService
                     gender: null,
                     birthdate: null,
                     timezone: null,
-                    profileImage: null
+                    profileImage: null,
+                    address: null
                 );
                 $user = $this->userRepository->create($userData, $createUserData->password);
 

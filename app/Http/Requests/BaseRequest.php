@@ -273,6 +273,7 @@ class BaseRequest extends FormRequest
             birthdate: $authUser->birthdate,
             timezone: $authUser->timezone,
             profileImage: $authUser->profile_image,
+            address: $authUser->address,
             roles: $authUser->getRoleNames()->toArray(),
             permissions: $authUser->getAllPermissions()->pluck('name')->toArray(),
             id: $authUser->id,

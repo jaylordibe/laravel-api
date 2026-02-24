@@ -20,6 +20,7 @@ class UserData extends BaseData
         public ?Carbon $birthdate,
         public ?string $timezone,
         public ?string $profileImage,
+        public ?string $address,
         public ?array $roles = null,
         public ?array $permissions = null,
         ...$args

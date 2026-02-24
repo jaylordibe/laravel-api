@@ -34,6 +34,7 @@ return new class extends Migration {
             $table->dateTime('birthdate')->nullable();
             $table->string('timezone')->nullable();
             $table->text('profile_image')->nullable();
+            $table->text('address')->nullable();
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {

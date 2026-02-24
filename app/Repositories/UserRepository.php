@@ -49,6 +49,7 @@ class UserRepository
         $user->gender = $userData->gender;
         $user->birthdate = $userData->birthdate;
         $user->timezone = $userData->timezone;
+        $user->address = $userData->address;
         $user->save();
 
         return $user->refresh();
@@ -72,6 +73,7 @@ class UserRepository
         $user->gender = $userData->gender;
         $user->birthdate = $userData->birthdate;
         $user->timezone = $userData->timezone;
+        $user->address = $userData->address;
         $user->save();
 
         return $user->refresh();
