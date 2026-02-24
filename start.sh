@@ -71,8 +71,6 @@ if [[ "$type" = "fresh" || "$type" = "reset" ]]; then
     "
 else
     commands="
-    chmod -R 777 storage
-    chmod -R 777 bootstrap/cache
     composer update
     php artisan migrate
     "
