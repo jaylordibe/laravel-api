@@ -19,6 +19,7 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Laravel\Passport\RefreshToken;
 use Throwable;
 
 class UserService
@@ -29,6 +30,30 @@ class UserService
         private readonly UserRoleRepository $userRoleRepository
     )
     {
+    }
+
+    /**
+     * Revoke all user tokens.
+     * This is used when the user changes their password
+     * or when an admin wants to revoke all tokens for a user.
+     *
+     * @param User $user
+     *
+     * @return void
+     * @throws Throwable
+     */
+    public function revokeAllUserTokens(User $user): void
+    {
+        DB::transaction(function () use ($user) {
+            $tokenIds = $user->tokens()->pluck('id');
+
+            if ($tokenIds->isNotEmpty()) {
+                RefreshToken::whereIn('access_token_id', $tokenIds)
+                    ->update(['revoked' => true]);
+            }
+
+            $user->tokens()->update(['revoked' => true]);
+        });
     }
 
     /**
