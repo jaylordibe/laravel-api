@@ -45,7 +45,7 @@ class UserFactory extends Factory
             'gender' => fake()->randomElement(Gender::cases()),
             'birthdate' => now()->subYears(random_int(1, 20)),
             'timezone' => fake()->timezone(),
-            'profile_image' => fake()->imageUrl()
+            'profile_image' => null
         ];
     }
 
