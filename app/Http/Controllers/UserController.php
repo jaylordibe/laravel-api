@@ -80,12 +80,11 @@ class UserController extends Controller
 
     /**
      * @param UserRequest $request
-     * @param int $userId
      *
      * @return JsonResponse|JsonResource
      * @throws BadRequestException
      */
-    public function updateAuthUserInfo(UserRequest $request, int $userId): JsonResponse|JsonResource
+    public function updateAuthUserInfo(UserRequest $request): JsonResponse|JsonResource
     {
         $userData = $request->toData();
         $userData->id = auth()->user()->id;
@@ -96,12 +95,11 @@ class UserController extends Controller
 
     /**
      * @param GenericRequest $request
-     * @param int $userId
      *
      * @return JsonResponse
      * @throws BadRequestException
      */
-    public function deleteAuthUser(GenericRequest $request, int $userId): JsonResponse
+    public function deleteAuthUser(GenericRequest $request): JsonResponse
     {
         $this->userService->delete(auth()->user()->id);
 
