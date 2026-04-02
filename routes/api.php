@@ -50,6 +50,8 @@ Route::middleware(['auth:api', 'throttle:api'])->group(function () {
         Route::post('/', [UserController::class, 'create']);
         Route::get('/', [UserController::class, 'getPaginated']);
         Route::get('/auth', [UserController::class, 'getAuthUser']);
+        Route::put('/auth', [UserController::class, 'updateAuthUserInfo']);
+        Route::delete('/auth', [UserController::class, 'deleteAuthUser']);
         Route::put('/auth/username', [UserController::class, 'updateAuthUsername']);
         Route::put('/auth/email', [UserController::class, 'updateAuthUserEmail']);
         Route::put('/auth/password', [UserController::class, 'updateAuthUserPassword']);

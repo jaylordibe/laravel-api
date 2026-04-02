@@ -79,6 +79,36 @@ class UserController extends Controller
     }
 
     /**
+     * @param UserRequest $request
+     * @param int $userId
+     *
+     * @return JsonResponse|JsonResource
+     * @throws BadRequestException
+     */
+    public function updateAuthUserInfo(UserRequest $request, int $userId): JsonResponse|JsonResource
+    {
+        $userData = $request->toData();
+        $userData->id = auth()->user()->id;
+        $user = $this->userService->update($userData);
+
+        return ResponseUtil::resource(UserResource::class, $user);
+    }
+
+    /**
+     * @param GenericRequest $request
+     * @param int $userId
+     *
+     * @return JsonResponse
+     * @throws BadRequestException
+     */
+    public function deleteAuthUser(GenericRequest $request, int $userId): JsonResponse
+    {
+        $this->userService->delete(auth()->user()->id);
+
+        return ResponseUtil::success('User deleted successfully.');
+    }
+
+    /**
      * Update auth user's username.
      *
      * @param GenericRequest $request
