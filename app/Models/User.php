@@ -149,10 +149,15 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return Attribute::make(
             get: function () {
-                $fullName = "{$this->last_name}, {$this->first_name}";
+                $fullName = $this->first_name;
 
                 if (!empty($this->middle_name)) {
-                    $fullName .= ' ' . strtoupper(Str::substr($this->middle_name, 0, 1)) . '.';
+                    $middleNameInitial = strtoupper(Str::substr($this->middle_name, 0, 1));
+                    $fullName .= " {$middleNameInitial}. ";
+                }
+
+                if (!empty($this->last_name)) {
+                    $fullName .= " {$this->last_name}";
                 }
 
                 return $fullName;
