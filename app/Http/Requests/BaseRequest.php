@@ -56,6 +56,12 @@ class BaseRequest extends FormRequest
                 return $default;
             }
 
+            $value = $this->string($key);
+
+            if ($value->isEmpty()) {
+                return $default;
+            }
+
             return BigDecimal::of($this->string($key));
         } catch (DivisionByZeroException|NumberFormatException|RoundingNecessaryException $exception) {
             Log::error('Failed to parse input as BigDecimal: ' . $exception->getMessage());
