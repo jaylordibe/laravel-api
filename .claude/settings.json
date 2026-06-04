@@ -1,0 +1,26 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cmd=$(jq -r '.tool_input.command // \"\"'); if printf '%s' \"$cmd\" | grep -Eq 'git[[:space:]]+([^&|;]*[[:space:]])?(commit|push)([[:space:]]|$)'; then printf '%s' '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"deny\",\"permissionDecisionReason\":\"Project hook: Claude must never run git commit or git push. The user handles all git writes; make file changes only.\"}}'; fi",
+            "statusMessage": "Guard: git commit/push"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=$(jq -r '.tool_input.file_path // \"\"'); case \"$f\" in */database/migrations/*) printf '%s' '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"ask\",\"permissionDecisionReason\":\"Project hook: this edits a file under database/migrations/. Never edit an already-applied migration (causes schema drift between local/test/prod). Approve only for a migration not yet run anywhere; otherwise create a NEW migration via php artisan make:migration.\"}}';; esac",
+            "statusMessage": "Guard: migration edit"
+          }
+        ]
+      }
+    ]
+  }
+}

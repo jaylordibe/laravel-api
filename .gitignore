@@ -22,3 +22,4 @@ yarn-error.log
 supervisord.pid
 /docker/database/data
 /docker/database/test-data
+/.claude/settings.local.json
