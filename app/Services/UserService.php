@@ -351,6 +351,7 @@ class UserService
      *
      * @return User|null
      * @throws BadRequestException
+     * @throws Throwable
      */
     public function updatePassword(UpdatePasswordData $changePasswordData): ?User
     {
@@ -367,6 +368,9 @@ class UserService
         if (empty($user)) {
             throw new BadRequestException('Failed to update password.');
         }
+
+        // Revoke all existing tokens so every session must re-authenticate with the new password.
+        $this->revokeAllUserTokens($user);
 
         return $user;
     }

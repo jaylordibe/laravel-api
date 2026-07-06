@@ -55,6 +55,6 @@ Any money/decimal column is `Brick\Math\BigDecimal`, never float — cast with `
 
 Every resource gets a feature test (and a unit test for non-trivial calc). See `laravel-feature-test` for the harness.
 
-## Formatting — do NOT run Pint
+## Formatting — `php artisan app:format`, never Pint
 
-This project does not use Pint or any auto-formatter (it's an unused transitive dev dependency; existing files fail `pint --test`). Match the hand-written style by hand: one blank line after a class's opening `{` and before its closing `}`; method/constructor opening brace on its own line (not `) {}`); `new Foo()` with parens; `!empty(...)` no space after `!`; full `@param`/`@return`/`@throws` PHPDoc.
+The project style is enforced by a first-class artisan command (`app/Console/Commands/FormatCommand.php`), NOT Pint. After scaffolding and filling in the stubs, run `docker exec laravel-api bash -c "php artisan app:format"` (verify with `--check`) — this fixes the whitespace/brace/`!` rules mechanically. The `app:generate-resource` stubs already follow the layout, but after any `make:*` generator run `app:format`. The naming (camelCase methods incl. tests), type-hint-everything (closures too), `new Foo()` parens (anonymous migration classes keep none), and full `@param`/`@return`/`@throws` PHPDoc rules are yours to apply by hand — see CLAUDE.md "Code style". Do NOT run Pint: its preset fights these conventions and can't express the blank-line rules.

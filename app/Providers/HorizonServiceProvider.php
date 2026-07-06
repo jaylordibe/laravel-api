@@ -8,6 +8,7 @@ use Laravel\Horizon\HorizonApplicationServiceProvider;
 
 class HorizonServiceProvider extends HorizonApplicationServiceProvider
 {
+
     /**
      * Bootstrap any application services.
      */
@@ -33,4 +34,5 @@ class HorizonServiceProvider extends HorizonApplicationServiceProvider
             ]);
         });
     }
+
 }

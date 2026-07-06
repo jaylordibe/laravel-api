@@ -15,6 +15,7 @@ while ! docker exec ${SERVICE_NAME}-db-test mysql -u$TEST_DB_USERNAME -p$TEST_DB
 done
 
 commands="
+    set -e
     chmod -R 777 storage
     chmod -R 777 bootstrap/cache
     composer install --prefer-dist --no-progress --no-interaction
@@ -23,6 +24,7 @@ commands="
     php artisan passport:keys --force
     php artisan passport:client --personal --name='API Personal Access Client' --provider=users --no-interaction --env=testing
     php artisan passport:client --password --name='API Password Grant Client' --provider=users --no-interaction --env=testing
+    php artisan app:format --check
     php artisan test --parallel
 "
 

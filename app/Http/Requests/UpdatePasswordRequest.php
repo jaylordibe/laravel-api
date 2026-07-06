@@ -15,8 +15,8 @@ class UpdatePasswordRequest extends BaseRequest
     public function rules(): array
     {
         return [
-            'password' => ['required'],
-            'passwordConfirmation' => ['required', 'same:password']
+            'password' => ['required', 'string', 'min:8'],
+            'passwordConfirmation' => ['required', 'same:password', 'min:8']
         ];
     }
 
