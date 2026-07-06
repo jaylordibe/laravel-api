@@ -150,6 +150,33 @@ class UserFeatureTest extends TestCase
     }
 
     #[Test]
+    public function testCreateUserWithDuplicateEmailReturnsSafeGenericError(): void
+    {
+        $token = $this->loginSystemAdminUser();
+        /** @var User $existingUser */
+        $existingUser = User::factory()->create();
+        $payload = [
+            'firstName' => fake()->firstName(),
+            'lastName' => fake()->lastName(),
+            'phoneNumber' => fake()->phoneNumber(),
+            'email' => $existingUser->email,
+            'password' => 'password',
+            'passwordConfirmation' => 'password',
+            'role' => fake()->randomElement(UserRole::cases())->value
+        ];
+        $response = $this->withToken($token)->post("{$this->resource}", $payload);
+
+        // The duplicate email hits the users.email unique constraint inside the
+        // transaction; the hardened generic catch must surface the uniform 400
+        // envelope with a SAFE message — never the raw database error.
+        $expected = [
+            'success' => false,
+            'message' => 'Failed to create user.'
+        ];
+        $response->assertBadRequest()->assertJson($expected);
+    }
+
+    #[Test]
     public function testGetPaginatedUsers(): void
     {
         $token = $this->loginSystemAdminUser();

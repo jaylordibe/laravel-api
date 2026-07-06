@@ -18,6 +18,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Laravel\Passport\RefreshToken;
 use Throwable;
@@ -154,8 +155,14 @@ class UserService
 
                 return $user;
             });
+        } catch (BadRequestException $e) {
+            // Preserve the specific, user-facing message from inside the transaction.
+            throw $e;
         } catch (Throwable $e) {
-            throw new BadRequestException($e->getMessage());
+            // Log the real cause server-side; never surface a raw internal (e.g. DB) message to the client.
+            Log::error('Failed to create user.', ['exception' => $e]);
+
+            throw new BadRequestException('Failed to create user.');
         }
     }
 

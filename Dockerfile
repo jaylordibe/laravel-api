@@ -1,4 +1,4 @@
-FROM jaylordibe/laravel-php:8.4
+FROM jaylordibe/laravel-php:8.5
 
 WORKDIR /var/www/html
 

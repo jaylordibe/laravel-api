@@ -64,5 +64,14 @@ The base template keeps these minimal on purpose; a fork handling sensitive data
 - **Unbounded reads**: lists go through `getPaginated` (`meta->perPage`) — never return a full table.
 - **Rate limit**: public/auth-input endpoints under `sensitive` or stricter.
 - **Route ids**: numeric ids constrained with `->where('<x>Id', config('custom.numeric_regex'))`.
+- **Error leakage**: a service `catch (Throwable)` must not surface a raw internal message (DB/SQL, file paths) to the client. Re-throw `BadRequestException`/`ProcessingException` first to preserve the specific user-facing message, then log the real cause server-side and throw a safe generic one (see `UserService::create` and `SpreadsheetService::readRawFileAsWorkSheet`).
 
 These are the "Security is non-negotiable" clause of the CLAUDE.md **Engineering bar**, made concrete.
+
+## Supply-chain scanning (CI)
+
+`.github/workflows/security.yaml` runs on every PR into `main`/`staging`/`develop`, weekly (Monday 03:00 UTC), and on-demand — kept separate from the fast test gate (`test-pull-request.yaml` → `./test-pipeline.sh`) so a slow/noisy scan never blocks the merge signal. Two jobs:
+- **`composer-audit`** — `composer validate` + `composer audit` (informational at any severity, **blocks on HIGH/CRITICAL** via a jq gate, since composer audit has no native severity filter).
+- **`trivy-fs`** — Trivy filesystem scan (`vuln,secret,misconfig`): vulnerable `composer.lock` deps, `Dockerfile` misconfig, committed secrets. Blocks on HIGH/CRITICAL, `ignore-unfixed`.
+
+Not included: OWASP ZAP DAST — this API ships no OpenAPI/Swagger spec and is fully behind `auth:api`, so a dynamic scan needs a spec + a token-mint step before it adds value. Add a `security-dast.yaml` once an OpenAPI document exists.

@@ -1,0 +1,93 @@
+name: Security
+
+# Dependency + filesystem vulnerability scanning. Kept SEPARATE from the fast
+# merge gate (test-pull-request.yaml -> ./test-pipeline.sh) on purpose: a slow or
+# noisy scan must never block the deterministic test signal. This runs on every
+# PR into a protected branch, plus a weekly sweep so newly-disclosed CVEs in
+# unchanged dependencies are still caught, plus on-demand from the Actions tab.
+on:
+  pull_request:
+    branches:
+      - main
+      - staging
+      - develop
+  schedule:
+    # Weekly, Monday 03:00 UTC (GitHub Actions cron is UTC-only).
+    - cron: '0 3 * * 1'
+  workflow_dispatch:
+
+# Cancel in-flight runs for the same ref; the newer commit wins.
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+# Least privilege: read-only access to the repo.
+permissions:
+  contents: read
+
+jobs:
+  composer-audit:
+    name: Composer dependency audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          tools: composer:v2
+          coverage: none
+
+      # Catches a malformed or lock-out-of-sync composer.json/composer.lock.
+      # --no-check-publish skips the name/description/license nags that only
+      # matter for a published library, not for an application repo.
+      - name: Validate composer files
+        run: composer validate --strict --no-check-publish
+
+      # Informational: prints every advisory at any severity, never fails the
+      # job — so low/moderate transitive findings are visible without red-lighting
+      # every PR. Reads composer.lock directly (no install needed).
+      - name: Audit dependencies (informational)
+        run: composer audit --locked --format=plain || true
+
+      # Gate: fail ONLY on HIGH/CRITICAL advisories. composer audit has no native
+      # severity filter, so parse the JSON and count high+ entries ourselves.
+      - name: Audit dependencies (block on high+)
+        run: |
+          composer audit --locked --format=json > composer-audit.json || true
+          COUNT=$(jq '[.advisories[]?[]? | select((.severity // "" | ascii_downcase) == "high" or (.severity // "" | ascii_downcase) == "critical")] | length' composer-audit.json)
+          echo "High/critical advisories: ${COUNT}"
+          if [ "${COUNT}" -gt 0 ]; then
+            jq -r '.advisories[]?[]? | select((.severity // "" | ascii_downcase) == "high" or (.severity // "" | ascii_downcase) == "critical") | "  - \(.packageName) (\(.affectedVersions)): \(.title) [\(.severity)] \(.cve // "no-CVE")"' composer-audit.json
+            echo "::error::Composer audit found HIGH/CRITICAL advisories (see list above). Bump the affected package(s)."
+            exit 1
+          fi
+
+  trivy-fs:
+    name: Trivy filesystem scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Scans the working tree for: vulnerable dependencies (composer.lock),
+      # Dockerfile misconfigurations, and accidentally committed secrets.
+      # Fails on HIGH/CRITICAL; ignore-unfixed skips CVEs with no available
+      # patch so the build doesn't red-light on findings you literally cannot fix.
+      - name: Trivy filesystem scan
+        uses: aquasecurity/trivy-action@0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln,secret,misconfig
+          format: table
+          exit-code: '1'
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          skip-dirs: storage,bootstrap/cache
