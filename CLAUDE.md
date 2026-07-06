@@ -97,6 +97,7 @@ Skills in `.claude/skills/` — consult the matching one before that kind of wor
 - **`laravel-money-precision`** — the `BigDecimal` rules for any money/decimal field.
 - **`laravel-background-work`** — queued jobs (Redis/Horizon) and console/scheduled commands.
 - **`laravel-auth-security`** — the auth/security model (Passport tokens, sign-in/sign-up + email verification, Spatie RBAC/Gates, the rate-limiter floor, uniform error shapes) and the per-endpoint security-review checklist. Consult before any auth change or security review.
+- **`laravel-integration`** — third-party integrations (file storage, push/FCM, SMS, email, any external HTTP API): the `app/Utils/<Domain>Util` boundary, config-driven credentials, the `Http` facade with timeouts, Laravel's config/driver swap seams, and faking externals in tests.
 
 Settings:
 - `.claude/settings.json` (committed) — hooks: Claude must never run `git commit`/`git push`; editing anything under `database/migrations/` prompts for confirmation.

@@ -81,7 +81,7 @@ jobs:
       # Fails on HIGH/CRITICAL; ignore-unfixed skips CVEs with no available
       # patch so the build doesn't red-light on findings you literally cannot fix.
       - name: Trivy filesystem scan
-        uses: aquasecurity/trivy-action@0.36.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: fs
           scan-ref: .
