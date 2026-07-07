@@ -2,6 +2,7 @@
 
 namespace App\Exceptions;
 
+use App\Utils\ResponseUtil;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -54,11 +55,7 @@ class BadRequestException extends Exception
      */
     public function render(Request $request): JsonResponse
     {
-        $response = [
-            'success' => false,
-            'message' => $this->getMessage()
-        ];
-        return response()->json($response, $this->getCode());
+        return ResponseUtil::error($this->getMessage());
     }
 
 }

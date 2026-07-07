@@ -85,9 +85,13 @@ jobs:
         with:
           scan-type: fs
           scan-ref: .
+          trivyignores: .trivyignore
           scanners: vuln,secret,misconfig
           format: table
           exit-code: '1'
           severity: HIGH,CRITICAL
           ignore-unfixed: true
-          skip-dirs: storage,bootstrap/cache
+          # vendor/ ships third-party package Dockerfiles (laravel/sail) that add
+          # misconfig noise; docker/database/data holds the local DB's runtime TLS
+          # keys. Both are gitignored (absent in CI) — skipped so local runs match CI.
+          skip-dirs: vendor,storage,bootstrap/cache,docker/database/data

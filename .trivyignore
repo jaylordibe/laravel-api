@@ -1,0 +1,14 @@
+# Trivy ignore file — https://trivy.dev/latest/docs/configuration/filtering/
+# Consumed automatically by the `trivy-fs` job in .github/workflows/security.yaml
+# (scan-ref is the repo root). Every entry must be justified below.
+
+# DS-0002 (HIGH): "Specify at least 1 USER command in Dockerfile with a non-root user".
+# Accepted for THIS application Dockerfile — the fix belongs in the base image, not here.
+# The base image (jaylordibe/laravel-php) runs `supervisord -> nginx`, and nginx must bind
+# port 80 (a privileged port) so Elastic Beanstalk can route traffic to the container. The
+# nginx master process therefore starts as root to bind :80 and then drops its worker
+# processes to the unprivileged `www-data` user via the `user` directive — the standard,
+# secure nginx model. Adding `USER www-data` to this Dockerfile would stop nginx binding
+# :80 and break the deployment. Proper hardening (non-privileged port + explicit drop) is
+# tracked in the base image jaylordibe/laravel-php; remove this ignore once that lands.
+DS-0002

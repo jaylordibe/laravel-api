@@ -54,11 +54,7 @@ class ProcessingException extends Exception
      */
     public function render(Request $request): JsonResponse
     {
-        $response = [
-            'success' => false,
-            'message' => $this->getMessage()
-        ];
-        return response()->json($response, $this->getCode());
+        return response()->json(['success' => false, 'message' => $this->getMessage()], $this->getCode());
     }
 
 }
