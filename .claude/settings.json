@@ -21,6 +21,18 @@
           }
         ]
       }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=$(jq -r .tool_input.file_path); case \"$f\" in *.php) docker exec laravel-api php artisan app:format >/dev/null 2>&1 || true ;; esac",
+            "statusMessage": "Formatting: app:format"
+          }
+        ]
+      }
     ]
   }
 }
