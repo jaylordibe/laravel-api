@@ -44,6 +44,10 @@ This README would normally document whatever steps are necessary to get your app
 9. [Laravel Data](https://github.com/spatie/laravel-data)
 10. [Laravel Permission](https://github.com/spatie/laravel-permission)
 
+### Working with Claude Code (optional) ###
+
+Contributors using [Claude Code](https://code.claude.com) get a committed, team-shared **ticket-to-diff pipeline** — `/ticket <TICKET-KEY>` drives a ticket from context-gathering → plan → implement → review → verify, stopping at a plan-approval gate and a commit gate. It lives in `.claude/`; the only per-machine step is a one-time issue-tracker login (`/mcp` → authenticate **atlassian**). Full details in [`.claude/README.md`](./.claude/README.md). Not required to run or test the API.
+
 ### Contribution guidelines ###
 
 * Writing tests
