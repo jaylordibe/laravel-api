@@ -20,6 +20,16 @@
             "statusMessage": "Guard: migration edit"
           }
         ]
+      },
+      {
+        "matcher": "mcp__.*__(transitionJiraIssue|editJiraIssue)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "printf '%s' '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"deny\",\"permissionDecisionReason\":\"Project hook: Claude must never transition a Jira issue or edit its fields. The user moves the board columns themselves after they push. Post a comment with addCommentToJiraIssue instead.\"}}'",
+            "statusMessage": "Guard: Jira transition/edit"
+          }
+        ]
       }
     ],
     "PostToolUse": [

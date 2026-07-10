@@ -1,21 +1,21 @@
 ---
-description: Drive a ticket from context-gathering to a verified diff, stopping at the plan-approval and commit gates.
+description: Drive a ticket from context-gathering to a verified diff, stopping at the plan-approval and commit gates, then report back on the ticket.
 argument-hint: <TICKET-KEY | pasted ticket text>
 ---
 
-You are the **conductor** for the ticket-to-diff pipeline. Follow these stages in order. Two gates are non-negotiable: **never implement before the plan is approved, and never commit or push** (the human owns all git writes — a project hook enforces this).
+You are the **conductor** for the ticket-to-diff pipeline. Follow these stages in order. Three rules are non-negotiable: **never implement before the plan is approved**, **never commit or push** (the human owns all git writes — a project hook enforces this), and **never transition an issue or change its fields** (the human moves the board columns after they push).
 
 ## Track pipeline state (do this first)
 
-Before Stage 1, create a persistent todo checklist with all six stages as items:
-`1. Understand` · `2. Plan [GATE 1]` · `3. Implement` · `4. Review` · `5. Verify` · `6. Present [GATE 2]`.
+Before Stage 1, create a persistent todo checklist with all seven stages as items:
+`1. Understand` · `2. Plan [GATE 1]` · `3. Implement` · `4. Review` · `5. Verify` · `6. Present [GATE 2]` · `7. Report to the issue tracker`.
 Mark a stage `in_progress` when you enter it and `completed` when you leave it; keep exactly one stage `in_progress` at a time.
 
 This checklist is the pipeline's **durable memory**. The plan gate (Stage 2) usually takes several rounds of back-and-forth, and the conversation may be summarized in between — so the original instructions can drift out of view. The checklist survives that. Therefore:
 
 - Keep Stage 2 `in_progress` through the entire plan discussion; do not mark it completed until the user **approves** the plan.
-- **When approval arrives, re-read the checklist and resume at the next pending stage (Stage 3 — Implement), then continue through Review → Verify → Present.** Do not treat a post-approval message ("looks good", "go ahead") as a standalone query — if a checklist with pending stages exists, you are mid-pipeline.
-- Never skip Stages 4–6 just because approval came after a long discussion.
+- **When approval arrives, re-read the checklist and resume at the next pending stage (Stage 3 — Implement), then continue through Review → Verify → Present → Report.** Do not treat a post-approval message ("looks good", "go ahead") as a standalone query — if a checklist with pending stages exists, you are mid-pipeline.
+- Never skip Stages 4–7 just because approval came after a long discussion.
 
 ## Input
 
@@ -51,4 +51,22 @@ This stack has **no build or type-check step** — do not invent one. Instead:
 
 ## Stage 6 — Present  [GATE 2]
 
-Present: the diff summary, the review and verify results (honestly — include any failures), and any downstream-consumer handoff note. Then **stop.** The user commits and pushes; do not run any git write command.
+Present: the diff summary, the review and verify results (honestly — include any failures), and any downstream-consumer handoff note. Do **not** run any git write command — the user commits and pushes. Then continue to Stage 7.
+
+## Stage 7 — Report to the issue tracker
+
+Post a single comment on the issue (Jira: `addCommentToJiraIssue` with `contentFormat: "markdown"`). No approval round-trip needed — the user has standing authorization for this one write. Skip this stage when no issue-tracker MCP is connected, when the input was pasted free text rather than a real issue key, or when the work was abandoned.
+
+**Never** transition the issue or edit its fields (Jira: `transitionJiraIssue`, `editJiraIssue`) — no status change, no assignee, no fields. The user moves the board columns themselves after they push. Never claim the work is merged, pushed, or deployed; at this point it exists only in their working tree.
+
+The comment and the pull request have **different audiences**, and conflating them is the usual mistake. The PR carries the reasoning, the trade-offs, and the diff. The ticket comment is read by the reporter, QA, and whoever runs standup — so write it for a **non-technical reader** and keep it short. Answer exactly three questions:
+
+1. **What behaviour changed**, in the language of the ticket — never the codebase. No file paths, no function names, no error codes.
+2. **What changed beyond what was asked.** Any behaviour a tester would be surprised by belongs here — including latent bugs you fixed along the way. This is the highest-value part of the comment.
+3. **What is still blocking**, explicitly. A ticket that reads "Done" while a cross-repo dependency is unshipped is how a broken feature reaches a real user. Say what must ship first and who owns it.
+
+Lead with a one-line status (e.g. `**Implemented — ready for review.**`), and qualify it if anything is outstanding. If Stage 4 or 5 surfaced a failure you could not resolve, say so in the comment — do not quietly omit it.
+
+A cross-repo blocker deserves its **own linked ticket**, not just a sentence in a comment; a comment is easy to miss, a linked blocker is not. You cannot create that ticket yourself unless the user asks — recommend it, and offer.
+
+After posting, tell the user the comment went up and confirm the issue status is untouched.
