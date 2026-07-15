@@ -20,6 +20,8 @@ This is developer *tooling*, not part of the API. The API runs and tests with no
 
 The conductor keeps a durable seven-stage todo checklist so the pipeline survives a long plan discussion (or a context summarization) and resumes at the right stage on approval, rather than treating "looks good" as a fresh request.
 
+**A ticket is a claim to validate, not a spec to transcribe.** Its author is usually end-goal focused and not deeply technical, so Stage 1 separates the *what* (the outcome wanted) from the *how* (the approach the ticket happened to name) and reconciles every factual claim against the current source — tickets go stale. Where the code contradicts the ticket, or the prescribed approach is bad practice, Stage 2's ADR leads with the better path and its trade-offs rather than faithfully building the wrong thing.
+
 **Stage 7 writes a comment, never a status.** The comment is for the reporter, QA, and standup — plain English, no file paths or function names — and answers three questions: what behaviour changed, what changed *beyond* what the ticket asked, and what is still blocking. The PR carries the reasoning and the diff; the ticket comment does not duplicate it. Moving the ticket across the board stays a human act, because at comment time the work exists only in your working tree.
 
 ### Components

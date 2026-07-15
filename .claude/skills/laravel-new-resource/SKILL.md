@@ -18,6 +18,8 @@ Route (routes/api.php)
   → Resource (JSON shape)        app/Http/Resources/<X>Resource.php
 ```
 
+**Validate the ask before you scaffold.** A request for "a new resource" is an outcome, not always the right shape — confirm the model/table/endpoints are genuinely new (not an extension of an existing resource, and not contradicted by current migrations/routes) before generating. If the prescribed shape is wrong or a better fit exists, recommend it *with the trade-off* first; scaffolding the wrong resource is still wrong.
+
 ## Scaffold first — ALWAYS use the generator
 
 This is the project owner's own tool and the required starting point — do NOT hand-write the layers from scratch. Run it FIRST (the container is normally up; check `docker ps`):

@@ -27,9 +27,13 @@ If `$ARGUMENTS` is an issue key and an issue-tracker MCP (e.g. Atlassian/Jira) i
 
 Launch the `context-mapper` agent on the ticket to produce the impact map (touched layers, contract surface, security surface, downstream consumers, tests implied). For a large or cross-cutting ticket, launch several `context-mapper` agents scoped to different subsystems in parallel. Read the map fully before designing anything.
 
+**Treat the ticket as a claim to validate, not a spec to transcribe.** Its author is usually end-goal focused and not deeply technical, so separate the **WHAT** (the outcome they want) from the **HOW** (the approach they happened to name). The map must include a **reconciliation** deliverable: which of the ticket's factual claims hold against the current source (Eloquent models, migrations, routes, services), which are stale or wrong, and whether the prescribed approach is sound or there is a better path. Carry any contradiction or suboptimal prescription into Stage 2 as the first thing the plan addresses — a faithful build of the wrong thing is still wrong.
+
 ## Stage 2 — Plan  [GATE 1]
 
 Enter **Plan mode**. Produce an ADR per CLAUDE.md: Context → Approach (rationale + rejected alternatives) → file-by-file changes → tests → verification → what this deliberately does NOT do. Then **stop and present it via ExitPlanMode**. Do not edit any file until the user approves. A plan is not a green light.
+
+**The ADR recommends, it does not transcribe.** The approach you present is the one *you* judge best for the outcome — not a restatement of the method the ticket prescribed. When your recommendation departs from the ticket's named approach (or from a "do it like X" aside), lead with the recommendation and its rationale, and put the ticket's prescribed approach under rejected alternatives with the trade-off that sank it. If the reconciliation from Stage 1 surfaced a stale claim or a genuine product decision, name it up front and route the product call to the user rather than silently deciding it.
 
 ## Stage 3 — Implement
 
