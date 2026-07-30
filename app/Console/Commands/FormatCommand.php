@@ -21,14 +21,19 @@ class FormatCommand extends Command
     protected $signature = 'app:format
         {--check : Report unformatted files and exit non-zero without writing changes}';
 
-    protected $description = 'Apply the project PHP code-style standard to app/, database/, and tests/.';
+    protected $description = 'Apply the project PHP code-style standard to app/, database/, routes/, and tests/.';
 
     /**
      * Directories scanned for PHP files.
      *
      * @var array<int, string>
      */
-    private const array PATHS = ['app', 'database', 'tests'];
+    private const array PATHS = ['app', 'database', 'routes', 'tests'];
+
+    /**
+     * Spaces that replace a single hard tab in leading indentation.
+     */
+    private const string TAB_REPLACEMENT = '    ';
 
     public function handle(): int
     {
@@ -85,9 +90,14 @@ class FormatCommand extends Command
      */
     private function format(string $text): string
     {
+        // A) Hard tabs in leading indentation become four spaces. Code generators
+        //    and editors emit tabs that would otherwise survive every later rule,
+        //    since those rules preserve whatever indentation they find.
+        $text = $this->expandLeadingTabs($text);
+
         $lines = explode("\n", $text);
 
-        // A) Braces on their own line: expand ') {}' and multi-line signature closes.
+        // B) Braces on their own line: expand ') {}' and multi-line signature closes.
         $out = [];
 
         foreach ($lines as $line) {
@@ -120,7 +130,7 @@ class FormatCommand extends Command
         }
 
         if ($declIndex !== null) {
-            // B) Blank line after the class-body opening brace.
+            // C) Blank line after the class-body opening brace.
             $openIndex = null;
 
             for ($j = $declIndex; $j < count($lines); $j++) {
@@ -134,7 +144,7 @@ class FormatCommand extends Command
                 array_splice($lines, $openIndex + 1, 0, '');
             }
 
-            // C) Blank line before the class-body closing brace.
+            // D) Blank line before the class-body closing brace.
             for ($i = count($lines) - 1; $i >= 0; $i--) {
                 if ($lines[$i] === '}' || $lines[$i] === '};') {
                     if ($i > 0 && trim($lines[$i - 1]) !== '') {
@@ -147,9 +157,24 @@ class FormatCommand extends Command
 
         $text = implode("\n", $lines);
 
-        // D) No space after the unary '!' operator (string-safe — never matches
+        // E) No space after the unary '!' operator (string-safe — never matches
         //    inside a quoted string, where '!' is preceded by a word char or quote).
         return preg_replace('/(?<![\w"\'])! +(?=[\w$(!])/', '!', $text);
+    }
+
+    /**
+     * Replace hard tabs with spaces in each line's leading indentation.
+     *
+     * Only leading whitespace is rewritten, so tabs inside string literals are
+     * left untouched.
+     */
+    private function expandLeadingTabs(string $text): string
+    {
+        return preg_replace_callback(
+            '/^[\t ]+/m',
+            static fn (array $matches): string => str_replace("\t", self::TAB_REPLACEMENT, $matches[0]),
+            $text
+        );
     }
 
     /**
