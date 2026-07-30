@@ -32,14 +32,17 @@ class AppVersion extends BaseModel
     protected $fillable = [];
 
     /**
-     * The attributes that should be cast to native types.
+     * Get the attributes that should be cast.
      *
-     * @var array
+     * @return array<string, string>
      */
-    protected $casts = [
-        'platform' => AppPlatform::class,
-        'release_date' => 'datetime',
-        'force_update' => 'boolean'
-    ];
+    protected function casts(): array
+    {
+        return [
+            'platform' => AppPlatform::class,
+            'release_date' => 'datetime',
+            'force_update' => 'boolean'
+        ];
+    }
 
 }

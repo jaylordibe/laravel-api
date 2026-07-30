@@ -49,7 +49,7 @@ docker exec -it laravel-api bash -c "php artisan <cmd>"
 
 Queues: Horizon processes Redis jobs (`QUEUE_CONNECTION=redis`). Scheduled tasks register in `routes/console.php`.
 
-**Formatting is `php artisan app:format` — never Pint.** The project style is enforced by a first-class artisan command (`app/Console/Commands/FormatCommand.php`), NOT by Pint. Run `php artisan app:format` to apply it and `php artisan app:format --check` to verify (non-zero exit + a list of offending files). Do **not** run Pint (or any other formatter): its stock preset actively fights these conventions (adds a space after `!`, collapses the constructor to `) {}`, strips `new` parens) and structurally *cannot* express the blank-line-after-`{`/before-`}` rules. After any `make:*` generator (which emits Laravel defaults), run `app:format` to bring the output to the project standard. See "Code style" below for the rules the command encodes and the ones you must still apply by hand.
+**Formatting is `php artisan app:format` — never Pint.** The project style is enforced by a first-class artisan command (`app/Console/Commands/FormatCommand.php`), NOT by Pint. Run `php artisan app:format` to apply it and `php artisan app:format --check` to verify (non-zero exit + a list of offending files). Do **not** run Pint (or any other formatter): its stock preset actively fights these conventions (adds a space after `!`, collapses the constructor to `) {}`, strips `new` parens) and structurally *cannot* express the blank-line-after-`{`/before-`}` rules. `laravel/pint` is deliberately **not** a dependency — it was removed so Laravel Boost stops generating "you must run Pint" guidance that contradicts this rule. Re-adding it would resurface that conflict. After any `make:*` generator (which emits Laravel defaults), run `app:format` to bring the output to the project standard. See "Code style" below for the rules the command encodes and the ones you must still apply by hand.
 
 ## Architecture — the layered request pipeline
 
@@ -80,8 +80,10 @@ Per-layer conventions:
 ## Models & data precision
 
 - All models extend `App\Models\BaseModel` → `SoftDeletes` + `HasFactory`, and auto-stamp `created_by`/`updated_by`/`deleted_by` from `Auth::id()` in boot hooks. Document columns/relations in the class-level `@property` PHPDoc block.
+- **Casts go in a `protected function casts(): array` method, never a `$casts` property.** This is the Laravel 11+ form and what `app:generate-resource` emits.
 - `$fillable` is intentionally empty — assignment is explicit in repositories, not mass-assignment.
 - Table names come from `App\Constants\DatabaseTableConstant` (never hardcode a table string).
+- **When a migration modifies an existing column, restate every attribute it already had** (`nullable`, `default`, length, `unsigned`, …). Laravel rewrites the column from the definition given, so any attribute you omit is silently dropped.
 - **Money / decimals use `Brick\Math\BigDecimal`, never float.** Cast such columns with `App\Casts\BigDecimalCast`; parse input via `BaseRequest::bigDecimal()`; divide with `App\Utils\MathUtil::divide()` (20-decimal scale, `RoundingMode::DOWN`, divide-by-zero safe).
 
 ## Enums, constants, routing
@@ -89,6 +91,7 @@ Per-layer conventions:
 - Enums (`app/Enums`) are string-backed and `use App\Traits\EnumTrait` (`names()`/`values()`/`toArray()`). Validate enum inputs with `Rule::enum(EnumClass::class)`. Expose enum sets to the frontend through `ConstantController` + the `constants` route group.
 - Constants in `app/Constants` — currently just `DatabaseTableConstant` (table names). Non-table defaults live in `config/custom.php` and are read with `config()`.
 - All routes in `routes/api.php`. Public routes sit in a small block at top; everything else is under `Route::middleware('auth:api')` (Passport). Constrain numeric ids with `->where('xId', config('custom.numeric_regex'))` — this is what `app:generate-resource` emits, so it is the pattern to match.
+- **Laravel 11+ streamlined structure — there is no `app/Http/Kernel.php` or `app/Console/Kernel.php`.** Middleware, exception rendering, and routing are configured declaratively in `bootstrap/app.php`; service providers are listed in `bootstrap/providers.php`; console commands in `app/Console/Commands/` register themselves, and scheduled tasks go in `routes/console.php`.
 
 ## Project skills & settings (`.claude/`)
 
@@ -122,7 +125,7 @@ Run `php artisan app:format` to apply the standard and `--check` to verify. Trac
 - **`new` parentheses:** named classes `new Foo()`; argument-less anonymous classes keep none (`return new class extends Migration`, matching Laravel's migration convention).
 - **Method and function names are camelCase — always, including test methods:** `public function testCreate()`, never `test_create` (use the `#[Test]` attribute). snake_case is only ever a DB column, an array key, or an enum value — never a PHP method/function identifier.
 - **Type-hint every parameter and return type** — methods, closures, and arrow functions alike: `fn (User $user): string => ...` / `function (Builder $query): void { ... }`, never bare `fn ($x) => ...`. Applies in app code and tests.
-- **Full PHPDoc:** a class-level `@property` block on models/DTOs; `@var` on `$table`/`$fillable`/`$casts`; a summary + `@param`/`@return`/`@throws` block on every method.
+- **Full PHPDoc:** a class-level `@property` block on models/DTOs; `@var` on `$table`/`$fillable`; a summary + `@param`/`@return`/`@throws` block on every method (including the `casts()` method, which carries `@return array<string, string>`).
 
 `app:format` scans `app/`, `database/`, `routes/`, and `tests/`, and encodes the indentation/whitespace/brace/`!` rules mechanically; the naming, type-hint, `new()`, and PHPDoc rules are yours to apply — run `--check` after `make:*` generators, which emit Laravel defaults that violate several of these.
 
@@ -140,13 +143,12 @@ The Laravel Boost guidelines are specifically curated by Laravel maintainers for
 This application is a Laravel application and its main Laravel ecosystems package & versions are below. You are an expert with them all. Ensure you abide by these specific packages & versions.
 
 - php - 8.5
-- laravel/framework (LARAVEL) - v12
+- laravel/framework (LARAVEL) - v13
 - laravel/horizon (HORIZON) - v5
 - laravel/passport (PASSPORT) - v13
 - laravel/prompts (PROMPTS) - v0
 - laravel/boost (BOOST) - v2
 - laravel/mcp (MCP) - v0
-- laravel/pint (PINT) - v1
 - laravel/sail (SAIL) - v1
 - phpunit/phpunit (PHPUNIT) - v12
 
@@ -272,38 +274,6 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 ## Vite Error
 
 - If you receive an "Illuminate\Foundation\ViteException: Unable to locate file in Vite manifest" error, you can run `yarn run build` or ask the user to run `yarn run dev` or `composer run dev`.
-
-=== laravel/v12 rules ===
-
-# Laravel 12
-
-- CRITICAL: ALWAYS use `search-docs` tool for version-specific Laravel documentation and updated code examples.
-- Since Laravel 11, Laravel has a new streamlined file structure which this project uses.
-
-## Laravel 12 Structure
-
-- In Laravel 12, middleware are no longer registered in `app/Http/Kernel.php`.
-- Middleware are configured declaratively in `bootstrap/app.php` using `Application::configure()->withMiddleware()`.
-- `bootstrap/app.php` is the file to register middleware, exceptions, and routing files.
-- `bootstrap/providers.php` contains application specific service providers.
-- The `app/Console/Kernel.php` file no longer exists; use `bootstrap/app.php` or `routes/console.php` for console configuration.
-- Console commands in `app/Console/Commands/` are automatically available and do not require manual registration.
-
-## Database
-
-- When modifying a column, the migration must include all of the attributes that were previously defined on the column. Otherwise, they will be dropped and lost.
-- Laravel 12 allows limiting eagerly loaded records natively, without external packages: `$query->latest()->limit(10);`.
-
-### Models
-
-- Casts can and likely should be set in a `casts()` method on a model rather than the `$casts` property. Follow existing conventions from other models.
-
-=== pint/core rules ===
-
-# Laravel Pint Code Formatter
-
-- If you have modified any PHP files, you must run `vendor/bin/pint --dirty --format agent` before finalizing changes to ensure your code matches the project's expected style.
-- Do not run `vendor/bin/pint --test --format agent`, simply run `vendor/bin/pint --format agent` to fix any formatting issues.
 
 === phpunit/core rules ===
 
