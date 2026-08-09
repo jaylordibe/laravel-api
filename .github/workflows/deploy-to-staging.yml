@@ -1,0 +1,87 @@
+name: Deploy To Staging
+
+on:
+  # Auto-deploy on pushes to the staging branch (typical GitFlow).
+  push:
+    branches:
+      - staging
+  # Manual re-deploy button in the Actions UI — useful for retries after
+  # transient infra failures without needing a new commit.
+  workflow_dispatch:
+
+# Serialize staging deploys so two pushes in quick succession don't race.
+# `cancel-in-progress: false` — an in-flight deploy should finish, not be killed
+# mid-flight. Newer pushes queue behind it.
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+
+# Least privilege: read-only access to the repository.
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test
+    # Calls the reusable workflow; deploy only runs if this passes.
+    uses: ./.github/workflows/test.yml
+
+  deploy:
+    name: Build And Deploy To Staging
+    # Deploy is OPT-IN — see deploy-to-production.yml for the full rationale.
+    # Enable by deleting this `if:` line (+ this comment) OR setting repository
+    # variable DEPLOY_ENABLED=true, once the staging target is provisioned.
+    if: ${{ vars.DEPLOY_ENABLED == 'true' }}
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    # GitHub environment — lets you scope staging secrets to this environment
+    # and optionally require reviewer approval via Settings → Environments.
+    environment:
+      name: staging
+      url: ${{ vars.STAGING_URL }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # THIS TEMPLATE SHIPS NO CONFIGURED DEPLOYMENT TARGET — see the equivalent
+      # step in deploy-to-production.yml for what to replace this with and
+      # which properties of the surrounding job to preserve.
+      - name: Deploy to staging
+        run: |
+          echo 'No deployment target is configured for this template.'
+          echo 'Replace this step with the real deploy, then set DEPLOY_ENABLED=true.'
+          exit 1
+
+      # Smoke test from the runner. STAGING_URL is read through `env:` rather
+      # than interpolated, so a value containing shell metacharacters is quoted
+      # rather than executed.
+      - name: Smoke test
+        env:
+          STAGING_URL: ${{ vars.STAGING_URL }}
+        run: |
+          if [ -z "${STAGING_URL}" ]; then
+            echo '::error::STAGING_URL is not set, so the deploy cannot be verified. Set it in Settings → Environments → staging.'
+            exit 1
+          fi
+          last_code=""
+          for attempt in $(seq 1 30); do
+            code=$(curl -s -o /dev/null -w "%{http_code}" \
+              "${STAGING_URL}/api/app-versions/latest" || echo curl_err)
+            case "$code" in
+              5*|curl_err) ;;
+              *)
+                echo "Healthy after ${attempt} attempt(s) (HTTP ${code})"
+                exit 0
+                ;;
+            esac
+            if [ "$code" != "$last_code" ]; then
+              echo "attempt ${attempt}: HTTP ${code}"
+              last_code=$code
+            fi
+            sleep 2
+          done
+          echo "::error::Health check failed after 60s — last status: HTTP ${last_code}"
+          exit 1

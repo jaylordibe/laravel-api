@@ -40,12 +40,12 @@ class AppServiceProvider extends ServiceProvider
 
         // Public limiter for unauthenticated endpoints
         RateLimiter::for('public', function (Request $request) {
-            return Limit::perMinute(60)->by('ip:' . $request->ip());
+            return Limit::perMinute(config('custom.rate_limits.public'))->by('ip:' . $request->ip());
         });
 
         // Very strict limiter for highly sensitive endpoints
         RateLimiter::for('sensitive', function (Request $request) {
-            return Limit::perMinute(5)->by('ip:' . $request->ip());
+            return Limit::perMinute(config('custom.rate_limits.sensitive'))->by('ip:' . $request->ip());
         });
 
         // Primary limiter for authenticated endpoints, with multiple layers to mitigate different abuse scenarios
@@ -60,13 +60,13 @@ class AppServiceProvider extends ServiceProvider
 
             return [
                 // Limits one stolen token hard
-                Limit::perMinute(60)->by($tokenKey),
+                Limit::perMinute(config('custom.rate_limits.api_per_token'))->by($tokenKey),
 
                 // Prevents many tokens for one user hammering
-                Limit::perMinute(120)->by($userKey),
+                Limit::perMinute(config('custom.rate_limits.api_per_user'))->by($userKey),
 
                 // Backstop only (kept higher to reduce NAT collateral damage)
-                Limit::perMinute(300)->by("ip:$ip"),
+                Limit::perMinute(config('custom.rate_limits.api_per_ip'))->by("ip:$ip"),
             ];
         });
 
@@ -77,7 +77,7 @@ class AppServiceProvider extends ServiceProvider
             $ip = $request->ip();
 
             return [
-                Limit::perMinute(10)->by($tokenId ? "token:$tokenId" : "ip:$ip"),
+                Limit::perMinute(config('custom.rate_limits.heavy'))->by($tokenId ? "token:$tokenId" : "ip:$ip"),
             ];
         });
 

@@ -9,11 +9,10 @@ storage/framework/views
 .env
 .env.example
 .env.testing
-docker-compose.yaml
+docker-compose.yml
 docker/
 vendor/bin
 *.md
-eb-laravel-api-env.yaml
 start.sh
 stop.sh
 test.sh

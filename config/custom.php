@@ -26,5 +26,30 @@ return [
     'appad_email' => env('APPAD_EMAIL'),
     'appad_password' => env('APPAD_PASSWORD'),
     'firebase_project_id' => env('FIREBASE_PROJECT_ID'),
-    'firebase_project_service_account_file' => env('FIREBASE_PROJECT_SERVICE_ACCOUNT_FILE')
+    'firebase_project_service_account_file' => env('FIREBASE_PROJECT_SERVICE_ACCOUNT_FILE'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Rate limits (requests per minute)
+    |--------------------------------------------------------------------------
+    |
+    | Read by the named limiters in AppServiceProvider::boot(). The defaults
+    | below are the production floor and are deliberately strict — raise one
+    | only with a reason, and never to work around a client that retries badly.
+    |
+    | They are env-overridable for exactly one legitimate case: an ephemeral
+    | throwaway environment being probed by a scanner. The DAST workflow
+    | (.github/workflows/security-dast.yml) raises them so the global limiters
+    | do not answer most of the scan with 429 and gut its coverage. Never raise
+    | them in a real environment to make a load test look better.
+    |
+    */
+    'rate_limits' => [
+        'public' => (int) env('RATE_LIMIT_PUBLIC', 60),
+        'sensitive' => (int) env('RATE_LIMIT_SENSITIVE', 5),
+        'api_per_token' => (int) env('RATE_LIMIT_API_PER_TOKEN', 60),
+        'api_per_user' => (int) env('RATE_LIMIT_API_PER_USER', 120),
+        'api_per_ip' => (int) env('RATE_LIMIT_API_PER_IP', 300),
+        'heavy' => (int) env('RATE_LIMIT_HEAVY', 10),
+    ],
 ];

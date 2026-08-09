@@ -1,0 +1,276 @@
+name: Security DAST
+
+# Dynamic Application Security Testing (OWASP ZAP), kept OUT of test.yml on
+# purpose. test.yml is the fast, deterministic merge/deploy gate (format check,
+# test suite, config validation, migration safety). DAST is the opposite shape:
+# it boots a live application and probes it over HTTP — slow, stateful (active
+# rules send real POST/PUT/DELETE), and noisy until tuned. So it runs on its own
+# cadence against a FULLY EPHEMERAL app with its own throwaway MySQL and Redis,
+# never against a shared or real environment.
+#
+# This became possible once the API gained a machine-readable OpenAPI document
+# (dedoc/scramble). Before that there was nothing to drive a scan from: spidering
+# a headless JSON API behind `auth:api` finds the 401 wall and little else.
+on:
+  # Weekly, Monday 03:00 UTC. Cron is UTC-only on GitHub Actions.
+  schedule:
+    - cron: '0 3 * * 1'
+  # On-demand from the Actions tab.
+  workflow_dispatch:
+
+concurrency:
+  group: dast-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  zap-api-scan:
+    name: ZAP API scan (ephemeral app)
+    runs-on: ubuntu-latest
+    # ZAP API scans over the full OpenAPI surface take a while; 30 minutes is
+    # generous headroom over a normal run and bounds a hung scan.
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Backing services come from the same docker-compose.yml developers use,
+      # so image, credentials and ports have exactly one definition. Only the
+      # throwaway test database and Redis — this job never touches a dev volume.
+      - name: Start MySQL and Redis
+        run: |
+          set -euo pipefail
+          cp .env.example .env
+          set -a; . ./.env; set +a
+          docker compose up -d app-db-test app-redis
+          for attempt in $(seq 1 60); do
+            if docker exec "${SERVICE_NAME}-db-test" \
+              mysql -u"$TEST_DB_USERNAME" -p"$TEST_DB_PASSWORD" -e 'SELECT 1' >/dev/null 2>&1; then
+              echo "MySQL is up (attempt ${attempt})"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo '::error::MySQL never became reachable'
+          exit 1
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: mbstring, xml, zip, curl, pdo, pdo_mysql, bcmath, intl, redis
+          tools: composer:v2
+          coverage: none
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      # The scan environment, written once and reused by every later step.
+      #
+      # Three deltas from .env.example, each load-bearing:
+      #  - DB_*/REDIS_* point at the published container ports, because artisan
+      #    and the served app run on the RUNNER, not inside the app container.
+      #  - RATE_LIMIT_* are raised to effectively unlimited. The named limiters
+      #    would otherwise answer most of ZAP's rapid-fire requests with 429 and
+      #    gut the scan's coverage — `sensitive` is 5/min in production, which
+      #    would stop the scan at the auth wall. This is the one legitimate
+      #    reason to raise them, and it is why they are config-driven at all.
+      #  - APP_DEBUG stays false so the scan sees production-shaped error
+      #    bodies. A debug stack trace would both mask real information
+      #    disclosure and generate findings that do not exist in production.
+      - name: Prepare the scan environment
+        run: |
+          set -euo pipefail
+          {
+            echo 'APP_ENV=local'
+            echo 'APP_DEBUG=false'
+            echo 'APP_URL=http://localhost:8001'
+            echo 'DB_HOST=127.0.0.1'
+            echo 'DB_PORT=3308'
+            echo 'REDIS_HOST=127.0.0.1'
+            echo 'REDIS_PORT=6378'
+            echo 'RATE_LIMIT_PUBLIC=1000000'
+            echo 'RATE_LIMIT_SENSITIVE=1000000'
+            echo 'RATE_LIMIT_API_PER_TOKEN=1000000'
+            echo 'RATE_LIMIT_API_PER_USER=1000000'
+            echo 'RATE_LIMIT_API_PER_IP=1000000'
+            echo 'RATE_LIMIT_HEAVY=1000000'
+          } >> .env
+          set -a; . ./.env; set +a
+          # The test database service owns these names; the app must use them.
+          sed -i "s/^DB_DATABASE=.*/DB_DATABASE=${TEST_DB_DATABASE}/" .env
+          sed -i "s/^DB_USERNAME=.*/DB_USERNAME=${TEST_DB_USERNAME}/" .env
+          sed -i "s/^DB_PASSWORD=.*/DB_PASSWORD=${TEST_DB_PASSWORD}/" .env
+          php artisan key:generate
+
+      # Seeded data matters: a scan against an empty database exercises the
+      # "not found" path of almost every route and proves very little. Seeding
+      # also creates the system-admin account the authenticated scan signs in as.
+      - name: Migrate, seed, and set up Passport
+        run: |
+          set -euo pipefail
+          php artisan migrate --force
+          php artisan db:seed --force
+          php artisan passport:keys --force
+          php artisan passport:client --personal --name='DAST Personal Access Client' --provider=users --no-interaction
+          php artisan passport:client --password --name='DAST Password Grant Client' --provider=users --no-interaction
+
+      # The scan target. Exported to a file rather than read from the live
+      # /docs/api endpoint so the scan does not depend on the docs route being
+      # reachable — that route is deliberately restricted outside local.
+      - name: Export the OpenAPI document
+        run: |
+          set -euo pipefail
+          php artisan scramble:export
+          php -r '
+            $spec = json_decode(file_get_contents("api.json"), true);
+            if (!is_array($spec) || empty($spec["paths"])) {
+              fwrite(STDERR, "::error::the exported OpenAPI document has no paths — the scan would cover nothing\n");
+              exit(1);
+            }
+            printf("OpenAPI %s: %d path(s), server %s\n",
+              $spec["openapi"], count($spec["paths"]), $spec["servers"][0]["url"] ?? "?");
+          '
+
+      - name: Start the API
+        run: |
+          php artisan serve --host=127.0.0.1 --port=8001 > app.log 2>&1 &
+          echo $! > app.pid
+
+      # Block until the app answers, so ZAP never scans a half-booted process.
+      - name: Wait for the API to be reachable
+        run: |
+          for attempt in $(seq 1 60); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' \
+              http://127.0.0.1:8001/api/app-versions/latest || echo 000)
+            case "$code" in
+              000|5*) ;;
+              *) echo "API is up (HTTP ${code}, attempt ${attempt})"; exit 0 ;;
+            esac
+            sleep 2
+          done
+          echo '::error::API did not become reachable in time.'
+          cat app.log
+          exit 1
+
+      # Sign in as the seeded system admin so the scan exercises endpoints
+      # BEHIND auth, not just the 401 wall — 33 of the 37 documented operations
+      # require a token.
+      #
+      # Deliberately obtained through the real POST /api/auth/sign-in rather
+      # than a bespoke token-minting command: shipping a privileged
+      # "mint me an admin token" artisan command in a template is a permanent
+      # new attack surface in every forked project, in exchange for saving one
+      # HTTP call here. The token is masked in the log.
+      - name: Sign in for an authenticated scan
+        id: token
+        run: |
+          set -euo pipefail
+          set -a; . ./.env; set +a
+          response=$(curl -s -X POST http://127.0.0.1:8001/api/auth/sign-in \
+            -H 'Content-Type: application/json' \
+            -H 'Accept: application/json' \
+            -d "{\"email\":\"${SYSAD_EMAIL}\",\"password\":\"${SYSAD_PASSWORD}\"}")
+          token=$(printf '%s' "$response" | php -r 'echo json_decode(stream_get_contents(STDIN), true)["token"] ?? "";')
+          if [ -z "$token" ]; then
+            echo '::error::could not obtain an access token; the scan would only ever see the auth wall'
+            printf '%s\n' "$response" | head -c 500
+            exit 1
+          fi
+          echo "::add-mask::$token"
+          echo "token=$token" >> "$GITHUB_OUTPUT"
+          echo 'Obtained an access token for the authenticated scan.'
+
+      # OpenAPI-driven scan: ZAP reads the exported document and exercises every
+      # declared operation — far better coverage than spidering a headless API.
+      #   --network host   -> the ZAP container reaches the app on localhost:8001
+      #   -f openapi       -> import the definition as OpenAPI
+      #   -I               -> do not fail on WARN-level alerts; gating is opt-in
+      #                       per rule via .zap/rules.tsv (set a rule to FAIL)
+      #   -c rules.tsv     -> the single tuning/gating seam
+      #   -z "-configfile" -> a ZAP replacer rule injecting
+      #                       `Authorization: Bearer <token>` on EVERY request.
+      #                       It MUST live in a properties file, NOT inline as
+      #                       `-z -config ...`: ZAP's -z parser splits on spaces,
+      #                       so the space in "Bearer <token>" would break the
+      #                       inline form (the token becomes a stray argument).
+      # The output directory is pre-created world-writable because the ZAP
+      # container runs as uid 1000 and must read the config and write reports
+      # into the bind mount.
+      - name: Run the ZAP API scan
+        env:
+          TOKEN: ${{ steps.token.outputs.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p zap-out
+          cp .zap/rules.tsv zap-out/rules.tsv
+          cp api.json zap-out/api.json
+          {
+            echo 'replacer.full_list(0).description=auth'
+            echo 'replacer.full_list(0).enabled=true'
+            echo 'replacer.full_list(0).matchtype=REQ_HEADER'
+            echo 'replacer.full_list(0).matchstr=Authorization'
+            echo 'replacer.full_list(0).regex=false'
+            echo "replacer.full_list(0).replacement=Bearer ${TOKEN}"
+          } > zap-out/auth.properties
+          chmod -R 0777 zap-out
+          docker run --rm --network host \
+            -v "$PWD/zap-out:/zap/wrk:rw" \
+            ghcr.io/zaproxy/zaproxy:stable \
+            zap-api-scan.py \
+              -t /zap/wrk/api.json \
+              -f openapi \
+              -I \
+              -c rules.tsv \
+              -r zap-report.html \
+              -w zap-report.md \
+              -J zap-report.json \
+              -z "-configfile /zap/wrk/auth.properties"
+
+      # Surface the markdown summary in the run's Summary tab for a quick read
+      # without downloading the artifact.
+      - name: Publish scan summary
+        if: always()
+        run: |
+          if [ -f zap-out/zap-report.md ]; then
+            {
+              echo '## OWASP ZAP API scan'
+              echo
+              cat zap-out/zap-report.md
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      # The auth.properties file holds a live bearer token, so the upload globs
+      # only the report files rather than the whole directory.
+      - name: Upload the ZAP report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-api-scan-report
+          path: |
+            zap-out/zap-report.html
+            zap-out/zap-report.md
+            zap-out/zap-report.json
+          if-no-files-found: warn
+
+      - name: Upload API logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-logs
+          path: app.log
+          if-no-files-found: ignore
+
+      - name: Stop the API
+        if: always()
+        run: |
+          if [ -f app.pid ]; then
+            kill "$(cat app.pid)" 2>/dev/null || true
+          fi
+
+      - name: Dump container logs on failure
+        if: failure()
+        run: docker compose logs --no-color --tail=200

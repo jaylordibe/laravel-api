@@ -1,0 +1,38 @@
+# OWASP ZAP rule tuning for .github/workflows/security-dast.yml
+#
+# Format: <RULE_ID>\t<ACTION>\t<optional comment>          (TAB separated)
+# Actions: IGNORE (drop it) | WARN (report, never fail) | FAIL (fail the build)
+#
+# THE SCAN IS INFORMATIONAL UNTIL YOU TUNE IT. The workflow passes `-I`, so a
+# WARN never fails the run; only a rule explicitly set to FAIL here can. That is
+# deliberate: an untuned DAST scan on a fresh template produces findings nobody
+# has triaged yet, and a job that red-lights on its first run gets disabled
+# before anyone reads it — at which point it protects nothing.
+#
+# How to use this file:
+#   1. Let the weekly scan run and read the report artifact.
+#   2. Triage each alert: real, not-applicable, or accepted.
+#   3. Set the not-applicable ones to IGNORE **with a reason in the comment**.
+#   4. Promote the ones you never want to regress to FAIL. That is the point of
+#      the exercise — a scan with no FAIL rule is a report, not a gate.
+#
+# Rule IDs are in the report, and the full list is at
+# https://www.zaproxy.org/docs/alerts/
+#
+# ── Starting IGNOREs: alerts that are structurally inapplicable to this API ──
+# This is a headless JSON API behind Passport. It renders no HTML, sets no
+# session cookie for browsers, and serves no static site — so the browser-page
+# hardening alerts below have nothing to protect here. Each is ignored for a
+# stated structural reason, not because it was inconvenient.
+10015	IGNORE	Re-examine Cache-control Directives — JSON responses are not browser-cached documents
+10020	IGNORE	Anti-clickjacking header — no HTML is ever rendered, so there is no frame to hijack
+10021	IGNORE	X-Content-Type-Options — every response is application/json with an explicit content type
+10038	IGNORE	CSP header — no HTML/script is served by this API
+10098	IGNORE	Cross-Domain Misconfiguration — CORS is a deliberate product decision; review it in config, not per-scan
+#
+# ── Everything else stays at its default (WARN) until triaged. ──
+# Do NOT bulk-IGNORE to get a clean run. The alerts most worth reading on an API
+# like this one are: 40018 SQL injection, 90019 server-side code injection,
+# 40012/40014 XSS reflected in JSON, 10105 weak authentication, 10202 absence of
+# anti-CSRF tokens on state-changing routes, and any information disclosure in
+# an error body. Promote those to FAIL once you have confirmed they are clean.

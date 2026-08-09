@@ -1,0 +1,105 @@
+name: Security
+
+# Dependency + filesystem vulnerability scanning. Kept SEPARATE from the fast
+# merge gate (test.yml -> ./test-pipeline.sh) on purpose: a slow or
+# noisy scan must never block the deterministic test signal. This runs on every
+# PR into a protected branch, plus a weekly sweep so newly-disclosed CVEs in
+# unchanged dependencies are still caught, plus on-demand from the Actions tab.
+on:
+  pull_request:
+    branches:
+      - main
+      - staging
+      - develop
+  schedule:
+    # Weekly, Monday 03:00 UTC (GitHub Actions cron is UTC-only).
+    - cron: '0 3 * * 1'
+  workflow_dispatch:
+
+# Cancel in-flight runs for the same ref; the newer commit wins.
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+# Least privilege: read-only access to the repo.
+permissions:
+  contents: read
+
+jobs:
+  composer-audit:
+    name: Composer dependency audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          tools: composer:v2
+          coverage: none
+
+      # Catches a malformed or lock-out-of-sync composer.json/composer.lock.
+      # --no-check-publish skips the name/description/license nags that only
+      # matter for a published library, not for an application repo.
+      - name: Validate composer files
+        run: composer validate --strict --no-check-publish
+
+      # Informational: prints every advisory at any severity, never fails the
+      # job — so low/moderate transitive findings are visible without red-lighting
+      # every PR. Reads composer.lock directly (no install needed).
+      - name: Audit dependencies (informational)
+        run: composer audit --locked --format=plain || true
+
+      # Gate: fail on HIGH/CRITICAL advisories, EXCEPT ones explicitly accepted
+      # (with rationale + review date) in .github/scripts/audit-gate.php.
+      #
+      # The gate lives in a script rather than an inline severity count because
+      # `composer audit` cannot accept a SINGLE advisory: an all-or-nothing check
+      # meets one genuinely-unfixable high finding and then either red-lights
+      # this job forever or gets deleted. The script threads that needle — hard
+      # on everything unaccepted, and it nags when an acceptance goes stale or
+      # passes its review date. It also refuses to treat an unparseable report as
+      # a clean result: the `|| true` below means a crashed audit would otherwise
+      # leave an empty file that reads as "no findings".
+      #
+      # When a NEW high trips this, reach for an upgrade BEFORE widening a
+      # constraint, and only allowlist as a last resort — advisories are often
+      # satisfied by a version the declared constraint ALREADY permits, i.e. the
+      # lockfile is stale rather than the upstream constraint being real.
+      - name: Audit dependencies (block on high+)
+        run: |
+          composer audit --locked --format=json > composer-audit.json || true
+          php .github/scripts/audit-gate.php composer-audit.json
+
+  trivy-fs:
+    name: Trivy filesystem scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Scans the working tree for: vulnerable dependencies (composer.lock),
+      # Dockerfile misconfigurations, and accidentally committed secrets.
+      # Fails on HIGH/CRITICAL; ignore-unfixed skips CVEs with no available
+      # patch so the build doesn't red-light on findings you literally cannot fix.
+      - name: Trivy filesystem scan
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          trivyignores: .trivyignore
+          scanners: vuln,secret,misconfig
+          format: table
+          exit-code: '1'
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          # vendor/ ships third-party package Dockerfiles (laravel/sail) that add
+          # misconfig noise; docker/database/data holds the local DB's runtime TLS
+          # keys. Both are gitignored (absent in CI) — skipped so local runs match CI.
+          skip-dirs: vendor,storage,bootstrap/cache,docker/database/data

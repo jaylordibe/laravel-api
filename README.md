@@ -46,7 +46,9 @@ This README would normally document whatever steps are necessary to get your app
 
 ### Working with Claude Code (optional) ###
 
-Contributors using [Claude Code](https://code.claude.com) get a committed, team-shared **ticket-to-diff pipeline** — `/ticket <TICKET-KEY>` drives a ticket from context-gathering → plan → implement → review → verify, stopping at a plan-approval gate and a commit gate. It lives in `.claude/`; the only per-machine step is a one-time issue-tracker login (`/mcp` → authenticate **atlassian**). Full details in [`.claude/README.md`](./.claude/README.md). Not required to run or test the API.
+Contributors using [Claude Code](https://code.claude.com) get a committed, team-shared **work-item-to-validated-diff pipeline** — `/work-item <issue key | URL | plain requirement>` drives a change from repository mapping → approval-gated plan → implementation → independent review → read-only validation, stopping only at the plan-approval gate and the commit gate. The five stages are also invocable individually as `/gate-design`, `/gate-approve`, `/gate-implement`, `/gate-review`, `/gate-validate`.
+
+It lives in `.claude/`; the only per-machine step is a one-time issue-tracker login (`/mcp` → authenticate **atlassian**), and an issue key is optional — a pasted requirement works the same way. Full details in [`.claude/README.md`](./.claude/README.md). **Not required to run, test, or deploy the API**, and no CI job depends on it.
 
 ### Contribution guidelines ###
 

@@ -1,0 +1,290 @@
+name: Test
+
+# Reusable + PR-triggered. The deploy workflows call this via `uses:` to gate
+# their deploys; PR events trigger it directly against the target branch.
+#
+# `workflow_call` is what lets one definition serve both. Without it each deploy
+# workflow needs its own copy of the test job, and the copies drift — a check
+# ends up enforced on a pull request but not on the deploy that follows it.
+on:
+  pull_request:
+    branches:
+      - main
+      - staging
+      - develop
+  # Makes this workflow callable as
+  # `jobs.<name>.uses: ./.github/workflows/test.yml`.
+  workflow_call:
+
+# Cancel in-flight runs for the same ref. Avoids two concurrent CI runs on
+# rapid pushes; the newer commit wins.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# Least-privilege default: read access to the repository and nothing else.
+permissions:
+  contents: read
+
+jobs:
+  # Three independent jobs, no `needs:` between them — the deploy gate is
+  # bounded by the SLOWEST job, not by their sum.
+
+  # Style + the full suite, exactly as a developer runs them.
+  #
+  # `./test-pipeline.sh` is the single source of truth for HOW tests run: it
+  # brings up the same docker-compose services a developer uses, waits for the
+  # test database, installs dependencies, generates Passport keys and clients,
+  # runs `php artisan app:format --check`, then `php artisan test --parallel`.
+  # Reimplementing those steps here would create a second definition that drifts
+  # from the one people actually run locally.
+  tests:
+    name: Format check and test suite
+    runs-on: ubuntu-latest
+    # ~2.5x a green run. A timeout is a runaway-job guard, NOT a capacity knob:
+    # if it trips, something got stuck — find out what rather than raising it.
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # `app:format --check`, never the fixing form. `app:format` exits 0 after
+      # rewriting whatever it repaired, so a fixing formatter in CI silently
+      # patches the runner's copy, passes, and throws the fixes away with the
+      # container — enforcing the style nowhere. test-pipeline.sh uses --check
+      # for exactly this reason; do not "helpfully" change it.
+      - name: Run the pipeline (format check + parallel test suite)
+        run: ./test-pipeline.sh
+
+      # Container logs are the first thing you want when the failure is "MySQL
+      # never came up" rather than "an assertion failed", and they are gone the
+      # moment the runner is torn down.
+      - name: Dump container logs on failure
+        if: failure()
+        run: docker compose logs --no-color --tail=200
+
+  # Migrations meeting data that already exists — the one failure class every
+  # other gate in this file is structurally blind to.
+  #
+  # `./test.sh` runs `migrate:fresh --seed`, so the suite only ever proves
+  # migrations apply to an EMPTY schema. A real deployment applies them to a
+  # populated one, and applies them BEFORE the new build starts serving, so the
+  # OLD code runs against the NEW schema for the length of the swap. A dropped
+  # column, a tightened NOT NULL, a rename, or a unique index that collides with
+  # existing duplicates passes the formatter, the test suite and the security
+  # scan, then fails in production with the schema already changed.
+  #
+  # Runs in parallel with the other jobs so it never lengthens the deploy gate,
+  # and skips itself entirely when a change touches no migration — which is most
+  # changes.
+  migration-safety:
+    name: Migrations against existing data
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out the proposed commit
+        uses: actions/checkout@v4
+        with:
+          path: head
+
+      # `main` is what production is actually running. Diffing against the PR's
+      # base branch instead would miss anything already merged to develop but
+      # not yet released — and it is the released schema these migrations will
+      # really land on.
+      - name: Check out the released commit
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: base
+
+      - name: Decide whether this change touches migrations
+        id: scope
+        run: |
+          set -euo pipefail
+          if diff -rq base/database/migrations head/database/migrations >/dev/null 2>&1; then
+            echo 'changed=false' >> "$GITHUB_OUTPUT"
+            echo 'No migration changes against the released commit — nothing for this job to prove.'
+            exit 0
+          fi
+          echo 'changed=true' >> "$GITHUB_OUTPUT"
+          echo 'Migration changes against the released commit:'
+          diff -rq base/database/migrations head/database/migrations || true
+
+          # A migration file that exists on `main` and has been EDITED or DELETED
+          # here is a rewrite of history that has already run somewhere. Laravel
+          # records applied migrations by filename in the `migrations` table, so
+          # an edited file silently changes a fresh database while leaving every
+          # migrated environment on the old schema. Nothing downstream can detect
+          # that, which is why it fails here instead.
+          rewritten=false
+          for released in base/database/migrations/*.php; do
+            [ -e "$released" ] || continue
+            name="$(basename "$released")"
+            proposed="head/database/migrations/$name"
+            if [ ! -f "$proposed" ]; then
+              echo "::error::released migration '$name' has been DELETED"
+              rewritten=true
+            elif ! diff -q "$released" "$proposed" >/dev/null 2>&1; then
+              echo "::error::released migration '$name' has been EDITED"
+              rewritten=true
+            fi
+          done
+          if [ "$rewritten" = 'true' ]; then
+            echo '::error::A migration that has already run was edited or deleted. Laravel keys applied migrations by filename, so this changes a fresh database while every migrated environment keeps the old schema. Add a NEW migration instead.'
+            exit 1
+          fi
+
+      # Only the test database service — this job never touches the dev volume.
+      # The same docker-compose.yml developers use, so the image, credentials
+      # and port have exactly one definition.
+      - name: Start MySQL
+        if: steps.scope.outputs.changed == 'true'
+        working-directory: head
+        run: |
+          set -euo pipefail
+          cp .env.example .env
+          set -a; . ./.env; set +a
+          docker compose up -d app-db-test
+          for attempt in $(seq 1 60); do
+            if docker exec "${SERVICE_NAME}-db-test" \
+              mysql -u"$TEST_DB_USERNAME" -p"$TEST_DB_PASSWORD" -e 'SELECT 1' >/dev/null 2>&1; then
+              echo "MySQL is up (attempt ${attempt})"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo '::error::MySQL never became reachable'
+          exit 1
+
+      - name: Set up PHP
+        if: steps.scope.outputs.changed == 'true'
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: mbstring, xml, zip, curl, pdo, pdo_mysql, bcmath, intl
+          tools: composer:v2
+          coverage: none
+
+      - name: Install dependencies (released commit)
+        if: steps.scope.outputs.changed == 'true'
+        working-directory: base
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      # Recreates production's starting point: the released schema, carrying
+      # rows. Artisan runs on the RUNNER, so the container-network hostname in
+      # .env cannot be used — DB_HOST/DB_PORT are exported to the published
+      # port instead. Dotenv is immutable by default, so an exported value wins
+      # over the file without editing it; every other credential still comes
+      # from .env.example and is never retyped here.
+      - name: Apply released migrations and seed data
+        if: steps.scope.outputs.changed == 'true'
+        working-directory: base
+        run: |
+          set -euo pipefail
+          cp .env.example .env
+          set -a; . ./.env; set +a
+          export DB_HOST=127.0.0.1
+          export DB_PORT=3308
+          export DB_DATABASE="$TEST_DB_DATABASE"
+          export DB_USERNAME="$TEST_DB_USERNAME"
+          export DB_PASSWORD="$TEST_DB_PASSWORD"
+          php artisan key:generate
+          php artisan migrate --force
+          php artisan db:seed --force
+
+      # Without this the job could pass against an empty database and prove
+      # nothing at all — the exact vacuous-green failure it exists to prevent.
+      - name: Assert the database is actually populated
+        if: steps.scope.outputs.changed == 'true'
+        working-directory: head
+        run: |
+          set -euo pipefail
+          set -a; . ./.env; set +a
+          row_count=$(docker exec "${SERVICE_NAME}-db-test" \
+            mysql -u"$TEST_DB_USERNAME" -p"$TEST_DB_PASSWORD" -D"$TEST_DB_DATABASE" \
+            -N -B -e 'SELECT COUNT(*) FROM users;' 2>/dev/null)
+          echo "users table holds ${row_count} row(s)"
+          if [ "${row_count:-0}" -lt 1 ]; then
+            echo '::error::seeding produced no rows, so applying migrations to a populated database was never actually tested'
+            exit 1
+          fi
+
+      - name: Install dependencies (proposed commit)
+        if: steps.scope.outputs.changed == 'true'
+        working-directory: head
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      # The primary assertion: the NEW migrations applied on top of the released
+      # schema, with real rows underneath them.
+      - name: Apply the proposed migrations to the populated database
+        if: steps.scope.outputs.changed == 'true'
+        working-directory: head
+        run: |
+          set -euo pipefail
+          set -a; . ./.env; set +a
+          export DB_HOST=127.0.0.1
+          export DB_PORT=3308
+          export DB_DATABASE="$TEST_DB_DATABASE"
+          export DB_USERNAME="$TEST_DB_USERNAME"
+          export DB_PASSWORD="$TEST_DB_PASSWORD"
+          php artisan key:generate
+          if ! php artisan migrate --force; then
+            echo '::error::the proposed migrations do not apply to a database that already holds data — this would fail mid-deploy, after the schema has already changed'
+            exit 1
+          fi
+
+      # The expand/contract assertion. A deployment runs the OLD build against
+      # the NEW schema for the whole swap window, so a migration that removes or
+      # tightens something the released code still reads takes the API down
+      # before the new build ever starts.
+      #
+      # `app-versions/latest` is the probe because it is the one PUBLIC route
+      # that exercises the whole stack — route, controller, service, repository,
+      # model, resource — against the database, with no token to mint first.
+      - name: Prove the released build still serves traffic on the new schema
+        if: steps.scope.outputs.changed == 'true'
+        working-directory: base
+        run: |
+          set -euo pipefail
+          set -a; . ./.env; set +a
+          export DB_HOST=127.0.0.1
+          export DB_PORT=3308
+          export DB_DATABASE="$TEST_DB_DATABASE"
+          export DB_USERNAME="$TEST_DB_USERNAME"
+          export DB_PASSWORD="$TEST_DB_PASSWORD"
+
+          php artisan serve --host=127.0.0.1 --port=8010 > served.log 2>&1 &
+          application_pid=$!
+          trap 'kill "$application_pid" 2>/dev/null || true' EXIT
+
+          for attempt in $(seq 1 30); do
+            status=$(curl -s -o /dev/null -w '%{http_code}' \
+              http://127.0.0.1:8010/api/app-versions/latest || echo 000)
+            # Any answered HTTP status proves the released code booted and
+            # queried the migrated schema. A 5xx does not: that is precisely the
+            # incompatibility this step exists to catch.
+            case "$status" in
+              000|5*) ;;
+              *)
+                echo "released build answered HTTP ${status} on the migrated schema (attempt ${attempt})"
+                exit 0
+                ;;
+            esac
+            if ! kill -0 "$application_pid" 2>/dev/null; then
+              echo '::error::the released build exited against the new schema — this migration is not backwards-compatible and will break the deploy window'
+              cat served.log
+              exit 1
+            fi
+            sleep 2
+          done
+
+          echo '::error::the released build never served a non-5xx response on the new schema within 60s — treat this migration as not backwards-compatible'
+          cat served.log
+          exit 1
+
+      - name: Dump container logs on failure
+        if: failure() && steps.scope.outputs.changed == 'true'
+        working-directory: head
+        run: docker compose logs --no-color --tail=200

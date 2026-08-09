@@ -1,0 +1,108 @@
+name: Deploy To Production
+
+on:
+  # Auto-deploy on pushes to main.
+  push:
+    branches:
+      - main
+  # Manual re-deploy button in the Actions UI — useful for retries after
+  # transient infra failures without needing a new commit.
+  workflow_dispatch:
+
+# Serialize production deploys so two pushes in quick succession don't race.
+# `cancel-in-progress: false` — an in-flight production deploy must finish, not
+# be killed mid-flight. Newer pushes queue behind it.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+# Least privilege: read-only access to the repository.
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test
+    # Calls the reusable workflow rather than restating the test job. The three
+    # workflows that gate on tests previously each carried their own copy, which
+    # is how a check ends up enforced on a PR but not on the deploy that follows
+    # it.
+    uses: ./.github/workflows/test.yml
+
+  deploy:
+    name: Build And Deploy To Production
+    # Deploy is OPT-IN. The template ships the `DEPLOY_ENABLED` repository
+    # variable UNSET, so pushes to the template itself (or any fresh fork) run
+    # CI but SKIP the deploy — no failed runs from an unconfigured target. In a
+    # real project, enable deploys by EITHER deleting this `if:` line (+ this
+    # comment) OR setting repository variable DEPLOY_ENABLED=true
+    # (Settings → Secrets and variables → Actions → Variables), once the target
+    # and its secrets are provisioned.
+    if: ${{ vars.DEPLOY_ENABLED == 'true' }}
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    # GitHub environment — configure in Settings → Environments → production to:
+    #   1. Require reviewer approval before the job runs (strongly recommended
+    #      for production — it enforces a human check).
+    #   2. Scope production secrets to this environment only.
+    #   3. Restrict which branches may deploy to it (main).
+    # The `url:` renders in the Actions UI as a link to the deployed environment.
+    environment:
+      name: production
+      url: ${{ vars.PRODUCTION_URL }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── THIS TEMPLATE SHIPS NO CONFIGURED DEPLOYMENT TARGET ───────────────
+      #
+      # Replace this step with your real deployment. Whatever you choose, keep
+      # the shape above: gated on `test`, opt-in via DEPLOY_ENABLED, serialized
+      # by `concurrency`, scoped to a GitHub environment, and finished by a smoke
+      # test that actually fails the run when the app does not come up.
+      #
+      # Migrations run BEFORE the new build starts serving, which means the OLD
+      # build runs against the NEW schema for the length of the swap. The
+      # `migration-safety` job in test.yml proves that window is survivable;
+      # keep the ordering it assumes.
+      - name: Deploy to production
+        run: |
+          echo 'No deployment target is configured for this template.'
+          echo 'Replace this step with the real deploy, then set DEPLOY_ENABLED=true.'
+          exit 1
+
+      # Smoke test from the runner. Fails the deploy if the app does not come up
+      # healthy within ~60s, so a broken build cannot sit silently in production.
+      # PRODUCTION_URL is read through `env:` rather than interpolated: `${{ }}`
+      # is substituted before bash parses the line, so a value containing shell
+      # metacharacters would be executed rather than quoted.
+      - name: Smoke test
+        env:
+          PRODUCTION_URL: ${{ vars.PRODUCTION_URL }}
+        run: |
+          if [ -z "${PRODUCTION_URL}" ]; then
+            echo '::error::PRODUCTION_URL is not set, so the deploy cannot be verified. Set it in Settings → Environments → production.'
+            exit 1
+          fi
+          last_code=""
+          for attempt in $(seq 1 30); do
+            code=$(curl -s -o /dev/null -w "%{http_code}" \
+              "${PRODUCTION_URL}/api/app-versions/latest" || echo curl_err)
+            case "$code" in
+              5*|curl_err) ;;
+              *)
+                echo "Healthy after ${attempt} attempt(s) (HTTP ${code})"
+                exit 0
+                ;;
+            esac
+            if [ "$code" != "$last_code" ]; then
+              echo "attempt ${attempt}: HTTP ${code}"
+              last_code=$code
+            fi
+            sleep 2
+          done
+          echo "::error::Health check failed after 60s — last status: HTTP ${last_code}"
+          exit 1
