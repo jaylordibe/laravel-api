@@ -2,7 +2,8 @@ name: Security DAST
 
 # Dynamic Application Security Testing (OWASP ZAP), kept OUT of test.yml on
 # purpose. test.yml is the fast, deterministic merge/deploy gate (format check,
-# test suite, config validation, migration safety). DAST is the opposite shape:
+# test suite, config validation, migration safety, and the production image
+# build + scan). DAST is the opposite shape:
 # it boots a live application and probes it over HTTP — slow, stateful (active
 # rules send real POST/PUT/DELETE), and noisy until tuned. So it runs on its own
 # cadence against a FULLY EPHEMERAL app with its own throwaway MySQL and Redis,

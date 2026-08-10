@@ -27,8 +27,9 @@ permissions:
   contents: read
 
 jobs:
-  # Three independent jobs, no `needs:` between them — the deploy gate is
-  # bounded by the SLOWEST job, not by their sum.
+  # Every job below is independent, with no `needs:` between them — the deploy
+  # gate is bounded by the SLOWEST job, not by their sum. (Deliberately not
+  # stated as a count, which silently goes stale the next time a job is added.)
 
   # Style + the full suite, exactly as a developer runs them.
   #
@@ -292,3 +293,105 @@ jobs:
         if: failure() && steps.scope.outputs.changed == 'true'
         working-directory: head
         run: docker compose logs --no-color --tail=200
+
+  # The artifact that actually ships. Nothing else in CI touches it: the suite
+  # and migration-safety both run artisan ON THE RUNNER against docker-compose
+  # services, so a Dockerfile that cannot build reaches production unchallenged.
+  #
+  # That is not hypothetical. `php artisan config:cache` serializes config with
+  # var_export(), which refuses any value that cannot round-trip — one object in
+  # a config file (Scramble's SecurityScheme) broke every image build while the
+  # whole suite stayed green, because nothing built the image. The runtime-
+  # writable storage directories are excluded by .dockerignore and were missing
+  # from the image for the same reason.
+  #
+  # Deliberately NOT `needs: tests`. Gating would append this job's runtime to
+  # every deploy; running it alongside costs a wasted image build on runs where
+  # the suite fails, and saves those minutes on every green deploy.
+  docker:
+    name: Build and scan the production image
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build the production image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: false
+          load: true
+          tags: laravel-api:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # CVEs in the base image's OS packages and in the installed vendor tree —
+      # the half `composer audit` in security.yml cannot see, because it reads
+      # composer.lock and never looks at the image the application runs inside.
+      # Fails on HIGH/CRITICAL; `ignore-unfixed` skips CVEs with no published
+      # patch so the build doesn't red-light on findings nobody can act on.
+      - name: Scan the image with Trivy
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: laravel-api:ci
+          format: table
+          exit-code: '1'
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          trivyignores: .trivyignore
+
+      # Trivy reads the image's filesystem; it never executes anything, so an
+      # image that cannot boot passes it cleanly. These checks run the real
+      # binary against the real cached artifacts.
+      #
+      # What this does NOT prove: serving traffic. There is no database, Redis
+      # or APP_KEY here, so anything past bootstrap is out of scope — claiming
+      # otherwise would let a second failure hide behind the first.
+      - name: Verify the built image boots what it will serve
+        run: |
+          set -euo pipefail
+
+          echo '::group::compiled artifacts and runtime directories'
+          docker run --rm --entrypoint sh laravel-api:ci -c '
+            set -eu
+            test -f vendor/autoload.php
+            test -f bootstrap/cache/config.php
+            ls bootstrap/cache/routes-*.php >/dev/null
+            # .dockerignore drops these from the build context; the Dockerfile
+            # recreates them. Without them view:cache fails at build time and
+            # php-fpm cannot write logs at runtime.
+            test -d storage/framework/views
+            test -d storage/logs
+            # php-fpm and nginx serve as www-data, so the application must own
+            # everything it writes.
+            owner=$(stat -c %U storage/logs)
+            if [ "$owner" != www-data ]; then
+              echo "storage/logs is owned by $owner, not www-data" >&2
+              exit 1
+            fi
+            echo "compiled config and routes present; storage writable by www-data"
+          '
+          echo '::endgroup::'
+
+          # Boots the framework from the CACHED config — the exact step that a
+          # non-serializable config value breaks.
+          echo '::group::framework boots from the cached config'
+          docker run --rm --entrypoint php laravel-api:ci artisan --version
+          echo '::endgroup::'
+
+          # Positive control: grep on empty output fails, so an image that
+          # produced nothing cannot pass this by omission.
+          echo '::group::routes resolve from the cached route table'
+          route_output=$(docker run --rm --entrypoint php laravel-api:ci \
+            artisan route:list --path=api/app-versions --no-ansi)
+          printf '%s\n' "$route_output"
+          if ! grep -q 'api/app-versions' <<<"$route_output"; then
+            echo '::error::the image cannot resolve its cached routes'
+            exit 1
+          fi
+          echo '::endgroup::'

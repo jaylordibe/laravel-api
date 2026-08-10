@@ -29,6 +29,15 @@ jobs:
     # it.
     uses: ./.github/workflows/test.yml
 
+  # Dependency advisories and the Trivy filesystem scan. A separate workflow so
+  # a slow or noisy scan never blocks the deterministic test signal — but called
+  # here so it still gates the deploy. Without this job the audit runs on pull
+  # requests and on the weekly cron only, and a push straight to `main` deploys
+  # with no dependency scanning at all.
+  security:
+    name: Security
+    uses: ./.github/workflows/security.yml
+
   deploy:
     name: Build And Deploy To Production
     # Deploy is OPT-IN. The template ships the `DEPLOY_ENABLED` repository
@@ -39,7 +48,7 @@ jobs:
     # (Settings → Secrets and variables → Actions → Variables), once the target
     # and its secrets are provisioned.
     if: ${{ vars.DEPLOY_ENABLED == 'true' }}
-    needs: test
+    needs: [test, security]
     runs-on: ubuntu-latest
     timeout-minutes: 20
 

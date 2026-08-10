@@ -26,13 +26,19 @@ jobs:
     # Calls the reusable workflow; deploy only runs if this passes.
     uses: ./.github/workflows/test.yml
 
+  # Dependency advisories and the Trivy filesystem scan — see
+  # deploy-to-production.yml for why the deploy gates on this separately.
+  security:
+    name: Security
+    uses: ./.github/workflows/security.yml
+
   deploy:
     name: Build And Deploy To Staging
     # Deploy is OPT-IN — see deploy-to-production.yml for the full rationale.
     # Enable by deleting this `if:` line (+ this comment) OR setting repository
     # variable DEPLOY_ENABLED=true, once the staging target is provisioned.
     if: ${{ vars.DEPLOY_ENABLED == 'true' }}
-    needs: test
+    needs: [test, security]
     runs-on: ubuntu-latest
     timeout-minutes: 20
 

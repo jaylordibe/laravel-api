@@ -2,9 +2,23 @@ name: Security
 
 # Dependency + filesystem vulnerability scanning. Kept SEPARATE from the fast
 # merge gate (test.yml -> ./test-pipeline.sh) on purpose: a slow or
-# noisy scan must never block the deterministic test signal. This runs on every
+# noisy scan must never block the deterministic test signal.
+#
+# The IMAGE scan lives in test.yml's `docker` job instead, because it needs the
+# image that job builds. The two are complementary, not redundant: this one
+# reads composer.lock and the whole working tree (so it sees secrets and
+# Dockerfile misconfigurations in files that never reach the runtime image);
+# that one reads the base image's OS packages and the installed vendor tree.
+# This runs on every
 # PR into a protected branch, plus a weekly sweep so newly-disclosed CVEs in
 # unchanged dependencies are still caught, plus on-demand from the Actions tab.
+#
+# `workflow_call` is what keeps the split honest. Splitting scanning out of
+# test.yml also split it out of the DEPLOY path, because the deploy workflows
+# gate on `uses: ./.github/workflows/test.yml` and nothing else — so for a while
+# a production deploy could ship without the audit or Trivy ever running. The
+# deploy workflows now call this one too; do not remove this trigger without
+# removing those callers.
 on:
   pull_request:
     branches:
@@ -15,6 +29,9 @@ on:
     # Weekly, Monday 03:00 UTC (GitHub Actions cron is UTC-only).
     - cron: '0 3 * * 1'
   workflow_dispatch:
+  # Makes this workflow callable as
+  # `jobs.<name>.uses: ./.github/workflows/security.yml`.
+  workflow_call:
 
 # Cancel in-flight runs for the same ref; the newer commit wins.
 concurrency:

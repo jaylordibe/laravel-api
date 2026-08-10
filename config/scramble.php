@@ -182,11 +182,25 @@ return [
      * route accidentally left outside `auth:api` shows up here as public, which
      * is exactly where you want to notice it.
      */
+    /*
+     * DO NOT add a 'scheme' => SecurityScheme::http('bearer') option here, even
+     * though the package's own example above shows one. `php artisan
+     * config:cache` serializes this array with var_export(), and a
+     * SecurityScheme instance implements no __set_state(), so the object form
+     * fails the cache with "value at scramble.security_strategy.1.scheme is
+     * non-serializable" — which takes down every deployment that caches config
+     * (the Dockerfile does, and the `docker` job in .github/workflows/test.yml
+     * exists to catch exactly this). Everything in a config file must be
+     * var_export-safe.
+     *
+     * Nothing is lost by omitting it: MiddlewareAuthSecurityStrategy's
+     * constructor already defaults $scheme to SecurityScheme::http('bearer'),
+     * so the documented output is byte-for-byte identical.
+     */
     'security_strategy' => [
         \Dedoc\Scramble\SecurityDocumentation\MiddlewareAuthSecurityStrategy::class,
         [
             'middleware' => ['auth', 'auth:*'],
-            'scheme' => \Dedoc\Scramble\Support\Generator\SecurityScheme::http('bearer'),
         ],
     ],
 ];
