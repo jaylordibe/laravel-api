@@ -28,8 +28,8 @@ permissions:
 
 jobs:
   # Every job below is independent, with no `needs:` between them — the deploy
-  # gate is bounded by the SLOWEST job, not by their sum. (Deliberately not
-  # stated as a count, which silently goes stale the next time a job is added.)
+  # gate is bounded by the SLOWEST job, not by their sum. (Stated without a
+  # count on purpose: a number here goes stale the moment a job is added.)
 
   # Style + the full suite, exactly as a developer runs them.
   #
@@ -298,12 +298,14 @@ jobs:
   # and migration-safety both run artisan ON THE RUNNER against docker-compose
   # services, so a Dockerfile that cannot build reaches production unchallenged.
   #
-  # That is not hypothetical. `php artisan config:cache` serializes config with
-  # var_export(), which refuses any value that cannot round-trip — one object in
-  # a config file (Scramble's SecurityScheme) broke every image build while the
-  # whole suite stayed green, because nothing built the image. The runtime-
-  # writable storage directories are excluded by .dockerignore and were missing
-  # from the image for the same reason.
+  # The failure modes are specific, not theoretical. `php artisan config:cache`
+  # serializes config with var_export(), so ONE non-serializable value in a
+  # config file — an object with no __set_state(), such as Scramble's
+  # SecurityScheme — fails the image build while every other gate stays green,
+  # because nothing else caches config. Separately, .dockerignore excludes the
+  # runtime-writable storage directories, so the Dockerfile must recreate them
+  # or `view:cache` aborts at build time and php-fpm cannot write logs at run
+  # time. This job is the only thing standing in front of either.
   #
   # Deliberately NOT `needs: tests`. Gating would append this job's runtime to
   # every deploy; running it alongside costs a wasted image build on runs where
