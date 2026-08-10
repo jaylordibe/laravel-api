@@ -68,10 +68,14 @@ jobs:
           fi
           last_code=""
           for attempt in $(seq 1 30); do
+            # `|| code=000` must stay a separate assignment: curl writes its
+            # `-w` output before exiting, so the inline `$(curl ... || echo X)`
+            # form concatenates curl's own "000" with the fallback, matches
+            # neither retry pattern, and reports an unreachable deploy healthy.
             code=$(curl -s -o /dev/null -w "%{http_code}" \
-              "${STAGING_URL}/api/app-versions/latest" || echo curl_err)
+              "${STAGING_URL}/api/app-versions/latest") || code=000
             case "$code" in
-              5*|curl_err) ;;
+              000|5*) ;;
               *)
                 echo "Healthy after ${attempt} attempt(s) (HTTP ${code})"
                 exit 0

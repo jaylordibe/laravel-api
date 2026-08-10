@@ -141,15 +141,29 @@ jobs:
           echo $! > app.pid
 
       # Block until the app answers, so ZAP never scans a half-booted process.
+      #
+      # The `|| code=000` must be a SEPARATE assignment, never `$(curl ... ||
+      # echo 000)`. curl writes its `-w` output *before* exiting, so on a
+      # connection failure the inline form concatenates curl's own "000" with
+      # the fallback "000" and yields "000000" — which matches neither `000`
+      # nor `5*`, falls through to the success branch, and reports a dead app
+      # as reachable. Assigning on the failure path keeps the value exact.
       - name: Wait for the API to be reachable
         run: |
           for attempt in $(seq 1 60); do
             code=$(curl -s -o /dev/null -w '%{http_code}' \
-              http://127.0.0.1:8001/api/app-versions/latest || echo 000)
+              http://127.0.0.1:8001/api/app-versions/latest) || code=000
             case "$code" in
               000|5*) ;;
               *) echo "API is up (HTTP ${code}, attempt ${attempt})"; exit 0 ;;
             esac
+            # Fail fast rather than burning the full 120s if `artisan serve`
+            # never bound the port or died on boot.
+            if ! kill -0 "$(cat app.pid)" 2>/dev/null; then
+              echo '::error::the API process exited during startup.'
+              cat app.log
+              exit 1
+            fi
             sleep 2
           done
           echo '::error::API did not become reachable in time.'
@@ -170,10 +184,17 @@ jobs:
         run: |
           set -euo pipefail
           set -a; . ./.env; set +a
-          response=$(curl -s -X POST http://127.0.0.1:8001/api/auth/sign-in \
+          # A transport-level curl failure here means the app is gone, not that
+          # the credentials were rejected. Say so, instead of letting `set -e`
+          # abort the step with a bare curl exit status and no explanation.
+          response=$(curl -sS -X POST http://127.0.0.1:8001/api/auth/sign-in \
             -H 'Content-Type: application/json' \
             -H 'Accept: application/json' \
-            -d "{\"email\":\"${SYSAD_EMAIL}\",\"password\":\"${SYSAD_PASSWORD}\"}")
+            -d "{\"email\":\"${SYSAD_EMAIL}\",\"password\":\"${SYSAD_PASSWORD}\"}") || {
+            echo '::error::could not reach the API to sign in — the served application is not answering'
+            cat app.log
+            exit 1
+          }
           token=$(printf '%s' "$response" | php -r 'echo json_decode(stream_get_contents(STDIN), true)["token"] ?? "";')
           if [ -z "$token" ]; then
             echo '::error::could not obtain an access token; the scan would only ever see the auth wall'

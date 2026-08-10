@@ -260,8 +260,12 @@ jobs:
           trap 'kill "$application_pid" 2>/dev/null || true' EXIT
 
           for attempt in $(seq 1 30); do
+            # `|| status=000` is a separate assignment on purpose: curl emits
+            # its `-w` output before exiting, so the inline `$(curl ... || echo
+            # 000)` form yields "000000" on a connection failure and falls
+            # through to the success branch below.
             status=$(curl -s -o /dev/null -w '%{http_code}' \
-              http://127.0.0.1:8010/api/app-versions/latest || echo 000)
+              http://127.0.0.1:8010/api/app-versions/latest) || status=000
             # Any answered HTTP status proves the released code booted and
             # queried the migrated schema. A 5xx does not: that is precisely the
             # incompatibility this step exists to catch.
