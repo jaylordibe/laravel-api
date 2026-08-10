@@ -184,13 +184,26 @@ jobs:
         run: |
           set -euo pipefail
           set -a; . ./.env; set +a
+          # The field is `identifier`, NOT `email` — POST /api/auth/sign-in
+          # accepts an email OR a username and resolves which it got via
+          # AppUtil::isValidEmail(). Posting `email` fails AuthRequest
+          # validation before any credential is ever checked.
+          #
+          # The body is built with json_encode and piped in, rather than
+          # interpolated into a hand-written JSON string, so a fork that sets a
+          # SYSAD_PASSWORD containing a quote or backslash still sends valid
+          # JSON. It goes over stdin so the password never touches disk.
+          #
           # A transport-level curl failure here means the app is gone, not that
           # the credentials were rejected. Say so, instead of letting `set -e`
           # abort the step with a bare curl exit status and no explanation.
-          response=$(curl -sS -X POST http://127.0.0.1:8001/api/auth/sign-in \
+          response=$(php -r 'echo json_encode([
+            "identifier" => getenv("SYSAD_EMAIL"),
+            "password" => getenv("SYSAD_PASSWORD"),
+          ]);' | curl -sS -X POST http://127.0.0.1:8001/api/auth/sign-in \
             -H 'Content-Type: application/json' \
             -H 'Accept: application/json' \
-            -d "{\"email\":\"${SYSAD_EMAIL}\",\"password\":\"${SYSAD_PASSWORD}\"}") || {
+            --data-binary @-) || {
             echo '::error::could not reach the API to sign in — the served application is not answering'
             cat app.log
             exit 1
