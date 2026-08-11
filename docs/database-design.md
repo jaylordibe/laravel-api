@@ -1,3 +1,10 @@
+<!--
+  Repository-owned worksheet. The engineering-framework plugin ships the
+  generic version (templates/data-design.md); this one is the Laravel/Eloquent
+  specialisation of it and names the actual base classes, casts and audit
+  columns this API uses. Fill this in for schema and migration work.
+-->
+
 # Database design: [Change]
 
 - **Related plan/ticket:**

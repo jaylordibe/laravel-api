@@ -1,3 +1,10 @@
+<!--
+  Repository-owned worksheet. The engineering-framework plugin ships the
+  generic version (templates/contract-change.md); this one is the Laravel
+  specialisation of it and names the actual classes, helpers and envelope this
+  API uses. Fill this in when a change touches an observable contract.
+-->
+
 # API/event contract: [Operation]
 
 - **Related plan/ticket:**

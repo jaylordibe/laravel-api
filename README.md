@@ -46,9 +46,9 @@ This README would normally document whatever steps are necessary to get your app
 
 ### Working with Claude Code (optional) ###
 
-Contributors using [Claude Code](https://code.claude.com) get a committed, team-shared **work-item-to-validated-diff pipeline** — `/work-item <issue key | URL | plain requirement>` drives a change from repository mapping → approval-gated plan → implementation → independent review → read-only validation, stopping only at the plan-approval gate and the commit gate. The five stages are also invocable individually as `/gate-design`, `/gate-approve`, `/gate-implement`, `/gate-review`, `/gate-validate`.
+Contributors using [Claude Code](https://code.claude.com) get a **work-item-to-validated-diff pipeline** from the [`engineering-framework`](https://github.com/jaylordibe/claude-engineering-framework) plugin — `/engineering-framework:work-item <issue key | URL | plain requirement>` drives a change from repository mapping → approval-gated plan → implementation → independent review → read-only validation, stopping only at the plan-approval gate and the commit gate. The five stages are also invocable individually as `/engineering-framework:gate-design`, `gate-approve`, `gate-implement`, `gate-review`, `gate-validate`.
 
-It lives in `.claude/`; the only per-machine step is a one-time issue-tracker login (`/mcp` → authenticate **atlassian**), and an issue key is optional — a pasted requirement works the same way. Full details in [`.claude/README.md`](./.claude/README.md). **Not required to run, test, or deploy the API**, and no CI job depends on it.
+The framework owns the methodology; this repository owns the truth it works from — `CLAUDE.md` plus `.claude/`. Per-machine setup is installing the plugin (`/plugin marketplace add jaylordibe/claude-engineering-framework`, then `/plugin install engineering-framework@jaylordibe`) and, optionally, a one-time issue-tracker login (`/mcp` → authenticate **atlassian**); an issue key is optional, since a pasted requirement works the same way. Run `/engineering-framework:framework-doctor` to check the repository against the framework contract. **Not required to run, test, or deploy the API**, and no CI job depends on it.
 
 ### Contribution guidelines ###
 

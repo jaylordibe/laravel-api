@@ -1,0 +1,97 @@
+{
+  "$schema": "https://raw.githubusercontent.com/jaylordibe/claude-engineering-framework/main/plugins/engineering-framework/reference/repo-config.schema.json",
+  "frameworkVersion": "0.2.0",
+
+  "protectedCommands": [
+    {
+      "match": "*start.sh fresh*",
+      "reason": "this wipes .env, vendor and the database volumes, then rebuilds from scratch. Everything not committed is lost, including any local seed data another session is relying on. Only the human runs this.",
+      "decision": "deny"
+    },
+    {
+      "match": "*start.sh reset*",
+      "reason": "this drops and reseeds the development database. Any data a colleague or another session is using goes with it. Only the human runs this.",
+      "decision": "deny"
+    },
+    {
+      "match": "*docker exec*artisan migrate",
+      "reason": "this applies migrations inside the api container, which is how migrations are normally run here. Applying a schema change is an act against a live database, not a build step. Prepare the migration file and let the human apply it.",
+      "decision": "deny"
+    },
+    {
+      "match": "*docker*exec*artisan migrate:fresh*",
+      "reason": "this drops every table and re-runs every migration inside the container. Prepare the migration file and let the human apply it.",
+      "decision": "deny"
+    },
+    {
+      "match": "*docker*exec*artisan migrate:refresh*",
+      "reason": "this rolls back and re-runs every migration inside the container. Prepare the migration file and let the human apply it.",
+      "decision": "deny"
+    },
+    {
+      "match": "*docker*exec*artisan migrate:reset*",
+      "reason": "this rolls back every migration inside the container. Prepare the migration file and let the human apply it.",
+      "decision": "deny"
+    },
+    {
+      "match": "*docker*exec*artisan migrate:rollback*",
+      "reason": "this rolls back the last migration batch inside the container. Prepare the migration file and let the human apply it.",
+      "decision": "deny"
+    },
+    {
+      "match": "*docker*exec*artisan db:wipe*",
+      "reason": "this destroys every table in the container's database. Only the human runs this.",
+      "decision": "deny"
+    },
+    {
+      "match": "*docker*exec*artisan db:seed*",
+      "reason": "this writes seed data into a live database inside the container. Confirm the target is a throwaway development database and not one another session is using.",
+      "decision": "deny"
+    },
+    {
+      "match": "*docker compose exec*artisan migrate*",
+      "reason": "this applies migrations inside the api container via compose. Applying a schema change is an act against a live database. Prepare the migration file and let the human apply it.",
+      "decision": "deny"
+    },
+    {
+      "match": "*artisan passport:keys*",
+      "reason": "this regenerates the OAuth2 signing keys. Every token issued under the old keys stops working, so it logs out every client at once. Confirm this is a local environment being initialised.",
+      "decision": "ask"
+    },
+    {
+      "match": "*artisan passport:install*",
+      "reason": "this regenerates keys and OAuth clients, invalidating existing tokens and client credentials. Confirm this is a local environment being initialised.",
+      "decision": "ask"
+    },
+    {
+      "match": "*artisan app:format",
+      "reason": "the fixing form rewrites files across app/, database/, routes/ and tests/. That is the correct closing step for an implementation, but never during validation, where it would manufacture a passing style check. Use --check to verify.",
+      "decision": "ask"
+    }
+  ],
+
+  "commands": {
+    "install": "composer install",
+    "lint": "php artisan app:format --check",
+    "test": "php artisan test --parallel",
+    "testIntegration": "./test.sh",
+    "securityScan": "composer audit"
+  },
+
+  "risk": {
+    "highRiskPaths": [
+      "*/app/Http/Requests/*",
+      "*/app/Http/Resources/*",
+      "*/routes/api.php",
+      "*/database/migrations/*",
+      "*/app/Providers/AppServiceProvider.php",
+      "*/bootstrap/app.php",
+      "*/config/custom.php",
+      "*/config/auth.php",
+      "*/app/Models/BaseModel.php",
+      "*/app/Data/BaseData.php",
+      "*/app/Http/Requests/BaseRequest.php"
+    ],
+    "notes": "This repository is the starter template every new API project is forked from, so a defect here propagates into every fork rather than affecting one system. Authorization is enforced per-endpoint through Passport plus Spatie permissions, and ownership isolation lives inside repository query methods rather than at the connection level — a repository method that forgets its scope leaks across accounts with no other layer to catch it. Money and decimal values are Brick\\Math\\BigDecimal end to end; introducing a float anywhere in that path is a correctness defect, not a style choice. Almost every command runs inside the laravel-api container, so a guard that only classifies host commands sees very little of what actually happens here."
+  }
+}
