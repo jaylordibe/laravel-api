@@ -62,11 +62,6 @@
       "match": "*artisan passport:install*",
       "reason": "this regenerates keys and OAuth clients, invalidating existing tokens and client credentials. Confirm this is a local environment being initialised.",
       "decision": "ask"
-    },
-    {
-      "match": "*artisan app:format",
-      "reason": "the fixing form rewrites files across app/, database/, routes/ and tests/. That is the correct closing step for an implementation, but never during validation, where it would manufacture a passing style check. Use --check to verify.",
-      "decision": "ask"
     }
   ],
 
