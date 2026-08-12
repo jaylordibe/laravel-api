@@ -222,16 +222,28 @@ warm_runtime_caches() {
     # once a minute — is a second full framework boot per invocation for an
     # artefact nothing reads, and it widens the window where a failed cache write
     # leaves a half-written file behind.
+    local routes_cached=false
+
     case "$MODE" in
         api|all)
-            if ! php artisan route:cache --no-interaction >/dev/null; then
+            if php artisan route:cache --no-interaction >/dev/null; then
+                routes_cached=true
+            else
                 rm -f "${APP_DIR}"/bootstrap/cache/routes-*.php 2>/dev/null || true
                 log "WARNING: route:cache failed; continuing with uncached routes."
             fi
             ;;
     esac
 
-    log "configuration and routes cached from the runtime environment."
+    # Reports what was ACTUALLY cached. A fixed "configuration and routes cached"
+    # line claimed a route cache in the modes that deliberately skip one and in
+    # the failure path above, which is precisely the log an operator reads while
+    # trying to work out why routing is slow.
+    if [ "$routes_cached" = 'true' ]; then
+        log "configuration and routes cached from the runtime environment."
+    else
+        log "configuration cached from the runtime environment; routes are not cached in this runtime."
+    fi
 }
 
 # ---------------------------------------------------------------------------

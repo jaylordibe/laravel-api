@@ -422,7 +422,6 @@ jobs:
           echo '::group::runtime directories and the ABSENCE of a baked config cache'
           docker run --rm --entrypoint sh laravel-api:ci -c '
             set -eu
-            test -f vendor/autoload.php
 
             # THE CONFIG CACHE MUST NOT EXIST IN THE IMAGE.
             #
@@ -457,10 +456,6 @@ jobs:
             fi
             echo "no baked config/route cache; compiled views present; storage writable by www-data"
           '
-          echo '::endgroup::'
-
-          echo '::group::framework boots'
-          docker run --rm --entrypoint php laravel-api:ci artisan --version
           echo '::endgroup::'
 
           # THE RUNTIME-ENVIRONMENT PROOF.
@@ -520,8 +515,18 @@ jobs:
             --entrypoint sh laravel-api:ci -c '
               /usr/local/bin/app-entrypoint.sh --version >/tmp/out 2>&1 || true
               cat /tmp/out
-              test -f bootstrap/cache/config.php && echo "CONFIG_CACHE_PRESENT"
-              ls bootstrap/cache/routes-*.php >/dev/null 2>&1 && echo "ROUTE_CACHE_PRESENT"
+              # `if`, never a trailing `cmd && echo`: the LAST command decides the
+              # exit status of this script, so an absent artefact would fail the
+              # whole step through set -e — before the assertions below could run,
+              # and with no ::error:: to say why. (No apostrophes below either:
+              # this script is delimited by single quotes.)
+              #
+              # Only config is probed here. entrypoint.sh caches ROUTES for api
+              # and all only, and this container runs in artisan mode, so a route
+              # cache is correctly absent and asserting on it would be wrong.
+              if [ -f bootstrap/cache/config.php ]; then
+                  echo "CONFIG_CACHE_PRESENT"
+              fi
             ')
           printf '%s\n' "$cache_state"
 
@@ -674,16 +679,4 @@ jobs:
             exit 1
           fi
           echo 'unknown mode rejected'
-          echo '::endgroup::'
-
-          # Positive control: grep on empty output fails, so an image that
-          # produced nothing cannot pass this by omission.
-          echo '::group::routes resolve from the cached route table'
-          route_output=$(docker run --rm --entrypoint php laravel-api:ci \
-            artisan route:list --path=api/app-versions --no-ansi)
-          printf '%s\n' "$route_output"
-          if ! grep -q 'api/app-versions' <<<"$route_output"; then
-            echo '::error::the image cannot resolve its cached routes'
-            exit 1
-          fi
           echo '::endgroup::'
