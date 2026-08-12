@@ -1,6 +1,6 @@
 {
   "$schema": "https://raw.githubusercontent.com/jaylordibe/claude-engineering-framework/main/plugins/engineering-framework/reference/repo-config.schema.json",
-  "frameworkVersion": "0.2.0",
+  "frameworkVersion": "0.3.0",
 
   "protectedCommands": [
     {

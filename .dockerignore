@@ -2,7 +2,6 @@
 .gitignore
 .gitattributes
 .editorconfig
-node_modules
 tests
 storage/logs
 storage/framework/cache
@@ -36,7 +35,4 @@ test-pipeline.sh
 phpunit.xml
 api.json
 boost.json
-package.json
-yarn.lock
-vite.config.js
 public/storage
