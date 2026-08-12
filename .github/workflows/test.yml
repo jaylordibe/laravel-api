@@ -58,7 +58,7 @@ jobs:
       - name: Run the pipeline (format check + parallel test suite)
         run: ./test-pipeline.sh
 
-      # Container logs are the first thing you want when the failure is "MySQL
+      # Container logs are the first thing you want when the failure is "PostgreSQL
       # never came up" rather than "an assertion failed", and they are gone the
       # moment the runner is torn down.
       - name: Dump container logs on failure
@@ -140,7 +140,7 @@ jobs:
       # Only the test database service — this job never touches the dev volume.
       # The same docker-compose.yml developers use, so the image, credentials
       # and port have exactly one definition.
-      - name: Start MySQL
+      - name: Start PostgreSQL
         if: steps.scope.outputs.changed == 'true'
         working-directory: head
         run: |
@@ -150,13 +150,13 @@ jobs:
           docker compose up -d app-db-test
           for attempt in $(seq 1 60); do
             if docker exec "${SERVICE_NAME}-db-test" \
-              mysql -u"$TEST_DB_USERNAME" -p"$TEST_DB_PASSWORD" -e 'SELECT 1' >/dev/null 2>&1; then
-              echo "MySQL is up (attempt ${attempt})"
+              pg_isready -U "$TEST_DB_USERNAME" -d "$TEST_DB_DATABASE" >/dev/null 2>&1; then
+              echo "PostgreSQL is up (attempt ${attempt})"
               exit 0
             fi
             sleep 2
           done
-          echo '::error::MySQL never became reachable'
+          echo '::error::PostgreSQL never became reachable'
           exit 1
 
       - name: Set up PHP
@@ -164,7 +164,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.5'
-          extensions: mbstring, xml, zip, curl, pdo, pdo_mysql, bcmath, intl
+          extensions: mbstring, xml, zip, curl, pdo, pdo_pgsql, bcmath, intl
           tools: composer:v2
           coverage: none
 
@@ -187,7 +187,8 @@ jobs:
           cp .env.example .env
           set -a; . ./.env; set +a
           export DB_HOST=127.0.0.1
-          export DB_PORT=3308
+          export DB_PORT=5435
+          export DB_SSLMODE=disable
           export DB_DATABASE="$TEST_DB_DATABASE"
           export DB_USERNAME="$TEST_DB_USERNAME"
           export DB_PASSWORD="$TEST_DB_PASSWORD"
@@ -203,9 +204,9 @@ jobs:
         run: |
           set -euo pipefail
           set -a; . ./.env; set +a
-          row_count=$(docker exec "${SERVICE_NAME}-db-test" \
-            mysql -u"$TEST_DB_USERNAME" -p"$TEST_DB_PASSWORD" -D"$TEST_DB_DATABASE" \
-            -N -B -e 'SELECT COUNT(*) FROM users;' 2>/dev/null)
+          row_count=$(docker exec -e PGPASSWORD="$TEST_DB_PASSWORD" "${SERVICE_NAME}-db-test" \
+            psql -U "$TEST_DB_USERNAME" -d "$TEST_DB_DATABASE" \
+            -tA -c 'SELECT COUNT(*) FROM users;' 2>/dev/null | tr -d '[:space:]')
           echo "users table holds ${row_count} row(s)"
           if [ "${row_count:-0}" -lt 1 ]; then
             echo '::error::seeding produced no rows, so applying migrations to a populated database was never actually tested'
@@ -226,7 +227,8 @@ jobs:
           set -euo pipefail
           set -a; . ./.env; set +a
           export DB_HOST=127.0.0.1
-          export DB_PORT=3308
+          export DB_PORT=5435
+          export DB_SSLMODE=disable
           export DB_DATABASE="$TEST_DB_DATABASE"
           export DB_USERNAME="$TEST_DB_USERNAME"
           export DB_PASSWORD="$TEST_DB_PASSWORD"
@@ -251,7 +253,8 @@ jobs:
           set -euo pipefail
           set -a; . ./.env; set +a
           export DB_HOST=127.0.0.1
-          export DB_PORT=3308
+          export DB_PORT=5435
+          export DB_SSLMODE=disable
           export DB_DATABASE="$TEST_DB_DATABASE"
           export DB_USERNAME="$TEST_DB_USERNAME"
           export DB_PASSWORD="$TEST_DB_PASSWORD"
@@ -358,17 +361,35 @@ jobs:
         run: |
           set -euo pipefail
 
-          echo '::group::compiled artifacts and runtime directories'
+          echo '::group::runtime directories and the ABSENCE of a baked config cache'
           docker run --rm --entrypoint sh laravel-api:ci -c '
             set -eu
             test -f vendor/autoload.php
-            test -f bootstrap/cache/config.php
-            ls bootstrap/cache/routes-*.php >/dev/null
+
+            # THE CONFIG CACHE MUST NOT EXIST IN THE IMAGE.
+            #
+            # `config:cache` freezes the value of every env() call. Run at build
+            # time — where .dockerignore has excluded .env, so only defaults
+            # exist — it would bake DB_HOST=127.0.0.1 into the image and make
+            # Laravel ignore every value the platform injects later, silently.
+            # docker/entrypoint.sh builds the cache at CONTAINER START instead.
+            if [ -f bootstrap/cache/config.php ]; then
+              echo "bootstrap/cache/config.php was baked into the image; runtime env would be ignored" >&2
+              exit 1
+            fi
+            if ls bootstrap/cache/routes-*.php >/dev/null 2>&1; then
+              echo "a route cache was baked into the image" >&2
+              exit 1
+            fi
+
             # .dockerignore drops these from the build context; the Dockerfile
             # recreates them. Without them view:cache fails at build time and
             # php-fpm cannot write logs at runtime.
             test -d storage/framework/views
             test -d storage/logs
+            # The Blade cache IS built at build time — it depends only on files
+            # in the build context, never on the environment.
+            ls storage/framework/views/*.php >/dev/null
             # php-fpm and nginx serve as www-data, so the application must own
             # everything it writes.
             owner=$(stat -c %U storage/logs)
@@ -376,14 +397,225 @@ jobs:
               echo "storage/logs is owned by $owner, not www-data" >&2
               exit 1
             fi
-            echo "compiled config and routes present; storage writable by www-data"
+            echo "no baked config/route cache; compiled views present; storage writable by www-data"
           '
           echo '::endgroup::'
 
-          # Boots the framework from the CACHED config — the exact step that a
-          # non-serializable config value breaks.
-          echo '::group::framework boots from the cached config'
+          echo '::group::framework boots'
           docker run --rm --entrypoint php laravel-api:ci artisan --version
+          echo '::endgroup::'
+
+          # THE RUNTIME-ENVIRONMENT PROOF.
+          #
+          # This is the check that would have caught a build-time config:cache.
+          # It injects values at `docker run` time — exactly how a platform
+          # supplies them — then asks the application what it actually resolved.
+          # Because entrypoint.sh caches config at container start, the answer
+          # must be the injected values and not the defaults compiled from
+          # config/*.php.
+          #
+          # A non-serializable config value still fails here, just at container
+          # start instead of image build, so the coverage the old build-time
+          # cache provided is not lost.
+          echo '::group::runtime environment is honoured by the built image'
+          resolved=$(docker run --rm \
+            -e APP_RUNTIME_MODE=artisan \
+            -e APP_CONFIG_CHECK=false \
+            -e APP_KEY=base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA= \
+            -e APP_ENV=production \
+            -e DB_CONNECTION=pgsql \
+            -e DB_HOST=db.runtime.example \
+            -e DB_PORT=6543 \
+            -e DB_DATABASE=runtime_db \
+            -e REDIS_HOST=redis.runtime.example \
+            -e FILESYSTEM_DISK=s3 \
+            -e AWS_BUCKET=runtime-bucket \
+            laravel-api:ci \
+            config:show database.connections.pgsql --no-ansi 2>&1)
+          printf '%s\n' "$resolved"
+
+          for expected in db.runtime.example 6543 runtime_db; do
+            if ! grep -q "$expected" <<<"$resolved"; then
+              echo "::error::the image did not honour a runtime-injected value (${expected} missing). A configuration cache baked at BUILD time makes Laravel ignore the environment."
+              exit 1
+            fi
+          done
+
+          # Negative control. Without it, a command that printed nothing useful
+          # would pass every grep above by accident.
+          if grep -q '127\.0\.0\.1' <<<"$resolved"; then
+            echo '::error::the resolved database host is still the default 127.0.0.1 — runtime environment was ignored'
+            exit 1
+          fi
+
+          # ANTI-VACUOUS CONTROL. The greps above pass whether or not the cache
+          # was actually built: entrypoint.sh deliberately falls back to live
+          # config when `config:cache` fails, and live config resolves the SAME
+          # injected values. So a broken cache — the non-serializable-config-value
+          # failure this job exists to catch — would sail through.
+          #
+          # Assert the cache artefact really exists and no fallback warning was
+          # emitted, which is what makes the check above mean what it claims.
+          cache_state=$(docker run --rm \
+            -e APP_RUNTIME_MODE=artisan -e APP_CONFIG_CHECK=false \
+            -e APP_KEY=base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA= \
+            --entrypoint sh laravel-api:ci -c '
+              /usr/local/bin/app-entrypoint.sh --version >/tmp/out 2>&1 || true
+              cat /tmp/out
+              test -f bootstrap/cache/config.php && echo "CONFIG_CACHE_PRESENT"
+              ls bootstrap/cache/routes-*.php >/dev/null 2>&1 && echo "ROUTE_CACHE_PRESENT"
+            ')
+          printf '%s\n' "$cache_state"
+
+          if ! grep -q 'CONFIG_CACHE_PRESENT' <<<"$cache_state"; then
+            echo '::error::the entrypoint did not produce bootstrap/cache/config.php — the runtime-env assertion above passed only because the uncached fallback resolves the same values'
+            exit 1
+          fi
+          if grep -qi 'config:cache failed\|route:cache failed' <<<"$cache_state"; then
+            echo '::error::the entrypoint fell back to live configuration; a config value is probably not var_export-serializable'
+            exit 1
+          fi
+          echo '::endgroup::'
+
+      # THE RUNTIME SPLIT.
+      #
+      # The base image starts nginx, php-fpm AND `php artisan horizon` from one
+      # supervisord config. If that leaks into the api runtime, every API replica
+      # carries a Horizon master, queue concurrency becomes a function of web
+      # traffic, and a deploy's `horizon:terminate` races across replicas. None of
+      # that shows up in a test suite, an image build or a Trivy scan, so it is
+      # asserted here.
+      #
+      # APP_ENTRYPOINT_DRY_RUN makes the entrypoint do all its preparation and
+      # then return instead of handing over to a long-running process, so the
+      # resulting container state can be inspected without booting supervisord.
+      - name: Verify each runtime mode configures the right processes
+        run: |
+          set -euo pipefail
+
+          # Shared: no config cache (nothing to connect to here) and no
+          # fail-fast config check (no database, Redis or keys in this job).
+          common_env=(
+            --rm --entrypoint sh
+            -e APP_ENTRYPOINT_DRY_RUN=true
+            -e APP_RUNTIME_CONFIG_CACHE=false
+            -e APP_CONFIG_CHECK=false
+          )
+
+          echo '::group::api mode: Horizon disabled, listening on :80'
+          api_state=$(docker run "${common_env[@]}" -e APP_RUNTIME_MODE=api laravel-api:ci -c '
+            /usr/local/bin/app-entrypoint.sh >/dev/null 2>&1
+            echo "--- horizon autostart ---"
+            awk "/^\[/ { inside = (\$0 == \"[program:horizon]\") } inside && /^autostart/ { print; exit }" \
+              /etc/supervisor/conf.d/supervisord.conf
+            echo "--- listen directives ---"
+            grep -E "^[[:space:]]*listen" /etc/nginx/conf.d/default.conf
+          ')
+          printf '%s\n' "$api_state"
+
+          if ! grep -q 'autostart=false' <<<"$api_state"; then
+            echo '::error::api mode did NOT disable the Horizon supervisor program — every API replica would run a queue worker'
+            exit 1
+          fi
+          if ! grep -qE 'listen 80;' <<<"$api_state"; then
+            echo '::error::api mode is not listening on the documented default port 80'
+            exit 1
+          fi
+          echo '::endgroup::'
+
+          # PORT is honoured, and the php-fpm ping listener moves out of the way
+          # rather than colliding when PORT is the one it normally uses.
+          echo '::group::api mode: PORT=8080 is honoured and the ping listener relocates'
+          port_state=$(docker run "${common_env[@]}" -e APP_RUNTIME_MODE=api -e PORT=8080 laravel-api:ci -c '
+            /usr/local/bin/app-entrypoint.sh >/dev/null 2>&1
+            grep -E "^[[:space:]]*listen" /etc/nginx/conf.d/default.conf
+            cat /run/app-runtime.env
+          ')
+          printf '%s\n' "$port_state"
+
+          if ! grep -qE 'listen 8080;' <<<"$port_state"; then
+            echo '::error::PORT=8080 was not applied to the nginx listener'
+            exit 1
+          fi
+          if grep -qE 'listen 127\.0\.0\.1:8080;' <<<"$port_state"; then
+            echo '::error::the php-fpm ping listener still binds 8080 and collides with the application port'
+            exit 1
+          fi
+          echo '::endgroup::'
+
+          # `all` is the single-container escape hatch and must NOT disable Horizon.
+          echo '::group::all mode: Horizon left enabled'
+          all_state=$(docker run "${common_env[@]}" -e APP_RUNTIME_MODE=all laravel-api:ci -c '
+            /usr/local/bin/app-entrypoint.sh >/dev/null 2>&1
+            awk "/^\[/ { inside = (\$0 == \"[program:horizon]\") } inside && /^autostart/ { print; exit }" \
+              /etc/supervisor/conf.d/supervisord.conf
+          ')
+          printf '%s\n' "$all_state"
+
+          if grep -q 'autostart=false' <<<"$all_state"; then
+            echo '::error::all mode disabled Horizon, but it is the one mode that must run it alongside the API'
+            exit 1
+          fi
+          echo '::endgroup::'
+
+          # Each remaining mode reports the command it would run. This catches a
+          # mode being renamed, dropped, or wired to the wrong command.
+          echo '::group::worker / scheduler / migrate resolve to the documented commands'
+          for pair in 'worker|artisan horizon' 'scheduler|artisan schedule:run' 'migrate|artisan migrate --force'; do
+            mode=${pair%%|*}
+            expected=${pair#*|}
+            output=$(docker run "${common_env[@]}" -e APP_RUNTIME_MODE="$mode" laravel-api:ci \
+              -c '/usr/local/bin/app-entrypoint.sh 2>&1')
+            printf '%s -> %s\n' "$mode" "$output"
+            # Asserts the COMMAND only. The dry-run line is printed by the script
+            # itself, so it proves nothing about the actual uid — that is asserted
+            # separately below, by running for real.
+            if ! grep -qF "would exec as www-data: php ${expected}" <<<"$output"; then
+              echo "::error::mode '${mode}' did not resolve to 'php ${expected}'"
+              exit 1
+            fi
+          done
+          echo '::endgroup::'
+
+          # REAL privilege-drop proof. The dry-run assertions above match a
+          # literal the script prints; they would still pass if setpriv were
+          # deleted. This runs a one-shot mode FOR REAL and reads the numeric
+          # owner of a file that process wrote.
+          #
+          # `stat -c %u` inside a committed snapshot, NOT `docker cp | tar -tv`:
+          # tar renders the owner as "33/33" under GNU tar and "33     33" under
+          # BSD tar, so any grep over that output passes on one machine and
+          # fails on another. stat prints the uid and nothing else.
+          echo '::group::one-shot runtimes really do drop to www-data'
+          probe_container=$(docker create \
+            -e APP_RUNTIME_MODE=artisan \
+            -e APP_RUNTIME_CONFIG_CACHE=false \
+            -e APP_CONFIG_CHECK=false \
+            -e APP_KEY=base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA= \
+            laravel-api:ci config:cache)
+          docker start -a "$probe_container"
+          docker commit "$probe_container" laravel-api:privilege-probe >/dev/null
+          docker rm -f "$probe_container" >/dev/null
+
+          owner_uid=$(docker run --rm --entrypoint stat laravel-api:privilege-probe \
+            -c '%u' /var/www/html/bootstrap/cache/config.php)
+          docker image rm -f laravel-api:privilege-probe >/dev/null 2>&1 || true
+          echo "config.php was written by uid ${owner_uid}"
+
+          # 33 is www-data in the Debian/Ubuntu base image; root would be 0.
+          if [ "$owner_uid" != '33' ]; then
+            echo "::error::the artisan runtime wrote as uid ${owner_uid}, not 33 (www-data) — the privilege drop did not happen"
+            exit 1
+          fi
+          echo '::endgroup::'
+
+          echo '::group::an unknown mode fails loudly instead of guessing'
+          if docker run "${common_env[@]}" -e APP_RUNTIME_MODE=nonsense laravel-api:ci \
+              -c '/usr/local/bin/app-entrypoint.sh' 2>/dev/null; then
+            echo '::error::an unknown APP_RUNTIME_MODE was accepted'
+            exit 1
+          fi
+          echo 'unknown mode rejected'
           echo '::endgroup::'
 
           # Positive control: grep on empty output fails, so an image that

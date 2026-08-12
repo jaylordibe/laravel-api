@@ -9,6 +9,7 @@ use App\Utils\AppUtil;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 use Laravel\Passport\PersonalAccessTokenResult;
 
 class AuthController extends Controller
@@ -26,8 +27,12 @@ class AuthController extends Controller
     {
         $authData = $request->toData();
         $identifierField = AppUtil::isValidEmail($authData->identifier) ? 'email' : 'username';
+        // Lower-cased to match the canonical form User stores. Auth::attempt builds
+        // its own WHERE clause straight from these credentials, so the model's
+        // set-mutator never sees it — on PostgreSQL an un-normalised identifier is
+        // a case-sensitive comparison and sign-in fails for the right password.
         $credentials = [
-            $identifierField => $authData->identifier,
+            $identifierField => Str::lower(trim($authData->identifier)),
             'password' => $authData->password
         ];
 

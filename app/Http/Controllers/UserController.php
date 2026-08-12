@@ -8,6 +8,7 @@ use App\Http\Requests\CreateUserRequest;
 use App\Http\Requests\GenericRequest;
 use App\Http\Requests\SignUpUserRequest;
 use App\Http\Requests\UpdatePasswordRequest;
+use App\Http\Requests\UpdateProfileImageRequest;
 use App\Http\Requests\UserRequest;
 use App\Http\Resources\UserResource;
 use App\Services\UserService;
@@ -184,20 +185,24 @@ class UserController extends Controller
     /**
      * Update auth user's profile image.
      *
-     * @param GenericRequest $request
+     * The file is validated in UpdateProfileImageRequest — type, real image
+     * content, dimensions and size. It used to arrive through a GenericRequest
+     * with no rules at all, and the only check was a hand-rolled "is it empty"
+     * branch here, which is both an unvalidated upload and a controller doing
+     * validation. Both are now gone: a missing or invalid file fails in the Form
+     * Request and returns the same 400 shape as every other validation failure.
+     *
+     * @param UpdateProfileImageRequest $request
      *
      * @return JsonResponse|JsonResource
      * @throws BadRequestException
      */
-    public function updateAuthUserProfileImage(GenericRequest $request): JsonResponse|JsonResource
+    public function updateAuthUserProfileImage(UpdateProfileImageRequest $request): JsonResponse|JsonResource
     {
-        $profileImageFile = $request->file('profileImage');
-
-        if (empty($profileImageFile)) {
-            return ResponseUtil::error('Profile photo is required.');
-        }
-
-        $user = $this->userService->updateProfileImage($request->getAuthUserData()->id, $profileImageFile);
+        $user = $this->userService->updateProfileImage(
+            $request->getAuthUserData()->id,
+            $request->getProfileImage()
+        );
 
         return ResponseUtil::resource(UserResource::class, $user);
     }

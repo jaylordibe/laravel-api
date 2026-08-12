@@ -10,7 +10,7 @@ echo -e "\033[0m \033[1;35m Starting services... \033[0m"
 docker compose up -d app-api app-db-test
 
 echo -e "\033[0m \033[1;35m Waiting for the containers to initialize \033[0m"
-while ! docker exec ${SERVICE_NAME}-db-test mysql -u$TEST_DB_USERNAME -p$TEST_DB_PASSWORD -e "SELECT 1" >/dev/null 2>&1; do
+while ! docker exec ${SERVICE_NAME}-db-test pg_isready -U "$TEST_DB_USERNAME" -d "$TEST_DB_DATABASE" >/dev/null 2>&1; do
     sleep 1
 done
 

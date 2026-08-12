@@ -1,12 +1,12 @@
 ---
 name: feature-testing
 user-invocable: false
-description: Use when writing or running tests (tests/Feature/*, tests/Unit/*) — the Docker-backed live MySQL test database, the ./test.sh wrapper and single-test form, the Tests\TestCase auth helpers (loginSystemAdminUser / login / getAuthUser), model factories, PHPUnit attribute style (#[Test]), and assertion conventions.
+description: Use when writing or running tests (tests/Feature/*, tests/Unit/*) — the Docker-backed live PostgreSQL test database, the ./test.sh wrapper and single-test form, the Tests\TestCase auth helpers (loginSystemAdminUser / login / getAuthUser), model factories, PHPUnit attribute style (#[Test]), and assertion conventions.
 ---
 
 # Tests
 
-Tests run **inside the `laravel-api` container against a real MySQL test database** (`laravel-db-test`) — not sqlite, not in-memory. `phpunit.xml` sets `APP_ENV=testing`. Suites are `tests/Unit` and `tests/Feature`; the split is by subject, not isolation — both hit the DB via factories.
+Tests run **inside the `laravel-api` container against a real PostgreSQL test database** (`laravel-db-test`) — not sqlite, not in-memory. `phpunit.xml` sets `APP_ENV=testing`. Suites are `tests/Unit` and `tests/Feature`; the split is by subject, not isolation — both hit the DB via factories.
 
 ## Running tests
 

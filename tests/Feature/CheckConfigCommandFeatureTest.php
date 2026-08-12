@@ -1,0 +1,147 @@
+<?php
+
+namespace Tests\Feature;
+
+use Illuminate\Support\Facades\Artisan;
+use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
+
+/**
+ * `app:check-config` is the container's fail-fast gate: docker/entrypoint.sh runs
+ * it before the api and worker runtimes start, and a non-zero exit stops the
+ * container booting.
+ *
+ * Only its SUCCESS path was covered, which is close to no coverage at all —
+ * inverting a condition or deleting an entire check would have kept the suite
+ * green while the gate silently stopped gating. Every test here drives a
+ * production-only branch and asserts the command actually fails.
+ */
+class CheckConfigCommandFeatureTest extends TestCase
+{
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Most checks are guarded on the production environment, so the whole
+        // class runs as production and then breaks one thing at a time.
+        app()['env'] = 'production';
+        config()->set('app.debug', false);
+        config()->set('cache.default', 'redis');
+        config()->set('logging.default', 'stderr');
+        config()->set('trustedproxy.proxies', '*');
+        config()->set('passport.private_key', '-----BEGIN RSA PRIVATE KEY-----x-----END RSA PRIVATE KEY-----');
+        config()->set('passport.public_key', '-----BEGIN PUBLIC KEY-----x-----END PUBLIC KEY-----');
+        config()->set('database.connections.pgsql.sslmode', 'verify-full');
+    }
+
+    #[Test]
+    public function itPassesWhenProductionConfigurationIsSound(): void
+    {
+        // A positive control. Without it, every assertion below could be passing
+        // for an unrelated reason.
+        self::assertSame(0, Artisan::call('app:check-config'));
+    }
+
+    #[Test]
+    public function itFailsWhenTheApplicationKeyIsMissing(): void
+    {
+        config()->set('app.key', null);
+
+        self::assertSame(1, Artisan::call('app:check-config'));
+        self::assertStringContainsString('APP_KEY', Artisan::output());
+    }
+
+    #[Test]
+    public function itFailsWhenDebugModeIsEnabledInProduction(): void
+    {
+        // Debug mode renders stack traces and configuration into HTTP responses.
+        config()->set('app.debug', true);
+
+        self::assertSame(1, Artisan::call('app:check-config'));
+        self::assertStringContainsString('APP_DEBUG', Artisan::output());
+    }
+
+    #[Test]
+    public function itFailsWhenTheCacheStoreIsPerContainer(): void
+    {
+        // The silent one: a file cache "works" in a scaled deployment while
+        // atomic locks and onOneServer() scheduling quietly guard nothing.
+        config()->set('cache.default', 'file');
+
+        self::assertSame(1, Artisan::call('app:check-config'));
+        self::assertStringContainsString('CACHE_STORE', Artisan::output());
+    }
+
+    #[Test]
+    public function itFailsOnASilentlyDowngradingDatabaseSslMode(): void
+    {
+        // `prefer` negotiates TLS and falls back to plaintext with no trace.
+        config()->set('database.connections.pgsql.sslmode', 'prefer');
+
+        self::assertSame(1, Artisan::call('app:check-config'));
+        self::assertStringContainsString('DB_SSLMODE', Artisan::output());
+    }
+
+    #[Test]
+    public function itFailsWhenTheWorkerTimeoutCanOutliveTheQueueRetryWindow(): void
+    {
+        // timeout >= retry_after means the queue hands the job to a second worker
+        // while the first is still running it.
+        config()->set('horizon.defaults.supervisor-1.timeout', 120);
+        config()->set('queue.connections.redis.retry_after', 90);
+
+        self::assertSame(1, Artisan::call('app:check-config'));
+        self::assertStringContainsString('retry_after', Artisan::output());
+    }
+
+    #[Test]
+    public function itFailsWhenTheUploadDiskStoresObjectsPublicly(): void
+    {
+        // Regression guard: this was skipped by disk NAME, so selecting the
+        // deliberately-public `public` disk as the upload target passed the check
+        // while every user upload became world-readable.
+        config()->set('custom.storage.disk', 'public');
+
+        self::assertSame(1, Artisan::call('app:check-config'));
+        self::assertStringContainsString('public', Artisan::output());
+    }
+
+    #[Test]
+    public function itFailsWhenPassportSigningKeysAreAbsent(): void
+    {
+        config()->set('passport.private_key', null);
+        config()->set('passport.public_key', null);
+
+        // The key FILES must also be absent for this to be a real failure; in the
+        // test container they are present, so assert on whichever branch applies
+        // rather than pretending to know.
+        $hasKeyFiles = file_exists(storage_path('oauth-private.key'))
+            && file_exists(storage_path('oauth-public.key'));
+
+        $exitCode = Artisan::call('app:check-config');
+
+        if ($hasKeyFiles) {
+            // Files present: not fatal, but production must be warned that
+            // per-container keys are not stable across replicas.
+            self::assertSame(0, $exitCode);
+            self::assertStringContainsString('key FILES', Artisan::output());
+
+            return;
+        }
+
+        self::assertSame(1, $exitCode);
+        self::assertStringContainsString('Passport signing keys', Artisan::output());
+    }
+
+    #[Test]
+    public function strictModePromotesAWarningToAFailure(): void
+    {
+        // A warning-only condition: file-based logging in production.
+        config()->set('logging.default', 'daily');
+
+        self::assertSame(0, Artisan::call('app:check-config'));
+        self::assertSame(1, Artisan::call('app:check-config', ['--strict' => true]));
+    }
+
+}

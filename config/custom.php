@@ -51,5 +51,78 @@ return [
         'api_per_user' => (int) env('RATE_LIMIT_API_PER_USER', 120),
         'api_per_ip' => (int) env('RATE_LIMIT_API_PER_IP', 300),
         'heavy' => (int) env('RATE_LIMIT_HEAVY', 10),
+
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Health probes
+    |--------------------------------------------------------------------------
+    |
+    | The readiness endpoint is deliberately NOT rate-limited — Laravel's limiter
+    | resolves through the Redis-backed cache, so a limiter in front of it would
+    | throw during the very Redis outage the probe exists to report. What bounds
+    | it instead is time: every probe has a hard ceiling, so a slow dependency
+    | cannot park php-fpm workers until the pool is exhausted.
+    |
+    */
+    'health' => [
+        'database_timeout_milliseconds' => (int) env('HEALTH_DB_TIMEOUT_MS', 3000),
+    ],
+
+    /*
+     * NOTE: trusted proxies are NOT configured here.
+     *
+     * They live in config/trustedproxy.php, because Laravel's TrustProxies
+     * middleware reads `config('trustedproxy.proxies')` itself — including the
+     * comma-splitting, trimming and '*' handling. Re-implementing that parsing
+     * here and pushing the result into the middleware from a service provider
+     * is what this template used to do; the framework already does it.
+     */
+
+    /*
+    |--------------------------------------------------------------------------
+    | Horizon dashboard access
+    |--------------------------------------------------------------------------
+    |
+    | Comma-separated emails allowed to open the Horizon dashboard outside local.
+    | EMPTY denies everyone, which is the correct default: failed-job payloads
+    | shown there carry whatever the job was handed.
+    |
+    */
+    'horizon_dashboard_emails' => array_values(array_filter(
+        array_map('trim', explode(',', (string) env('HORIZON_DASHBOARD_EMAILS', ''))),
+        static fn (string $email): bool => $email !== ''
+    )),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Object storage
+    |--------------------------------------------------------------------------
+    |
+    | Which disk App\Utils\FileUtil reads and writes, and how long the signed URLs
+    | it hands out remain valid.
+    |
+    | The disk defaults to the application's default disk (FILESYSTEM_DISK), so
+    | swapping storage providers is one environment variable and no code change.
+    | It is a separate setting so a fork can send user uploads somewhere other
+    | than the default disk without redefining what "default" means.
+    |
+    */
+    'storage' => [
+        'disk' => env('APP_STORAGE_DISK', env('FILESYSTEM_DISK', 'local')),
+
+        /*
+         * Signed-URL lifetime in minutes. Short on purpose: a signed URL is a
+         * bearer credential for one object, and it is routinely pasted into chat,
+         * logged by an intermediary and left in browser history. Long enough to
+         * click, not long enough to circulate.
+         */
+        'temporary_url_ttl' => (int) env('APP_STORAGE_TEMPORARY_URL_TTL', 15),
+
+        /*
+         * Upload limits for user-supplied images, applied in the Form Request.
+         */
+        'max_image_upload_kilobytes' => (int) env('APP_MAX_IMAGE_UPLOAD_KB', 5120),
     ],
 ];

@@ -10,7 +10,7 @@
 - **Related plan/ticket:**
 - **Owner:**
 - **Framework:** Laravel 13 (Eloquent)
-- **Database:** MySQL
+- **Database:** PostgreSQL
 - **Risk:** Low | Medium | High | Critical
 
 ## Model lifecycle

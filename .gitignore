@@ -8,6 +8,11 @@
 .env
 .env.backup
 .env.production
+# Any ad-hoc backup of a real env file. These carry live credentials and are
+# trivially created by hand (`mv .env .env.something.bak`) during a migration,
+# which is exactly when nobody is looking at what git picked up.
+.env.*.bak
+*.bak
 .phpactor.json
 .phpunit.result.cache
 Homestead.json

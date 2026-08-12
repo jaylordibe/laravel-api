@@ -50,8 +50,10 @@ class UserFeatureTest extends TestCase
             'firstName' => $userData->firstName,
             'middleName' => $userData->middleName,
             'lastName' => $userData->lastName,
-            'username' => $userData->username,
-            'email' => $userData->email,
+            // Lower-cased: User normalises email/username on write so the
+            // PostgreSQL unique index and every lookup compare the same value.
+            'username' => Str::lower($userData->username),
+            'email' => Str::lower($userData->email),
             'timezone' => $userData->timezone,
             'phoneNumber' => $userData->phoneNumber,
             'birthdate' => $userData->birthdate
@@ -73,7 +75,7 @@ class UserFeatureTest extends TestCase
             'firstName' => $user->first_name,
             'middleName' => $user->middle_name,
             'lastName' => $user->last_name,
-            'username' => $payload['username'],
+            'username' => Str::lower($payload['username']),
             'email' => $user->email,
             'timezone' => $user->timezone,
             'phoneNumber' => $user->phone_number,
@@ -97,7 +99,7 @@ class UserFeatureTest extends TestCase
             'middleName' => $user->middle_name,
             'lastName' => $user->last_name,
             'username' => $user->username,
-            'email' => $payload['email'],
+            'email' => Str::lower($payload['email']),
             'timezone' => $user->timezone,
             'phoneNumber' => $user->phone_number,
             'birthdate' => $user->birthdate->toISOString()
@@ -142,8 +144,8 @@ class UserFeatureTest extends TestCase
             'firstName' => $payload['firstName'],
             'lastName' => $payload['lastName'],
             'phoneNumber' => $payload['phoneNumber'],
-            'email' => $payload['email'],
-            'username' => Str::replace('.', '', Str::before($payload['email'], '@'))
+            'email' => Str::lower($payload['email']),
+            'username' => Str::lower(Str::replace('.', '', Str::before($payload['email'], '@')))
         ];
 
         $response->assertCreated()->assertJson($expected);

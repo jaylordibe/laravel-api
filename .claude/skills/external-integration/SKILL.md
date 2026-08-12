@@ -66,7 +66,7 @@ The Util maps the upstream shape → our shape **at the boundary**. Callers (ser
 
 ## Testing — never hit a real vendor
 
-Fake the externals; the harness (`feature-testing`) hits a live MySQL DB but must not reach the network:
+Fake the externals; the harness (`feature-testing`) hits a live PostgreSQL DB but must not reach the network:
 - `Http::fake([...])` — stub upstream responses, assert with `Http::assertSent(...)`.
 - `Storage::fake('public')` — in-memory disk for `FileUtil`; assert with `Storage::disk('public')->assertExists(...)`.
 - `Notification::fake()` / `Mail::fake()` — already used (`UserFeatureTest` fakes notifications on sign-up); assert `assertSentTo` / `assertSent`.

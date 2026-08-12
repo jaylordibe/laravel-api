@@ -77,7 +77,7 @@ These are the "Security is non-negotiable" clause of the CLAUDE.md **Engineering
 
 ## Dynamic scanning (DAST)
 
-`.github/workflows/security-dast.yml` runs OWASP ZAP weekly (Monday 03:00 UTC) and on demand, against a **fully ephemeral** app with its own throwaway MySQL and Redis — never a shared or real environment. It is separate from the merge gate because active rules send real `POST`/`PUT`/`DELETE` and the scan is slow and stateful.
+`.github/workflows/security-dast.yml` runs OWASP ZAP weekly (Monday 03:00 UTC) and on demand, against a **fully ephemeral** app with its own throwaway PostgreSQL and Redis — never a shared or real environment. It is separate from the merge gate because active rules send real `POST`/`PUT`/`DELETE` and the scan is slow and stateful.
 
 The scan is driven by the generated OpenAPI document (`php artisan scramble:export`), so it exercises every declared operation rather than spidering a headless JSON API and finding only the 401 wall. Three details are load-bearing:
 

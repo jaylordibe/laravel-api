@@ -1,3 +1,15 @@
+# LOCAL DEVELOPMENT ONLY.
+#
+# This file is not a deployment artifact and is excluded from the production image
+# by .dockerignore. It runs the application straight from the base image with the
+# source bind-mounted, so `app-api` here keeps the base image's single-container
+# behaviour: nginx, php-fpm AND Horizon in one process tree. That is deliberate —
+# a developer wants queues working without running a second container.
+#
+# The PRODUCTION image is different: it is built from the Dockerfile, which
+# installs docker/entrypoint.sh and defaults to APP_RUNTIME_MODE=api, so a
+# horizontally scaled API replica never carries a Horizon master. See
+# DEPLOYMENT.md.
 services:
   app-api:
     image: jaylordibe/laravel-php:8.5
@@ -11,75 +23,116 @@ services:
       - .:/var/www/html
     working_dir: /var/www/html
     depends_on:
-      - app-db
-      - app-redis
+      app-db:
+        condition: service_healthy
+      app-redis:
+        condition: service_started
     networks:
       - app-network
   app-db:
-    image: mysql:8.0.25
+    # PostgreSQL. Pinned to a minor version so every developer and every CI run
+    # gets the same engine; an unpinned tag is how "works on my machine" starts.
+    image: postgres:18.3
     container_name: ${SERVICE_NAME}-db
     restart: unless-stopped
     tty: true
     platform: linux/amd64
     ports:
-      - "3307:3306"
+      - "5433:5432"
     environment:
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${DB_DATABASE}
-      MYSQL_USER: ${DB_USERNAME}
-      MYSQL_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_DATABASE}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
-      - ./docker/database/data:/var/lib/mysql
+      # Mounted at /var/lib/postgresql, NOT /var/lib/postgresql/data.
+      #
+      # PostgreSQL 18 changed the official image's layout: data now lives in a
+      # major-version subdirectory (/var/lib/postgresql/18/docker) so that
+      # `pg_upgrade --link` can work across versions without crossing a mount
+      # boundary. An image 18 or newer REFUSES TO START against the old
+      # .../data mount point, so this is not a stylistic choice.
+      - ./docker/database/data:/var/lib/postgresql
+    # pg_isready is the engine's own readiness check, and it reports ready only
+    # once the server accepts connections — which is later than the container
+    # being "up". The scripts wait on this rather than polling with a client.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d ${DB_DATABASE}"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+      start_period: 10s
     networks:
       - app-network
   app-db-gui:
-    image: phpmyadmin/phpmyadmin:latest
+    # pgAdmin replaces phpMyAdmin, which speaks only the MySQL protocol.
+    image: dpage/pgadmin4:latest
     container_name: ${SERVICE_NAME}-db-gui
     restart: unless-stopped
-    tty: true
     platform: linux/amd64
     ports:
       - "8001:80"
     environment:
-      PMA_HOST: app-db
-      UPLOAD_LIMIT: 300M
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
+      # Local-only convenience. These disable pgAdmin's own login and its
+      # first-run wizard on a container that is reachable from localhost only and
+      # holds nothing but throwaway development data. Never carry this file, or
+      # these settings, into a deployed environment.
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
     networks:
       - app-network
   app-db-test:
-    image: mysql:8.0.25
+    image: postgres:18.3
     container_name: ${SERVICE_NAME}-db-test
     restart: unless-stopped
     tty: true
     platform: linux/amd64
+    # 5435, not 5434: the sibling NestJS template publishes its test database on
+    # 5434, and two templates in the same workspace must be able to run at the
+    # same time. The dev database keeps 5433 (5432 + 1).
     ports:
-      - "3308:3306"
+      - "5435:5432"
     environment:
-      MYSQL_ROOT_PASSWORD: ${TEST_DB_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${TEST_DB_DATABASE}
-      MYSQL_USER: ${TEST_DB_USERNAME}
-      MYSQL_PASSWORD: ${TEST_DB_PASSWORD}
+      POSTGRES_DB: ${TEST_DB_DATABASE}
+      POSTGRES_USER: ${TEST_DB_USERNAME}
+      POSTGRES_PASSWORD: ${TEST_DB_PASSWORD}
     volumes:
-      - ./docker/database/test-data:/var/lib/mysql
+      # See the note on app-db: PostgreSQL 18+ requires the mount here.
+      - ./docker/database/test-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${TEST_DB_USERNAME} -d ${TEST_DB_DATABASE}"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+      start_period: 10s
     networks:
       - app-network
   app-db-test-gui:
-    image: phpmyadmin/phpmyadmin:latest
+    image: dpage/pgadmin4:latest
     container_name: ${SERVICE_NAME}-db-test-gui
     restart: unless-stopped
-    tty: true
     platform: linux/amd64
     ports:
       - "8002:80"
     environment:
-      PMA_HOST: app-db-test
-      UPLOAD_LIMIT: 300M
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
     networks:
       - app-network
   app-redis:
-    image: redis:latest
+    image: redis:8.6.2
     container_name: ${SERVICE_NAME}-redis
+    restart: unless-stopped
     ports:
       - "6378:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
     networks:
       - app-network
 networks:

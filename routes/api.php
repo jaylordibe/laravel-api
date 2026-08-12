@@ -3,11 +3,32 @@
 use App\Http\Controllers\AppVersionController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ConstantController;
+use App\Http\Controllers\HealthController;
 use App\Http\Controllers\JobStatusController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DeviceTokenController;
 use App\Http\Controllers\ActivityLogController;
+
+// Readiness probe. Public by necessity — a load balancer cannot present a bearer
+// token — and therefore deliberately discloses nothing beyond a per-dependency
+// boolean.
+//
+// DELIBERATELY NOT THROTTLED. Laravel's rate limiter resolves through the default
+// cache store, which production requires to be Redis — so putting `throttle:*` in
+// front of this endpoint means that when Redis is down, the limiter throws before
+// the controller runs and the probe returns 500 instead of the 503 that names
+// Redis as the failed dependency. A readiness check that breaks in exactly the
+// outage it exists to report is worse than no readiness check.
+//
+// The DoS surface this leaves is bounded by the probes themselves: two round
+// trips, each with a hard timeout (see App\Utils\HealthUtil), and no output that
+// varies with input. Restrict the path at the edge if your platform exposes it to
+// the internet.
+//
+// LIVENESS is separate and lives at GET /up (bootstrap/app.php). See
+// HealthController for why the two must not be merged.
+Route::get('health/ready', [HealthController::class, 'ready']);
 
 // Public Routes
 Route::middleware(['throttle:public'])->group(function () {

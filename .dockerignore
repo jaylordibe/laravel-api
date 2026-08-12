@@ -1,19 +1,42 @@
 .git
 .gitignore
+.gitattributes
 .editorconfig
 node_modules
 tests
 storage/logs
 storage/framework/cache
 storage/framework/views
+# Every .env variant. Runtime configuration is injected by the platform; an image
+# that carries a .env would override it (Laravel reads .env before the process
+# environment) and would bake credentials into a distributable layer.
 .env
-.env.example
-.env.testing
+.env.*
 docker-compose.yml
-docker/
+# Only the PostgreSQL data volumes — docker/entrypoint.sh and docker/healthcheck.sh
+# are COPYed into the image and must stay in the build context.
+docker/database/
 vendor/bin
 *.md
 start.sh
 stop.sh
 test.sh
 test-pipeline.sh
+# Tooling and generated artifacts with no role at runtime. Excluding them keeps
+# the context small and keeps CI config, editor settings and the generated
+# OpenAPI document out of the shipped image.
+.github
+.claude
+.junie
+.idea
+.zap
+.trivyignore
+.phpunit.result.cache
+.phpunit.cache
+phpunit.xml
+api.json
+boost.json
+package.json
+yarn.lock
+vite.config.js
+public/storage

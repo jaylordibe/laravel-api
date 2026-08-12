@@ -393,12 +393,30 @@ class UserService
      */
     public function updateProfileImage(int $id, UploadedFile $profileImageFile): ?User
     {
-        $path = FileUtil::upload($profileImageFile);
-        $profileImage = FileUtil::getUrl($path);
-        $user = $this->userRepository->updateProfileImage($id, $profileImage);
+        // The stored value is the object KEY, not a URL.
+        //
+        // It used to persist FileUtil::getUrl($path) — a permanent, unsigned,
+        // publicly readable link. That baked three problems into a database
+        // column: the object had to stay public for the link to work, the row
+        // became invalid the moment the storage provider or bucket changed, and
+        // the URL leaked to anyone who ever saw the record. Storing the key
+        // instead lets UserResource mint a short-lived signed URL per response,
+        // so the object stays private and the link expires.
+        //
+        // The key is generated SERVER-SIDE from the user id and a ULID. The
+        // client filename is never used: it is attacker-controlled and is the
+        // input to path traversal (`../../`), to overwriting another user's
+        // object, and to storing a name the storage backend interprets. Scoping
+        // by user id also keeps one user's objects out of another's prefix.
+        $path = FileUtil::upload(
+            $profileImageFile,
+            'profile-images/' . $id
+        );
+
+        $user = $this->userRepository->updateProfileImage($id, $path);
 
         if (empty($user)) {
-            throw new BadRequestException('Failed to update email');
+            throw new BadRequestException('Failed to update profile image.');
         }
 
         return $user;

@@ -145,6 +145,42 @@ class User extends Authenticatable implements MustVerifyEmail
     /**
      * Get the user's full name.
      */
+    /**
+     * Normalise the email to lower case on write.
+     *
+     * PostgreSQL compares `varchar` case-SENSITIVELY, and both the `users_email_unique`
+     * index and every `where('email', ?)` lookup rely on that comparison. Under
+     * MySQL's `utf8mb4_unicode_ci` collation the case difference was absorbed for
+     * free; on PostgreSQL it is not, so without this the same address registered
+     * as `Jay@Example.com` and `jay@example.com` produces TWO accounts that the
+     * unique index happily accepts, and a sign-in typed in the wrong case fails
+     * with "Invalid username or password".
+     *
+     * Normalising on write means the stored value is canonical, so the unique
+     * index enforces real uniqueness. Callers must lower-case the value they look
+     * up with — see UserRepository and AuthController.
+     *
+     * @return Attribute
+     */
+    protected function email(): Attribute
+    {
+        return Attribute::make(
+            set: fn (?string $value): ?string => $value === null ? null : Str::lower(trim($value))
+        );
+    }
+
+    /**
+     * Normalise the username to lower case on write, for the same reason as email.
+     *
+     * @return Attribute
+     */
+    protected function username(): Attribute
+    {
+        return Attribute::make(
+            set: fn (?string $value): ?string => $value === null ? null : Str::lower(trim($value))
+        );
+    }
+
     protected function fullName(): Attribute
     {
         return Attribute::make(

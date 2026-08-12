@@ -2,16 +2,58 @@
 
 namespace App\Utils;
 
+use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use RuntimeException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use ZipArchive;
 
 class FileUtil
 {
 
-    private const string DISK = 'public';
+    /**
+     * Per-request memo of generated temporary URLs, keyed by disk + path + ttl.
+     *
+     * @var array<string, string>
+     */
+    private static array $temporaryUrlCache = [];
+
+    /**
+     * Resolve the storage disk used for application files.
+     *
+     * This was a `private const DISK = 'public'`, which hard-wired every upload
+     * to the LOCAL disk exposed through the public storage symlink. Two problems,
+     * both of which this method fixes:
+     *
+     *   - Every stored object was world-readable to anyone who could guess or
+     *     obtain its URL, with no authorization step anywhere in the path.
+     *   - A constant cannot be pointed at object storage, so the local
+     *     filesystem — which is ephemeral and per-replica in a container — was
+     *     the only possible destination.
+     *
+     * The disk now comes from configuration (APP_STORAGE_DISK, falling back to
+     * FILESYSTEM_DISK), so switching between local, S3-compatible and GCS storage
+     * is an environment variable. All of those disks store objects PRIVATELY; the
+     * URL helpers below issue short-lived signed URLs instead of public links.
+     *
+     * @return Filesystem
+     */
+    private static function disk(): Filesystem
+    {
+        return Storage::disk(config('custom.storage.disk'));
+    }
+
+    /**
+     * Default lifetime, in minutes, for the signed URLs issued below.
+     *
+     * @return int
+     */
+    private static function defaultTtlInMinutes(): int
+    {
+        return config('custom.storage.temporary_url_ttl');
+    }
 
     /**
      * Uploads a single file.
@@ -23,7 +65,7 @@ class FileUtil
      */
     public static function upload(UploadedFile $file, string $path = ''): string
     {
-        return $file->store($path, self::DISK);
+        return $file->store($path, config('custom.storage.disk'));
     }
 
     /**
@@ -66,7 +108,7 @@ class FileUtil
             return false;
         }
 
-        return Storage::disk(self::DISK)->delete($path);
+        return self::disk()->delete($path);
     }
 
     /**
@@ -97,30 +139,48 @@ class FileUtil
      * Generates a single pre-signed/public url that has an expiration.
      *
      * @param string $path - the file path to generate the url from
-     * @param int $expirationInMinutes - the number of minutes that the url will be valid
+     * @param int|null $expirationInMinutes - minutes the url stays valid; null uses the configured default
      *
      * @return string - the pre-signed/public url
      */
-    public static function generatePublicUrl(string $path, int $expirationInMinutes = 15): string
+    public static function generatePublicUrl(string $path, ?int $expirationInMinutes = null): string
     {
         if (empty($path)) {
             return '';
         }
 
-        $expirationDate = now()->addMinutes($expirationInMinutes);
+        $ttl = $expirationInMinutes ?? self::defaultTtlInMinutes();
 
-        return Storage::disk(self::DISK)->temporaryUrl($path, $expirationDate);
+        // Memoised for the lifetime of the request.
+        //
+        // Signing is not always local. On S3 it is a pure HMAC and free. On GCS
+        // with Application Default Credentials — the posture DEPLOYMENT.md
+        // recommends, because it avoids shipping a key file — the client has no
+        // private key, so each signature is an HTTPS round trip to the IAM
+        // credentials API. A collection response that signs one URL per row then
+        // makes one outbound call per row.
+        //
+        // This removes the repeat-path case entirely. It does NOT make a page of
+        // 100 DISTINCT objects free on GCS+ADC; see the note in DEPLOYMENT.md for
+        // the options there.
+        $cacheKey = config('custom.storage.disk') . '|' . $path . '|' . $ttl;
+
+        if (!array_key_exists($cacheKey, self::$temporaryUrlCache)) {
+            self::$temporaryUrlCache[$cacheKey] = self::disk()->temporaryUrl($path, now()->addMinutes($ttl));
+        }
+
+        return self::$temporaryUrlCache[$cacheKey];
     }
 
     /**
      * Generates multiple pre-signed/public urls that has an expiration.
      *
      * @param array $paths - the file paths to generate the url from
-     * @param int $expirationInMinutes - the number of minutes that the url will be valid
+     * @param int|null $expirationInMinutes - minutes the url stays valid; null uses the configured default
      *
      * @return array - the pre-signed/public urls
      */
-    public static function generatePublicUrls(array $paths, int $expirationInMinutes = 15): array
+    public static function generatePublicUrls(array $paths, ?int $expirationInMinutes = null): array
     {
         if (empty($paths)) {
             return [];
@@ -143,34 +203,34 @@ class FileUtil
      * Generates a single download url that has an expiration.
      *
      * @param string $path - the file path to generate the url from
-     * @param int $expirationInMinutes - the number of minutes that the url will be valid
+     * @param int|null $expirationInMinutes - minutes the url stays valid; null uses the configured default
      *
      * @return string - the download url
      */
-    public static function generateDownloadUrl(string $path, int $expirationInMinutes = 15): string
+    public static function generateDownloadUrl(string $path, ?int $expirationInMinutes = null): string
     {
         if (empty($path)) {
             return '';
         }
 
-        $expirationDate = now()->addMinutes($expirationInMinutes);
+        $expirationDate = now()->addMinutes($expirationInMinutes ?? self::defaultTtlInMinutes());
         $options = [
             'ResponseContentType' => 'application/octet-stream',
             'ResponseContentDisposition' => 'attachment; filename=' . basename($path)
         ];
 
-        return Storage::disk(self::DISK)->temporaryUrl($path, $expirationDate, $options);
+        return self::disk()->temporaryUrl($path, $expirationDate, $options);
     }
 
     /**
      * Generates multiple download urls that has an expiration.
      *
      * @param array $paths - the file paths to generate the url from
-     * @param int $expirationInMinutes - the number of minutes that the url will be valid
+     * @param int|null $expirationInMinutes - minutes the url stays valid; null uses the configured default
      *
      * @return array - the download urls
      */
-    public static function generateDownloadUrls(array $paths, int $expirationInMinutes = 15): array
+    public static function generateDownloadUrls(array $paths, ?int $expirationInMinutes = null): array
     {
         if (empty($paths)) {
             return [];
@@ -198,7 +258,7 @@ class FileUtil
      */
     public static function exists(string $path): bool
     {
-        return Storage::disk(self::DISK)->exists($path);
+        return self::disk()->exists($path);
     }
 
     /**
@@ -210,7 +270,7 @@ class FileUtil
      */
     public static function missing(string $path): bool
     {
-        return Storage::disk(self::DISK)->missing($path);
+        return self::disk()->missing($path);
     }
 
     /**
@@ -222,7 +282,7 @@ class FileUtil
      */
     public static function directoryExists(string $path): bool
     {
-        return Storage::disk(self::DISK)->directoryExists($path);
+        return self::disk()->directoryExists($path);
     }
 
     /**
@@ -234,7 +294,7 @@ class FileUtil
      */
     public static function directoryMissing(string $path): bool
     {
-        return Storage::disk(self::DISK)->directoryMissing($path);
+        return self::disk()->directoryMissing($path);
     }
 
     /**
@@ -246,7 +306,7 @@ class FileUtil
      */
     public static function makeDirectory(string $path): bool
     {
-        return Storage::disk(self::DISK)->makeDirectory($path);
+        return self::disk()->makeDirectory($path);
     }
 
     /**
@@ -258,7 +318,7 @@ class FileUtil
      */
     public static function deleteDirectory(string $path): bool
     {
-        return Storage::disk(self::DISK)->deleteDirectory($path);
+        return self::disk()->deleteDirectory($path);
     }
 
     /**
@@ -274,11 +334,23 @@ class FileUtil
             return null;
         }
 
-        return Storage::disk(self::DISK)->download($path);
+        return self::disk()->download($path);
     }
 
     /**
-     * Get the url for the file at the given path.
+     * Get the unsigned url for the file at the given path.
+     *
+     * PREFER generatePublicUrl(). A URL from this method carries no signature and
+     * no expiry, so it only resolves if the object is publicly readable — and on
+     * every disk configured by this template objects are private, which means
+     * this returns a link that 403s.
+     *
+     * `Storage::url()` returning a string is NOT evidence that the object is
+     * reachable: it composes a URL from the disk configuration without asking the
+     * storage backend anything. That is exactly how a "working" upload feature
+     * ships against a private bucket and fails only in the browser.
+     *
+     * Kept for genuinely public assets on the `public` disk.
      *
      * @param string $path
      *
@@ -286,7 +358,7 @@ class FileUtil
      */
     public static function getUrl(string $path): string
     {
-        return Storage::disk(self::DISK)->url($path);
+        return self::disk()->url($path);
     }
 
     /**
@@ -312,15 +384,46 @@ class FileUtil
     }
 
     /**
-     * Get the storage path for the file at the given path.
+     * Get the absolute filesystem path for the file at the given path.
+     *
+     * LOCAL DISKS ONLY. An object store has no filesystem path, so this throws
+     * rather than returning something that looks like a path and fails later in
+     * whatever tries to open it. Anything reading file CONTENT should use get()
+     * or readStream(), which work on every disk.
      *
      * @param string $path
      *
      * @return string
+     * @throws RuntimeException when the configured disk is not a local filesystem
      */
     public static function getStoragePath(string $path): string
     {
-        return Storage::disk(self::DISK)->path($path);
+        // Tests the DRIVER, not `method_exists($disk, 'path')`.
+        //
+        // That earlier check was dead code: `path()` is declared on the
+        // Filesystem CONTRACT itself, so every disk has it, and the guard could
+        // never fire. Worse, on an object store `path()` succeeds and returns a
+        // bare object key — so the method quietly handed back a relative string
+        // that whatever opened it resolved against the process working
+        // directory. The guard's own docblock describes preventing exactly that.
+        if (!self::isLocalDisk()) {
+            throw new RuntimeException(
+                'Disk [' . config('custom.storage.disk') . '] has no local filesystem path. '
+                . 'Use FileUtil::get() or a temporary URL instead.'
+            );
+        }
+
+        return self::disk()->path($path);
+    }
+
+    /**
+     * Whether the configured storage disk is a local filesystem.
+     *
+     * @return bool
+     */
+    private static function isLocalDisk(): bool
+    {
+        return config('filesystems.disks.' . config('custom.storage.disk') . '.driver') === 'local';
     }
 
     /**
@@ -332,7 +435,7 @@ class FileUtil
      */
     public static function get(string $path): string
     {
-        return Storage::disk(self::DISK)->get($path);
+        return self::disk()->get($path);
     }
 
     /**

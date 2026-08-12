@@ -6,9 +6,11 @@ use App\Data\UpdatePasswordData;
 use App\Data\UserData;
 use App\Data\UserFilterData;
 use App\Models\User;
+use App\Utils\DatabaseUtil;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class UserRepository
 {
@@ -86,7 +88,7 @@ class UserRepository
      */
     public function isEmailExists(string $email): bool
     {
-        return User::where('email', $email)->exists();
+        return User::where('email', Str::lower(trim($email)))->exists();
     }
 
     /**
@@ -96,7 +98,7 @@ class UserRepository
      */
     public function isUsernameExists(string $username): bool
     {
-        return User::where('username', $username)->exists();
+        return User::where('username', Str::lower(trim($username)))->exists();
     }
 
     /**
@@ -123,11 +125,17 @@ class UserRepository
         }
 
         if (!empty($userFilterData->meta->search)) {
-            $userBuilder->where(function (Builder $searchBuilder) use ($userFilterData) {
-                $searchBuilder->where('first_name', 'LIKE', "%{$userFilterData->meta->search}%")
-                    ->orWhere('last_name', 'LIKE', "%{$userFilterData->meta->search}%")
-                    ->orWhere('username', 'LIKE', "%{$userFilterData->meta->search}%")
-                    ->orWhere('email', 'LIKE', "%{$userFilterData->meta->search}%");
+            // ILIKE on PostgreSQL, LIKE on MySQL — see DatabaseUtil for why a
+            // plain 'LIKE' here silently became case-sensitive when this template
+            // moved to PostgreSQL.
+            $operator = DatabaseUtil::caseInsensitiveLikeOperator();
+            $pattern = DatabaseUtil::containsPattern($userFilterData->meta->search);
+
+            $userBuilder->where(function (Builder $searchBuilder) use ($operator, $pattern) {
+                $searchBuilder->where('first_name', $operator, $pattern)
+                    ->orWhere('last_name', $operator, $pattern)
+                    ->orWhere('username', $operator, $pattern)
+                    ->orWhere('email', $operator, $pattern);
             });
         }
 
@@ -170,6 +178,13 @@ class UserRepository
             return null;
         }
 
+        // Canonicalise BEFORE comparing. The model lower-cases on write, so the
+        // stored value is canonical while the incoming one is raw — comparing them
+        // directly meant submitting your OWN username in different case failed the
+        // equality check, then matched yourself in the existence check below, and
+        // returned "already taken" for a name you already own.
+        $username = Str::lower(trim($username));
+
         if ($username === $user->username) {
             return $user;
         }
@@ -199,6 +214,9 @@ class UserRepository
         if (empty($user)) {
             return null;
         }
+
+        // Canonicalise before comparing — see updateUsername() for why.
+        $email = Str::lower(trim($email));
 
         if ($email === $user->email) {
             return $user;
@@ -268,7 +286,7 @@ class UserRepository
      */
     public function findByUsername(string $username, array $relations = [], array $columns = ['*']): ?User
     {
-        return User::with($relations)->where('username', $username)->first($columns);
+        return User::with($relations)->where('username', Str::lower(trim($username)))->first($columns);
     }
 
     /**
@@ -282,7 +300,7 @@ class UserRepository
      */
     public function findByEmail(string $email, array $relations = [], array $columns = ['*']): ?User
     {
-        return User::with($relations)->where('email', $email)->first($columns);
+        return User::with($relations)->where('email', Str::lower(trim($email)))->first($columns);
     }
 
 }

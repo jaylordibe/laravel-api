@@ -6,7 +6,7 @@ name: Security DAST
 # build + scan). DAST is the opposite shape:
 # it boots a live application and probes it over HTTP — slow, stateful (active
 # rules send real POST/PUT/DELETE), and noisy until tuned. So it runs on its own
-# cadence against a FULLY EPHEMERAL app with its own throwaway MySQL and Redis,
+# cadence against a FULLY EPHEMERAL app with its own throwaway PostgreSQL and Redis,
 # never against a shared or real environment.
 #
 # This became possible once the API gained a machine-readable OpenAPI document
@@ -41,7 +41,7 @@ jobs:
       # Backing services come from the same docker-compose.yml developers use,
       # so image, credentials and ports have exactly one definition. Only the
       # throwaway test database and Redis — this job never touches a dev volume.
-      - name: Start MySQL and Redis
+      - name: Start PostgreSQL and Redis
         run: |
           set -euo pipefail
           cp .env.example .env
@@ -49,20 +49,20 @@ jobs:
           docker compose up -d app-db-test app-redis
           for attempt in $(seq 1 60); do
             if docker exec "${SERVICE_NAME}-db-test" \
-              mysql -u"$TEST_DB_USERNAME" -p"$TEST_DB_PASSWORD" -e 'SELECT 1' >/dev/null 2>&1; then
-              echo "MySQL is up (attempt ${attempt})"
+              pg_isready -U "$TEST_DB_USERNAME" -d "$TEST_DB_DATABASE" >/dev/null 2>&1; then
+              echo "PostgreSQL is up (attempt ${attempt})"
               exit 0
             fi
             sleep 2
           done
-          echo '::error::MySQL never became reachable'
+          echo '::error::PostgreSQL never became reachable'
           exit 1
 
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.5'
-          extensions: mbstring, xml, zip, curl, pdo, pdo_mysql, bcmath, intl, redis
+          extensions: mbstring, xml, zip, curl, pdo, pdo_pgsql, bcmath, intl, redis
           tools: composer:v2
           coverage: none
 
@@ -90,7 +90,8 @@ jobs:
             echo 'APP_DEBUG=false'
             echo 'APP_URL=http://localhost:8001'
             echo 'DB_HOST=127.0.0.1'
-            echo 'DB_PORT=3308'
+            echo 'DB_PORT=5435'
+            echo 'DB_SSLMODE=disable'
             echo 'REDIS_HOST=127.0.0.1'
             echo 'REDIS_PORT=6378'
             echo 'RATE_LIMIT_PUBLIC=1000000'
