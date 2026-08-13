@@ -1,34 +1,50 @@
 # LARAVEL API #
 
-This README would normally document whatever steps are necessary to get your application up and running.
+A **Laravel 13 / PHP 8.5 API starter template** — the base every new API project
+is forked from. It ships a small set of framework resources (`User` with Passport
+auth, `AppVersion`, `DeviceToken`, `ActivityLog`, `JobStatus`, `Constant`) and a
+strict layered architecture every new resource follows.
 
-### What is this repository for? ###
+### Stack ###
 
-* Quick summary
-    * This repository is the Laravel API.
-* Version
-    * v1.0
+| Concern | Choice |
+|---|---|
+| Database | **PostgreSQL** (`DB_CONNECTION=pgsql`) |
+| Queue / workers | Redis + Laravel Horizon |
+| Scheduler | `php artisan schedule:run`, invoked externally |
+| Auth | Laravel Passport (OAuth2 bearer tokens) |
+| Object storage | Laravel `Storage` — `local`, `s3` (and S3-compatible) or `gcs` |
+| API docs | `dedoc/scramble`, generated (`/docs/api`, local only) |
+
+The database engine is PostgreSQL end to end — `config/database.php`,
+`docker-compose.yml`, `.env.example`, the test suite and every CI job. A `mysql`
+connection is kept configured and hardened for a fork that must run against
+MySQL, but that is a fork's decision to own: migrations, tests and CI target
+`pgsql`. PostgreSQL may be hosted however you like — a managed service, a
+container, Kubernetes, or a process on a VM. No cloud is required.
 
 ### How do I get set up? ###
 
 * Dependencies
     * [Docker](https://docs.docker.com/get-docker/)
-* Summary of set up
-    * To start the application with a fresh database or when setting up the project for the first time
-    ```
-    ./start.sh fresh
-    ```
-    * To start the application with the current database state
+* Start the application (keeps the current database state)
     ```
     ./start.sh
     ```
-    * To stop the application
+* First-time setup, or whenever you want to start from an empty database
+    ```
+    ./start.sh fresh
+    ```
+    > **Destructive.** `fresh` drops and re-creates the local database; `reset`
+    > also removes the containers and volumes.
+* To stop the application
     ```
     ./stop.sh
     ```
 * How to run tests
     ```
-    ./test.sh
+    ./test.sh                                          # everything
+    ./test.sh AppVersionFeatureTest tests/Feature/AppVersionFeatureTest.php   # one file
     ```
 * Local services
     * API — http://localhost:8000
@@ -39,9 +55,17 @@ This README would normally document whatever steps are necessary to get your app
 
 The template is **provider-neutral**: it depends on generic capabilities (HTTP
 runtime, PostgreSQL, a Redis-compatible backend, object storage, runtime secrets,
-queue workers, scheduler invocation, logging, health checks) and contains no
-cloud-provider SDK or configuration. One image serves every runtime, selected with
-`APP_RUNTIME_MODE`:
+queue workers, scheduler invocation, logging, health checks), and no required
+runtime path depends on a cloud provider.
+
+Provider-specific integrations *do* exist — the `s3` and `gcs` filesystem disks,
+and Firebase push notifications — and they are **isolated behind Laravel's
+abstractions and this template's `app/Utils/<Domain>Util` boundary**, so swapping
+one is configuration rather than a rewrite. Core application logic stays
+provider-neutral. `DEPLOYMENT.md` §Provider neutrality lists exactly where each
+adapter lives.
+
+One image serves every runtime, selected with `APP_RUNTIME_MODE`:
 
 | Runtime | Command |
 |---|---|

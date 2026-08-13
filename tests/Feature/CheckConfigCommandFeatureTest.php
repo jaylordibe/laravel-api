@@ -96,6 +96,41 @@ class CheckConfigCommandFeatureTest extends TestCase
     }
 
     #[Test]
+    public function itFailsWhenRedisTlsPeerVerificationIsDisabled(): void
+    {
+        // config/database.php offers no way to reach this state, which is exactly
+        // why the gate checks it: the only route here is a fork editing that file
+        // or a package overriding the connection, and both are silent. TLS
+        // without verification stops a passive listener and nothing else.
+        config()->set('database.redis.default.scheme', 'tls');
+        config()->set('database.redis.default.context.ssl', [
+            'verify_peer' => false,
+            'verify_peer_name' => false,
+        ]);
+
+        self::assertSame(1, Artisan::call('app:check-config'));
+        self::assertStringContainsString('peer verification', Artisan::output());
+    }
+
+    #[Test]
+    public function itFailsWhenTheRedisTlsCaFileIsAbsentFromTheContainer(): void
+    {
+        // The realistic TLS misconfiguration: REDIS_TLS_CA names a CA bundle that
+        // was never mounted into the image. Without this check the container
+        // starts, serves traffic, and then fails on the first cache read — an
+        // outage that looks like a Redis problem rather than a mount problem.
+        config()->set('database.redis.default.scheme', 'tls');
+        config()->set('database.redis.default.context.ssl', [
+            'verify_peer' => true,
+            'verify_peer_name' => true,
+            'cafile' => '/etc/ssl/certs/not-mounted-here.pem',
+        ]);
+
+        self::assertSame(1, Artisan::call('app:check-config'));
+        self::assertStringContainsString('REDIS_TLS_CA', Artisan::output());
+    }
+
+    #[Test]
     public function itFailsWhenTheUploadDiskStoresObjectsPublicly(): void
     {
         // Regression guard: this was skipped by disk NAME, so selecting the

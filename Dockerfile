@@ -36,7 +36,13 @@ COPY . .
 # bootstrap/cache as root; doing it earlier would leave those files root-owned.
 # nginx and php-fpm serve as www-data in the base image (nginx.conf: `user
 # www-data;`), so anything the application writes must belong to that user.
+#
+# storage/app is recreated for the same reason: .dockerignore excludes it so a
+# developer's local uploads — and the Passport key files that sit beside them in
+# storage/ — never enter a distributable layer, but the `local` and `public`
+# disks still resolve their roots there at runtime.
 RUN mkdir -p \
+        storage/app/public \
         storage/framework/cache/data \
         storage/framework/sessions \
         storage/framework/views \

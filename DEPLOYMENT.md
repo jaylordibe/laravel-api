@@ -13,8 +13,26 @@ runtime secrets · queue workers · scheduler invocation · logging · health ch
 ```
 
 Mapping those to a specific cloud is **infrastructure's job, not the
-application's**. There is no provider SDK, no provider-specific configuration and
-no provider branch anywhere in `app/`.
+application's**. No provider is required, and no runtime path depends on one.
+
+### Provider neutrality — stated precisely
+
+**Provider-specific integrations do exist, and they are isolated behind Laravel's
+own abstractions and this template's `app/Utils/<Domain>Util` boundary** — which
+is not the same thing as vendor lock-in, and is worth stating precisely:
+
+| Where | What | How it stays neutral |
+|---|---|---|
+| `config/filesystems.php` | `s3` and `gcs` disks (`spatie/laravel-google-cloud-storage`) | Application code only ever calls `Storage`. Selecting a disk is one environment variable; no caller changes. |
+| `app/Utils/PushNotificationUtil.php` | Firebase Cloud Messaging, via `google/apiclient` | The **only** file in `app/` that imports a provider SDK (`Google\Client`). Every caller goes through this Util, so replacing the provider is one class. |
+| `config/queue.php`, `config/cache.php` | Laravel's stock `sqs` / `dynamodb` entries | Framework defaults, unused by this template — `redis` is the shipped path. |
+| `config/mail.php` | Mailgun transport | Swappable through Laravel's mailer configuration. |
+
+What is genuinely absent: no provider SDK on any **required** runtime path, no
+secret-manager client, no provider branch in the request pipeline, and no
+infrastructure definitions (Terraform, Pulumi, CDK, Kubernetes manifests) in this
+repository at all. Core application logic is provider-neutral; the adapters are
+opt-in and confined.
 
 ---
 
@@ -122,6 +140,14 @@ first the job is neither completed nor failed; it stays reserved until
 `retry_after` (90s) and then runs a second time, which with `HORIZON_TRIES=3` is a
 silent duplicate execution rather than a visible failure.
 
+This is **proven by execution**, not asserted: the `docker` job in
+`.github/workflows/test.yml` boots the worker runtime against a real Redis, puts a
+25-second job in flight, stops the container, and fails unless the container both
+exits `0` and finishes the job first. It also asserts that PID 1 really is
+`php artisan horizon` (no shell in between to swallow the signal) and that the
+base image provides `pcntl`, without which Horizon cannot install a SIGTERM
+handler at all.
+
 Do **not** try to drain a worker with `horizon:terminate` from a separate
 container. It matches masters by hostname and signals by PID, so from another
 container it finds nothing, prints "No processes to terminate." and exits 0 —
@@ -173,7 +199,7 @@ correct.
 | `FILESYSTEM_DISK` | `local` \| `s3` \| `gcs` |
 | `DB_CONNECTION=pgsql`, `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_SSLMODE` | Database |
 | `REDIS_HOST`, `REDIS_PORT`, `REDIS_TLS_ENABLED` | Redis |
-| `HORIZON_MAX_PROCESSES`, `HORIZON_TRIES`, `HORIZON_TIMEOUT` | Worker sizing |
+| `HORIZON_MAX_PROCESSES`, `HORIZON_MIN_PROCESSES`, `HORIZON_TRIES`, `HORIZON_TIMEOUT`, `HORIZON_MEMORY`, `HORIZON_MAX_JOBS`, `HORIZON_MAX_TIME`, `HORIZON_QUEUES`, `HORIZON_BALANCE` | Worker sizing — every concurrency knob is environment-driven; see §5 |
 | `HORIZON_DASHBOARD_EMAILS` | Dashboard allowlist; **empty denies everyone** |
 | `HEALTH_DB_TIMEOUT_MS` | Readiness database probe ceiling (default 3000) |
 | `APP_RUNTIME_CONFIG_CACHE`, `APP_CONFIG_CHECK` | Startup behaviour escape hatches |
@@ -237,6 +263,13 @@ connection can be downgraded invisibly. `app:check-config` fails on them.
 
 ### Connection capacity — do this arithmetic before you scale
 
+**Container scale and Horizon's process scale multiply.** One worker container is
+not one queue consumer:
+
+```
+worker container replicas × HORIZON_MAX_PROCESSES = concurrent queue consumers
+```
+
 Every runtime holds connections, and they share one server-side limit:
 
 ```
@@ -297,6 +330,13 @@ trusted. `REDIS_TLS_CA` is the supported answer to a private CA.
 Redis is used by the cache, the queue, Horizon, atomic locks and rate limiting.
 All of them resolve through the same connection definition, so transport security
 cannot drift between them.
+
+**Redis connection count scales the same way the database's does** — see the
+arithmetic in §5. Each php-fpm worker and each Horizon process opens its own
+client, and the Horizon master and each supervisor hold connections of their own
+on top of the workers, so a managed instance with a low connection cap runs out
+for exactly the same reason the database does. Size both against the same
+replica × process sum.
 
 ---
 
@@ -548,7 +588,11 @@ separately from this repository. This template depends on it for:
 - nginx (`user www-data`) + php-fpm 8.5 (`pm.max_children=20`) under supervisord;
 - `/entrypoint.sh` rendering nginx real-IP config from `TRUSTED_PROXIES` and
   fixing ownership of `storage/` and `bootstrap/cache`;
-- the `pdo_pgsql`, `redis`, `gd`, `intl`, `bcmath` and `zip` extensions.
+- the `pdo_pgsql`, `redis`, `gd`, `intl`, `bcmath` and `zip` extensions;
+- **`pcntl`**, which Horizon needs to trap SIGTERM. Without it a worker container
+  dies where it stands on shutdown and every in-flight job is lost — silently,
+  since the container still exits and the job simply reappears after
+  `retry_after`. CI asserts it is present rather than assuming it.
 
 **Stated assumptions you should verify for your own threat model:** the image is
 published `linux/amd64` only; supervisord runs as root in order to bind the port

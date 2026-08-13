@@ -439,11 +439,40 @@ jobs:
               exit 1
             fi
 
+            # NO SECRET MAY SHIP IN A LAYER.
+            #
+            # `COPY . .` copies the build context, and .gitignore has no say in
+            # what that contains. `php artisan passport:keys` writes signing keys
+            # into storage/ during local setup, so before .dockerignore excluded
+            # them a `docker build` on a developer machine baked a private
+            # signing key into a distributable image — invisibly, because a fresh
+            # CI checkout has no key files and the layer was clean here.
+            #
+            # This runs in CI, where those files never exist, so it can only fail
+            # if the exclusions are removed AND someone rebuilds locally. Keep it
+            # anyway: it states the requirement where it is enforced, and it also
+            # catches a .env or a local SQLite database entering the image.
+            if ls storage/*.key >/dev/null 2>&1; then
+              echo "a Passport signing key was baked into the image" >&2
+              exit 1
+            fi
+            if ls .env .env.* >/dev/null 2>&1; then
+              echo "a .env file was baked into the image; it would override the injected environment" >&2
+              exit 1
+            fi
+            if ls database/*.sqlite >/dev/null 2>&1; then
+              echo "a local SQLite database was baked into the image" >&2
+              exit 1
+            fi
+
             # .dockerignore drops these from the build context; the Dockerfile
             # recreates them. Without them view:cache fails at build time and
             # php-fpm cannot write logs at runtime.
             test -d storage/framework/views
             test -d storage/logs
+            # Excluded for the same reason as the keys beside them, and recreated
+            # here because the local/public disks resolve their roots there.
+            test -d storage/app/public
             # The Blade cache IS built at build time — it depends only on files
             # in the build context, never on the environment.
             ls storage/framework/views/*.php >/dev/null
@@ -454,7 +483,7 @@ jobs:
               echo "storage/logs is owned by $owner, not www-data" >&2
               exit 1
             fi
-            echo "no baked config/route cache; compiled views present; storage writable by www-data"
+            echo "no baked config/route cache; no secrets in any layer; compiled views present; storage writable by www-data"
           '
           echo '::endgroup::'
 
@@ -679,4 +708,150 @@ jobs:
             exit 1
           fi
           echo 'unknown mode rejected'
+          echo '::endgroup::'
+
+      # THE DRAIN CONTRACT.
+      #
+      # Every other check here is static: it reads a rendered config file or a
+      # command string. None of them can tell whether a SIGTERM from the platform
+      # actually lets an in-flight job finish, and that property has three
+      # independent ways to break silently —
+      #
+      #   * a shell left between the runtime and Horizon, swallowing the signal;
+      #   * `pcntl` missing from the base image, so Horizon cannot trap SIGTERM
+      #     at all and dies where it stands;
+      #   * horizon.fast_termination flipped to true, which returns before the
+      #     workers have stopped.
+      #
+      # In all three the container still exits and the deploy still goes green;
+      # the job is simply lost, reappearing later as a duplicate when the queue's
+      # retry_after elapses. So this boots the worker runtime FOR REAL against a
+      # real Redis, puts a long job in flight, and stops the container while it is
+      # running.
+      - name: Verify the worker runtime drains in-flight jobs on SIGTERM
+        run: |
+          set -euo pipefail
+
+          cleanup() {
+            docker rm -f shutdown-worker shutdown-redis >/dev/null 2>&1 || true
+            docker network rm shutdown-net >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+
+          docker network create shutdown-net >/dev/null
+          docker run -d --name shutdown-redis --network shutdown-net redis:8.6.2 >/dev/null
+
+          # No database is reachable here, so the fail-fast config check is off;
+          # Horizon itself needs only Redis.
+          docker run -d --name shutdown-worker --network shutdown-net \
+            -e APP_RUNTIME_MODE=worker \
+            -e APP_CONFIG_CHECK=false \
+            -e APP_ENV=production \
+            -e APP_DEBUG=false \
+            -e APP_KEY=base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA= \
+            -e QUEUE_CONNECTION=redis \
+            -e CACHE_STORE=redis \
+            -e REDIS_HOST=shutdown-redis \
+            -e LOG_CHANNEL=stderr \
+            laravel-api:ci >/dev/null
+
+          echo '::group::Horizon is PID 1, unwrapped, and can trap signals'
+          for attempt in $(seq 1 30); do
+            if docker exec shutdown-worker php artisan horizon:status --no-interaction 2>/dev/null | grep -q 'running'; then
+              break
+            fi
+            sleep 2
+          done
+
+          pid1=$(docker exec shutdown-worker ps -p 1 -o args=)
+          echo "PID 1: ${pid1}"
+
+          # A shell between the container runtime and Horizon would absorb
+          # SIGTERM and never forward it.
+          if ! grep -q 'artisan horizon' <<<"$pid1"; then
+            echo '::error::PID 1 is not `php artisan horizon` — SIGTERM will not reach the queue master'
+            exit 1
+          fi
+
+          # Horizon traps SIGTERM through pcntl. Without the extension the trap is
+          # never installed and the default disposition — terminate immediately —
+          # applies. This depends on the BASE image, which this repository does
+          # not build, so it is asserted rather than assumed.
+          if ! docker exec shutdown-worker php -r 'exit(function_exists("pcntl_signal") ? 0 : 1);'; then
+            echo '::error::the base image has no pcntl extension — Horizon cannot trap SIGTERM and every in-flight job dies on shutdown'
+            exit 1
+          fi
+          echo 'PID 1 is Horizon; pcntl is available'
+          echo '::endgroup::'
+
+          echo '::group::an in-flight job survives the shutdown'
+          # The closure is written to a FILE rather than passed to `tinker
+          # --execute`: serialization reads the closure's source, and code
+          # eval'd by tinker has no source file to read.
+          #
+          # The wait re-checks a deadline instead of a single sleep() — Horizon's
+          # autoscaler signals its workers, and a signal makes sleep() return
+          # early, which would end the job before the shutdown under test.
+          docker exec shutdown-worker sh -c 'cat > /tmp/dispatch.php <<"PHP"
+          <?php
+          require "/var/www/html/vendor/autoload.php";
+          $app = require "/var/www/html/bootstrap/app.php";
+          $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+          dispatch(function () {
+              file_put_contents("/tmp/job-started", date("c"));
+              $deadline = time() + 25;
+              while (time() < $deadline) {
+                  usleep(200000);
+              }
+              file_put_contents("/tmp/job-finished", date("c"));
+          });
+          PHP
+          php /tmp/dispatch.php'
+
+          # Wait for the job to be PICKED UP, so the stop below lands mid-flight.
+          # Stopping before a worker claimed it would prove nothing.
+          for attempt in $(seq 1 20); do
+            if docker exec shutdown-worker test -f /tmp/job-started; then
+              break
+            fi
+            sleep 1
+          done
+
+          if ! docker exec shutdown-worker test -f /tmp/job-started; then
+            echo '::error::the worker never picked the job up; the drain assertion below would be vacuous'
+            exit 1
+          fi
+          if docker exec shutdown-worker test -f /tmp/job-finished; then
+            echo '::error::the job finished before the shutdown was issued; the drain assertion below would be vacuous'
+            exit 1
+          fi
+
+          # The grace period is deliberately longer than the job. The point is
+          # not that the platform waits — it is that Horizon uses the wait.
+          started_at=$(date +%s)
+          docker stop -t 90 shutdown-worker >/dev/null
+          elapsed=$(( $(date +%s) - started_at ))
+          exit_code=$(docker inspect -f '{{.State.ExitCode}}' shutdown-worker)
+          echo "shutdown took ${elapsed}s, exit code ${exit_code}"
+
+          # 137 is 128+9: SIGKILL after the grace period expired.
+          if [ "$exit_code" != '0' ]; then
+            echo "::error::the worker exited ${exit_code} on SIGTERM, not 0 — shutdown is not graceful"
+            exit 1
+          fi
+          # `docker cp` rather than `docker exec`: the container is stopped by
+          # now, so nothing can be executed inside it, but its filesystem is
+          # still readable.
+          if ! docker cp shutdown-worker:/tmp/job-finished - >/dev/null 2>&1; then
+            echo '::error::the in-flight job never completed — SIGTERM killed it instead of draining it'
+            exit 1
+          fi
+
+          # An instant exit means the job was abandoned rather than drained. The
+          # bound is loose on purpose: it only has to exclude "did not wait".
+          if [ "$elapsed" -lt 5 ]; then
+            echo "::error::the worker exited after ${elapsed}s with a 25s job in flight — it did not drain"
+            exit 1
+          fi
+          echo 'the in-flight job completed before the container exited'
           echo '::endgroup::'

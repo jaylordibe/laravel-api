@@ -133,6 +133,108 @@ class ConfigurationContractFeatureTest extends TestCase
     }
 
     #[Test]
+    public function plainRedisCarriesNoTransportSecuritySettings(): void
+    {
+        // The local-development shape, and the baseline the cases below differ
+        // from. TLS off must leave the connection a plain tcp one: a stray
+        // `scheme` or `context` key here would make phpredis attempt a TLS
+        // handshake against a plaintext container and fail at connect time.
+        $this->withEnvs(['REDIS_TLS_ENABLED' => 'false'], function (): void {
+            $connection = $this->rebuildRedisConnection();
+
+            self::assertArrayNotHasKey('scheme', $connection);
+            self::assertArrayNotHasKey('context', $connection);
+            // Bounded even in the plain case: a hung Redis must surface as a
+            // failed request, not as a parked php-fpm worker.
+            self::assertGreaterThan(0, $connection['timeout']);
+            self::assertGreaterThan(0, $connection['read_timeout']);
+        });
+    }
+
+    #[Test]
+    public function authenticatedRedisPassesBothCredentialsThrough(): void
+    {
+        // A managed endpoint typically issues an ACL username as well as a
+        // password. Dropping the username silently downgrades the connection to
+        // the `default` ACL user, which on a properly configured server has no
+        // permissions — an authentication failure blamed on the password.
+        $this->withEnvs([
+            'REDIS_USERNAME' => 'app-user',
+            'REDIS_PASSWORD' => 'app-secret',
+        ], function (): void {
+            $connection = $this->rebuildRedisConnection();
+
+            self::assertSame('app-user', $connection['username']);
+            self::assertSame('app-secret', $connection['password']);
+        });
+    }
+
+    #[Test]
+    public function redisTlsWithoutACustomCaVerifiesAgainstTheSystemTrustStore(): void
+    {
+        // The managed-service case: a publicly trusted certificate and no CA to
+        // supply. `cafile` must then be ABSENT rather than present-and-empty —
+        // an empty cafile is not "use the system store", it is a path that fails
+        // to open, and the connection dies with an opaque SSL error.
+        $this->withEnvs(['REDIS_TLS_ENABLED' => 'true', 'REDIS_TLS_CA' => null], function (): void {
+            $ssl = $this->rebuildRedisConnection()['context']['ssl'];
+
+            self::assertArrayNotHasKey('cafile', $ssl);
+            self::assertTrue($ssl['verify_peer']);
+            self::assertTrue($ssl['verify_peer_name']);
+        });
+    }
+
+    #[Test]
+    public function redisTlsAcceptsAPrivateCaAndAClientCertificate(): void
+    {
+        // The private-CA case is the one people disable verification for. It is
+        // supported properly instead: supply the CA, keep verification on.
+        // REDIS_TLS_CERT/KEY cover an endpoint requiring mutual TLS.
+        $this->withEnvs([
+            'REDIS_TLS_ENABLED' => 'true',
+            'REDIS_TLS_CA' => '/etc/ssl/certs/private-ca.pem',
+            'REDIS_TLS_CERT' => '/etc/ssl/certs/client.pem',
+            'REDIS_TLS_KEY' => '/etc/ssl/private/client.key',
+        ], function (): void {
+            $ssl = $this->rebuildRedisConnection()['context']['ssl'];
+
+            self::assertSame('/etc/ssl/certs/private-ca.pem', $ssl['cafile']);
+            self::assertSame('/etc/ssl/certs/client.pem', $ssl['local_cert']);
+            self::assertSame('/etc/ssl/private/client.key', $ssl['local_pk']);
+            self::assertTrue($ssl['verify_peer']);
+        });
+    }
+
+    #[Test]
+    public function noEnvironmentVariableCanWeakenRedisPeerVerification(): void
+    {
+        // The insecure escape hatch must not exist. Its usual shape is an
+        // environment variable someone sets "just for now" during an incident and
+        // nobody ever unsets, so the guarantee has to be that no value of any
+        // variable produces verify_peer => false.
+        $this->withEnvs([
+            'REDIS_TLS_ENABLED' => 'true',
+            // Plausible names for the knob this template deliberately lacks.
+            'REDIS_TLS_INSECURE' => 'true',
+            'REDIS_TLS_VERIFY_PEER' => 'false',
+            'REDIS_VERIFY_PEER' => '0',
+        ], function (): void {
+            $ssl = $this->rebuildRedisConnection()['context']['ssl'];
+
+            self::assertTrue($ssl['verify_peer']);
+            self::assertTrue($ssl['verify_peer_name']);
+        });
+
+        // And the source carries no such branch, so the assertion above cannot
+        // pass merely because the variable names guessed here are the wrong ones.
+        $source = file_get_contents(config_path('database.php'));
+
+        self::assertStringNotContainsString("'verify_peer' => false", $source);
+        self::assertStringNotContainsString("'verify_peer_name' => false", $source);
+    }
+
+    #[Test]
     public function everyRedisConsumerSharesOneConnectionDefinition(): void
     {
         // Cache, queue, Horizon, locks and rate limiting must not be able to
@@ -261,6 +363,73 @@ class ConfigurationContractFeatureTest extends TestCase
     }
 
     #[Test]
+    public function everyDiskExceptPublicStoresObjectsPrivately(): void
+    {
+        // An object store is unforgiving here: a bucket serving publicly readable
+        // objects has no second gate behind it, and nothing inside the
+        // application can tell that the last upload became world-readable. The
+        // `public` disk is the single deliberate exception — it is the local disk
+        // behind the storage symlink, for assets that are meant to be public.
+        //
+        // Asserted on the SHIPPED file rather than the resolved config, so a fork
+        // that sets `visibility => public` on s3 or gcs fails here even if its
+        // environment never selects that disk.
+        $disks = (require config_path('filesystems.php'))['disks'];
+
+        foreach ($disks as $name => $disk) {
+            if ($name === 'public') {
+                self::assertSame('public', $disk['visibility']);
+
+                continue;
+            }
+
+            self::assertSame(
+                'private',
+                $disk['visibility'] ?? 'private',
+                "Disk [{$name}] must store objects privately; the application hands out short-lived signed URLs instead."
+            );
+        }
+    }
+
+    #[Test]
+    public function noStorageDiskRequiresStaticCredentials(): void
+    {
+        // Workload identity is the recommended production posture: with the
+        // key/secret and key-file variables unset, each SDK falls back to its
+        // ambient credential chain — an attached role or managed identity, with
+        // no long-lived secret to distribute or rotate. A committed default that
+        // filled these in would force static keys back into every deployment.
+        $this->withEnvs([
+            'AWS_ACCESS_KEY_ID' => null,
+            'AWS_SECRET_ACCESS_KEY' => null,
+            'GOOGLE_CLOUD_KEY_FILE' => null,
+        ], function (): void {
+            $disks = (require config_path('filesystems.php'))['disks'];
+
+            self::assertNull($disks['s3']['key']);
+            self::assertNull($disks['s3']['secret']);
+            self::assertNull($disks['gcs']['key_file_path']);
+        });
+    }
+
+    #[Test]
+    public function queueBookkeepingUsesTheApplicationsOwnDatabase(): void
+    {
+        // Laravel's stock fallback here is `sqlite`. With DB_CONNECTION unset
+        // that split the application (pgsql) from its batch and failed-job
+        // bookkeeping (a SQLite file inside the container), so the first failed
+        // job would be recorded somewhere nobody looks — or fail inside the
+        // failure handler.
+        $this->withEnvs(['DB_CONNECTION' => null], function (): void {
+            $queue = require config_path('queue.php');
+            $database = require config_path('database.php');
+
+            self::assertSame($database['default'], $queue['failed']['database']);
+            self::assertSame($database['default'], $queue['batching']['database']);
+        });
+    }
+
+    #[Test]
     public function theLocalDiskCanIssueTemporaryUrls(): void
     {
         // Without `serve`, temporaryUrl() throws on a local disk, so the
@@ -320,6 +489,53 @@ class ConfigurationContractFeatureTest extends TestCase
         } finally {
             $apply($original === null ? null : (string) $original);
         }
+    }
+
+    /**
+     * The same, for several variables at once.
+     *
+     * Redis TLS is only meaningful as a COMBINATION — enabled plus a CA, enabled
+     * plus a client certificate — so asserting on one variable at a time would
+     * not describe any configuration a deployment actually uses.
+     *
+     * @param array<string, string|null> $variables - null unsets that variable for the duration
+     * @param callable $callback
+     *
+     * @return void
+     */
+    private function withEnvs(array $variables, callable $callback): void
+    {
+        if (empty($variables)) {
+            $callback();
+
+            return;
+        }
+
+        $key = array_key_first($variables);
+        $value = $variables[$key];
+        unset($variables[$key]);
+
+        // Nested rather than looped, so every variable is restored by the same
+        // `finally` that set it even when the callback throws.
+        $this->withEnv($key, $value, function () use ($variables, $callback): void {
+            $this->withEnvs($variables, $callback);
+        });
+    }
+
+    /**
+     * Re-evaluate config/database.php against the environment currently in place
+     * and return the default Redis connection it produces.
+     *
+     * The connection array is built by a closure at config LOAD time, so the
+     * already-booted application's `config('database.redis.default')` reflects
+     * the test environment and nothing else. Re-requiring the file is what makes
+     * a TLS or credential variable observable at all.
+     *
+     * @return array<string, mixed>
+     */
+    private function rebuildRedisConnection(): array
+    {
+        return (require config_path('database.php'))['redis']['default'];
     }
 
 }

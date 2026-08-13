@@ -11,6 +11,26 @@ storage/framework/views
 # environment) and would bake credentials into a distributable layer.
 .env
 .env.*
+# THE PASSPORT SIGNING KEYS. `php artisan passport:keys` writes these into
+# storage/ during local setup, and .gitignore keeps them out of git — but git is
+# not the build context. `COPY . .` was therefore baking a developer's private
+# signing key into a distributable image layer on every local `docker build`,
+# where it survives every later deletion and is readable by anyone who can pull
+# the image. CI never noticed: a fresh checkout has no key files, so the layer
+# was clean there and dirty on exactly the machines that had a key to leak.
+#
+# Excluding them is also what makes the failure LOUD rather than silent. With no
+# key files in the image, a deployment that forgot to inject
+# PASSPORT_PRIVATE_KEY/PASSPORT_PUBLIC_KEY is refused at startup by
+# app:check-config, instead of quietly signing tokens with a key from a laptop.
+storage/*.key
+# A developer's local uploads and scratch files. The Dockerfile recreates the
+# directory; nothing durable may live in the image anyway.
+storage/app
+storage/framework/sessions
+# A local SQLite file, created by composer's post-create-project script. Never
+# used by this template (the engine is PostgreSQL) and it can carry real rows.
+database/*.sqlite
 docker-compose.yml
 # Only the PostgreSQL data volumes — docker/entrypoint.sh and docker/healthcheck.sh
 # are COPYed into the image and must stay in the build context.

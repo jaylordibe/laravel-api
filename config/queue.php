@@ -85,8 +85,18 @@ return [
     |
     */
 
+    /*
+     * The fallback is `pgsql`, matching config/database.php.
+     *
+     * Laravel ships `sqlite` here. With DB_CONNECTION unset that made the
+     * application resolve its default connection to pgsql while batch and
+     * failed-job bookkeeping resolved to a SQLite FILE — so the first failed job
+     * on a misconfigured deployment would either write into a throwaway file
+     * inside the container or blow up in the failure handler, which is the worst
+     * possible moment to discover a second, unrelated misconfiguration.
+     */
     'batching' => [
-        'database' => env('DB_CONNECTION', 'sqlite'),
+        'database' => env('DB_CONNECTION', 'pgsql'),
         'table' => 'job_batches',
     ],
 
@@ -103,9 +113,12 @@ return [
     |
     */
 
+    /*
+     * See the note on `batching` above for why the fallback is `pgsql`.
+     */
     'failed' => [
         'driver' => env('QUEUE_FAILED_DRIVER', 'database-uuids'),
-        'database' => env('DB_CONNECTION', 'sqlite'),
+        'database' => env('DB_CONNECTION', 'pgsql'),
         'table' => 'failed_jobs',
     ],
 
