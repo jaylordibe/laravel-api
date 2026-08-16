@@ -42,6 +42,26 @@ docker exec -it laravel-api bash -c "php artisan <cmd>"
 
 **Build: none. Type check: none.** This stack has neither — `N/A`, not a gap. Never report either as evidence.
 
+## High-risk paths
+
+A change touching one of these is classified at least **High** risk,
+whatever the diff looks like. This raises ceremony and widens the review
+panel; it blocks no edit.
+
+- `*/app/Http/Requests/*`
+- `*/app/Http/Resources/*`
+- `*/routes/api.php`
+- `*/database/migrations/*`
+- `*/app/Providers/AppServiceProvider.php`
+- `*/bootstrap/app.php`
+- `*/config/custom.php`
+- `*/config/auth.php`
+- `*/app/Models/BaseModel.php`
+- `*/app/Data/BaseData.php`
+- `*/app/Http/Requests/BaseRequest.php`
+
+This repository is the starter template every new API project is forked from, so a defect here propagates into every fork rather than affecting one system. Authorization is enforced per-endpoint through Passport plus Spatie permissions, and ownership isolation lives inside repository query methods rather than at the connection level — a repository method that forgets its scope leaks across accounts with no other layer to catch it. Money and decimal values are Brick\Math\BigDecimal end to end; introducing a float anywhere in that path is a correctness defect, not a style choice. Almost every command runs inside the laravel-api container, so a guard that only classifies host commands sees very little of what actually happens here.
+
 ## Architecture — the layered request pipeline
 
 Every resource follows the **same** strict pipeline. Trace an existing one before adding a new one — `AppVersion` is the cleanest CRUD reference; `User` adds auth. Do not introduce alternate patterns.
