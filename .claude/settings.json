@@ -546,7 +546,15 @@
       "mcp__*__createJiraIssue",
       "mcp__*__createIssueLink",
       "mcp__*__*CreateIssue*",
-      "mcp__*__*createIssue*"
+      "mcp__*__*createIssue*",
+      "Bash(docker exec*artisan passport:keys*)",
+      "Bash(docker exec*artisan passport:install*)",
+      "Bash(docker compose exec*artisan passport:keys*)",
+      "Bash(docker compose exec*artisan passport:install*)",
+      "PowerShell(docker exec*artisan passport:keys*)",
+      "PowerShell(docker exec*artisan passport:install*)",
+      "PowerShell(docker compose exec*artisan passport:keys*)",
+      "PowerShell(docker compose exec*artisan passport:install*)"
     ],
     "deny": [
       "Bash(git commit *)",
@@ -757,7 +765,19 @@
       "mcp__*__assignJiraIssue",
       "mcp__*__addWorklogToJiraIssue",
       "mcp__*__*IssueField*",
-      "mcp__*__*issueField*"
+      "mcp__*__*issueField*",
+      "Bash(docker exec*artisan db:wipe*)",
+      "Bash(docker exec*artisan db:seed*)",
+      "Bash(docker exec*artisan schema:dump*)",
+      "Bash(docker compose exec*artisan db:wipe*)",
+      "Bash(docker compose exec*artisan db:seed*)",
+      "Bash(docker compose exec*artisan schema:dump*)",
+      "PowerShell(docker exec*artisan db:wipe*)",
+      "PowerShell(docker exec*artisan db:seed*)",
+      "PowerShell(docker exec*artisan schema:dump*)",
+      "PowerShell(docker compose exec*artisan db:wipe*)",
+      "PowerShell(docker compose exec*artisan db:seed*)",
+      "PowerShell(docker compose exec*artisan schema:dump*)"
     ]
   },
   "hooks": {
