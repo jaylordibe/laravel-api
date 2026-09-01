@@ -52,6 +52,12 @@ return [
         'api_per_ip' => (int) env('RATE_LIMIT_API_PER_IP', 300),
         'heavy' => (int) env('RATE_LIMIT_HEAVY', 10),
 
+        /*
+         * Guesses against the shared docs credential, keyed by address. Low
+         * because a legitimate reader loads the docs page and its document once
+         * and then browses the rendered result locally.
+         */
+        'api_docs' => (int) env('RATE_LIMIT_API_DOCS', 20),
     ],
 
     /*
@@ -79,6 +85,32 @@ return [
      * here and pushing the result into the middleware from a service provider
      * is what this template used to do; the framework already does it.
      */
+
+    /*
+    |--------------------------------------------------------------------------
+    | API documentation access
+    |--------------------------------------------------------------------------
+    |
+    | Access to the Scramble docs routes (`/docs/api` and `/docs/api.json`),
+    | enforced by App\Http\Middleware\RestrictApiDocsAccess.
+    |
+    | `local` ignores all three keys and is always open; `production` ignores
+    | them too and is always closed, because the document is a complete map of
+    | the API including which routes are reachable without a token. They matter
+    | on staging, review apps and any other deployed environment, where the docs
+    | stay 403 until `enabled` is true AND both halves of the credential are set
+    | -- an unset username or password counts as "not configured" and denies, so
+    | a half-finished .env fails closed rather than accepting empty strings.
+    |
+    | The credential is shared and handed to downstream client developers. It is
+    | not a platform account and grants nothing beyond reading the document.
+    |
+    */
+    'api_docs' => [
+        'enabled' => (bool) env('API_DOCS_ENABLED', false),
+        'username' => env('API_DOCS_USERNAME'),
+        'password' => env('API_DOCS_PASSWORD'),
+    ],
 
     /*
     |--------------------------------------------------------------------------

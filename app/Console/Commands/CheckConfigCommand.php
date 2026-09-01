@@ -77,6 +77,7 @@ class CheckConfigCommand extends Command
         $this->checkPassport($isProduction);
         $this->checkLogging($isProduction);
         $this->checkProxies($isProduction);
+        $this->checkApiDocs($isProduction);
 
         foreach ($this->warnings as $warning) {
             $this->components->warn($warning);
@@ -446,6 +447,40 @@ class CheckConfigCommand extends Command
         // https:// site, and every client IP recorded as the balancer's, which
         // also collapses per-IP rate limiting onto one bucket.
         $this->warnings[] = 'TRUSTED_PROXIES is empty. If this runs behind a load balancer, set it — otherwise generated URLs use the wrong scheme and every request appears to come from the proxy.';
+    }
+
+    /**
+     * The API docs credential says what the operator meant.
+     *
+     * Neither case below is an error, because both fail CLOSED —
+     * App\Http\Middleware\RestrictApiDocsAccess answers 403 either way, so
+     * nothing is exposed and refusing to start would be disproportionate. They
+     * are warnings because the symptom is otherwise invisible: an operator who
+     * set the flag and expects to read the docs gets the same 403 as an
+     * attacker, with nothing anywhere saying why.
+     *
+     * @param bool $isProduction
+     *
+     * @return void
+     */
+    private function checkApiDocs(bool $isProduction): void
+    {
+        if (!config('custom.api_docs.enabled')) {
+            return;
+        }
+
+        if ($isProduction) {
+            $this->warnings[] = 'API_DOCS_ENABLED is true in production, where the docs routes are denied unconditionally and this setting has no effect. Unset it so the intent is not misread later.';
+
+            return;
+        }
+
+        $username = (string) config('custom.api_docs.username');
+        $password = (string) config('custom.api_docs.password');
+
+        if ($username === '' || $password === '') {
+            $this->warnings[] = 'API_DOCS_ENABLED is true but API_DOCS_USERNAME and/or API_DOCS_PASSWORD is unset, so /docs/api stays 403. An unset half is treated as unconfigured on purpose — an empty credential must never be matchable.';
+        }
     }
 
 }

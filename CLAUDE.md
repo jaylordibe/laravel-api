@@ -50,6 +50,7 @@ panel; it blocks no edit.
 
 - `*/app/Http/Requests/*`
 - `*/app/Http/Resources/*`
+- `*/app/Http/Middleware/*`
 - `*/routes/api.php`
 - `*/database/migrations/*`
 - `*/app/Providers/AppServiceProvider.php`
@@ -110,7 +111,7 @@ These look wrong, look deletable, or look like they could be simplified. They mu
 - **Rate limits are config, not magic numbers.** The named limiters (`public`, `sensitive`, `api`, `heavy`) are defined in `AppServiceProvider::boot()` but read `config('custom.rate_limits.*')`. The defaults are the **production floor**; the env overrides exist for one legitimate case — an ephemeral throwaway environment being probed by a scanner (see the DAST workflow). Never raise them in a real environment to make a client or load test look better.
 - **List/get handlers type-hint `GenericRequest`**, so Scramble cannot see their query parameters and documents none. Do **not** "fix" this by type-hinting the concrete Request on those handlers without a plan — that changes when validation runs.
 - **`.dockerignore` excludes `storage/*.key`, and that exclusion is load-bearing.** `.gitignore` has no say in what `COPY . .` copies, so before this line a `docker build` on any machine that had run `php artisan passport:keys` baked the developer's **private signing key** into a distributable image layer — invisibly, because a fresh CI checkout has no key files and the layer was clean there. Excluding them is also what keeps the failure loud: with no key files in the image, a deployment that forgot to inject `PASSPORT_PRIVATE_KEY`/`PASSPORT_PUBLIC_KEY` is refused at startup by `app:check-config` instead of quietly signing tokens with a laptop's key. The same applies to `storage/app`, `.env*` and `database/*.sqlite`; the `docker` job in `test.yml` asserts none of them ship.
-- **Docs routes are local-only.** `GET /docs/api` and `/docs/api.json` are wrapped in Scramble's `RestrictedDocsAccess` unless a `viewApiDocs` gate is defined. `api.json` is generated output and gitignored.
+- **Docs routes are gated by `App\Http\Middleware\RestrictApiDocsAccess`, not by a gate.** `GET /docs/api` and `/docs/api.json` are open in `local`, denied unconditionally in `production`, and elsewhere require `API_DOCS_ENABLED` plus a shared HTTP Basic credential (`API_DOCS_USERNAME`/`API_DOCS_PASSWORD`, `config/custom.php` → `api_docs`) — every one of which fails closed. Scramble's own `RestrictedDocsAccess` was replaced because its `viewApiDocs` gate can never pass here: these routes carry the `web` group and this API has no session login, so the caller is always a guest. That is the opposite of the Horizon dashboard, whose `viewHorizon` gate works because Horizon authenticates first. `api.json` is generated output and gitignored; `scramble:export` writes it from the console, so the DAST workflow never depends on the route being reachable.
 
 ## Code style
 
@@ -129,6 +130,8 @@ The only permitted abbreviations are idioms already established repo-wide (`id`,
 ## API documentation (OpenAPI)
 
 The OpenAPI 3.1 document is **generated, never hand-written** — `dedoc/scramble` derives request shape from the Form Request's `rules()`, response shape from the API Resource, parameters from the route, and **security from route middleware**: `auth:api` routes are marked bearer-secured, anything else is marked `security: []`, i.e. explicitly public. That last point is load-bearing — a route accidentally left outside `auth:api` shows up as public in `api.json`, which is where you want to notice it. `php artisan scramble:export` writes `api.json`. Config in `config/scramble.php`.
+
+**Who can read it is a separate decision from how it is generated.** The two routes are gated by `App\Http\Middleware\RestrictApiDocsAccess` (see the bullet in *Things that will bite you*), not by Scramble's `viewApiDocs` gate — open in `local`, denied outright in `production`, and behind a shared HTTP Basic credential everywhere else. `scramble:export` is a console command and bypasses all of it, which is why the DAST workflow uses it instead of fetching the route.
 
 **A new resource is documented for free** if it follows the pipeline. If an endpoint documents badly the usual cause is a real defect — a `rules()` that does not describe what the endpoint accepts, or a Resource that does not describe what it returns. Fix the code, not the annotation.
 

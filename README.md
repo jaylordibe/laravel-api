@@ -14,7 +14,7 @@ strict layered architecture every new resource follows.
 | Scheduler | `php artisan schedule:run`, invoked externally |
 | Auth | Laravel Passport (OAuth2 bearer tokens) |
 | Object storage | Laravel `Storage` — `local`, `s3` (and S3-compatible) or `gcs` |
-| API docs | `dedoc/scramble`, generated (`/docs/api`, local only) |
+| API docs | `dedoc/scramble`, generated (`/docs/api`; open locally, HTTP Basic elsewhere, never in production) |
 
 The database engine is PostgreSQL end to end — `config/database.php`,
 `docker-compose.yml`, `.env.example`, the test suite and every CI job. A `mysql`

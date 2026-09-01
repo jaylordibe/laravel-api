@@ -442,11 +442,39 @@ class ConfigurationContractFeatureTest extends TestCase
     public function apiDocumentationStaysRestricted(): void
     {
         // The generated OpenAPI document describes every endpoint, including the
-        // administrative ones.
-        self::assertContains(
-            \Dedoc\Scramble\Http\Middleware\RestrictedDocsAccess::class,
-            config('scramble.middleware')
+        // administrative ones, and marks which of them answer without a token.
+        //
+        // This asserts the WIRING only — that the gate is still attached, and
+        // still ahead of nothing that could bypass it. The rules it enforces are
+        // exercised over HTTP in ApiDocsAccessFeatureTest.
+        $middleware = config('scramble.middleware');
+
+        self::assertContains(\App\Http\Middleware\RestrictApiDocsAccess::class, $middleware);
+
+        // Scramble's own gate defers to a `viewApiDocs` gate that can never pass
+        // here (no session login), so leaving it attached would be misleading
+        // about where the decision is actually made.
+        self::assertNotContains(\Dedoc\Scramble\Http\Middleware\RestrictedDocsAccess::class, $middleware);
+
+        // The limiter must run BEFORE the gate: middleware after a rejection
+        // never runs, so the reverse order leaves credential guesses uncounted.
+        self::assertLessThan(
+            array_search(\App\Http\Middleware\RestrictApiDocsAccess::class, $middleware, true),
+            array_search('throttle:api-docs', $middleware, true)
         );
+    }
+
+    #[Test]
+    public function theApiDocumentationCredentialIsUnsetByDefault(): void
+    {
+        // Asserts the COMMITTED defaults, not the test environment's values. A
+        // fork that inherits an enabled flag or a shipped credential would
+        // publish its whole contract on the first deployment that is not local.
+        $config = require config_path('custom.php');
+
+        self::assertFalse($config['api_docs']['enabled']);
+        self::assertEmpty($config['api_docs']['username']);
+        self::assertEmpty($config['api_docs']['password']);
     }
 
     /**

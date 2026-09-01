@@ -170,13 +170,31 @@ class CheckConfigCommandFeatureTest extends TestCase
     }
 
     #[Test]
-    public function strictModePromotesAWarningToAFailure(): void
+    public function itWarnsWhenTheApiDocsFlagIsSetInProduction(): void
     {
-        // A warning-only condition: file-based logging in production.
-        config()->set('logging.default', 'daily');
+        // Not a failure: the middleware denies production unconditionally, so the flag exposes
+        // nothing. It is worth saying out loud because an operator who set it believes the docs
+        // are reachable and will read the resulting 403 as a bug somewhere else.
+        config()->set('custom.api_docs.enabled', true);
 
         self::assertSame(0, Artisan::call('app:check-config'));
         self::assertSame(1, Artisan::call('app:check-config', ['--strict' => true]));
+        self::assertStringContainsString('API_DOCS_ENABLED', Artisan::output());
+    }
+
+    #[Test]
+    public function itWarnsWhenTheApiDocsCredentialIsOnlyHalfConfigured(): void
+    {
+        // The staging shape: not production, flag on, password never injected. It fails closed,
+        // so this stays a warning — but the 403 it produces is indistinguishable from the one an
+        // attacker gets, and nothing else in the system would ever say why.
+        app()['env'] = 'staging';
+        config()->set('custom.api_docs.enabled', true);
+        config()->set('custom.api_docs.username', 'docs-reader');
+        config()->set('custom.api_docs.password', null);
+
+        self::assertSame(1, Artisan::call('app:check-config', ['--strict' => true]));
+        self::assertStringContainsString('API_DOCS_PASSWORD', Artisan::output());
     }
 
 }

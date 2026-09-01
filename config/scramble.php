@@ -1,6 +1,6 @@
 <?php
 
-use Dedoc\Scramble\Http\Middleware\RestrictedDocsAccess;
+use App\Http\Middleware\RestrictApiDocsAccess;
 
 return [
     /*
@@ -140,9 +140,31 @@ return [
      */
     'flatten_deep_query_parameters' => true,
 
+    /*
+     * Middleware applied to BOTH docs routes. Scramble registers `/docs/api`
+     * (the UI) and `/docs/api.json` (the document) from this one array, so
+     * there is no way to gate the page and leave the document open — which is
+     * the right constraint, since the document is the part that actually
+     * describes the contract.
+     *
+     * RestrictApiDocsAccess replaces the package's own RestrictedDocsAccess.
+     * The package version allows `local` and otherwise asks the `viewApiDocs`
+     * gate, but no gate can pass here: these routes carry the `web` group and
+     * this API has no session login, so the caller is always a guest. Opening
+     * the docs on a deployed environment needs authentication, not a gate. See
+     * that class for the full rule set and `custom.api_docs` for the settings.
+     *
+     * `throttle:api-docs` runs BEFORE the gate, deliberately. Middleware after
+     * a rejection never runs, so putting the limiter second would leave
+     * credential guesses uncounted — the one case where the limit matters. It
+     * costs a rejected caller nothing else: document generation happens after
+     * the gate, so an unauthenticated request is answered cheaply and cannot be
+     * used to drive CPU.
+     */
     'middleware' => [
         'web',
-        RestrictedDocsAccess::class,
+        'throttle:api-docs',
+        RestrictApiDocsAccess::class,
     ],
 
     'extensions' => [],

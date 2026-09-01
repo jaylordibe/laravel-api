@@ -81,6 +81,15 @@ class AppServiceProvider extends ServiceProvider
             ];
         });
 
+        // Guesses against the shared HTTP Basic credential on the docs routes. Keyed by address
+        // because the caller is a guest by definition -- there is no token or user to key by. Low
+        // on purpose: a legitimate reader fetches the docs page and its document once and then
+        // browses the rendered result locally, so this is generous for a human and useless for a
+        // guesser.
+        RateLimiter::for('api-docs', function (Request $request) {
+            return Limit::perMinute(config('custom.rate_limits.api_docs'))->by('ip:' . $request->ip());
+        });
+
         // Define the gate permissions
         foreach (UserPermission::cases() as $permission) {
             Gate::define($permission, function (User $user) use ($permission) {
