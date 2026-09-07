@@ -21,10 +21,28 @@ permissions:
   contents: read
 
 jobs:
-  test:
-    name: Test
-    # Calls the reusable workflow; deploy only runs if this passes.
-    uses: ./.github/workflows/test.yml
+  # DISABLED DELIBERATELY — mirrors infoalanya-v2-api's staging policy: staging
+  # is the fastest path to a deployed build, and gating every push on the full
+  # test suite fought that goal. Production is unaffected:
+  # `deploy-to-production.yml` still gates on this same workflow via
+  # `needs: [test, security]`.
+  #
+  # What still covers staging: `test.yml` triggers directly on `pull_request`
+  # into `staging` (and `develop`/`main`), so landing code via a PR is tested
+  # against the merge preview. What is NO LONGER covered — know this before
+  # pushing:
+  #   • a DIRECT push to `staging` gets no test run at all;
+  #   • a PR run tests the MERGE PREVIEW, and what ends up on the branch can
+  #     differ from it (another branch merging in between is enough).
+  # This job was the only check of the exact commit that gets deployed.
+  #
+  # The `security` job below is kept as a blocking gate on purpose (see
+  # `needs:` on the deploy job): it runs in minutes, so it costs nothing like
+  # the suite did, and dropping it too would leave the deploy ungated entirely.
+  # To restore full gating, uncomment this job and add `test` back to `needs`.
+  # test:
+  #   name: Test
+  #   uses: ./.github/workflows/test.yml
 
   # Dependency advisories and the Trivy filesystem scan — see
   # deploy-to-production.yml for why the deploy gates on this separately.
@@ -38,7 +56,7 @@ jobs:
     # Enable by deleting this `if:` line (+ this comment) OR setting repository
     # variable DEPLOY_ENABLED=true, once the staging target is provisioned.
     if: ${{ vars.DEPLOY_ENABLED == 'true' }}
-    needs: [test, security]
+    needs: [security]
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
