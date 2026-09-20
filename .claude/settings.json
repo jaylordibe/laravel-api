@@ -4,13 +4,13 @@
     "jaylordibe": {
       "source": {
         "source": "github",
-        "repo": "jaylordibe/claude-engineering-framework"
+        "repo": "jaylordibe/himoa"
       },
       "autoUpdate": true
     }
   },
   "enabledPlugins": {
-    "engineering-framework@jaylordibe": true
+    "himoa@jaylordibe": true
   },
   "env": {
     "CLAUDE_CODE_ENABLE_TODO_TOOLS": "1"
