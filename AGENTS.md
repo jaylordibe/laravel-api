@@ -158,169 +158,164 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 
 # Repository truth — laravel-api
 
-Guidance for Claude Code working in this repository. This file is the always-on core: it is loaded on every request, so it holds only what applies to *almost every* change. Situational playbooks live in `.claude/skills/`; deeper worksheets live in `docs/`. See **Deep references** at the bottom.
+Repository truth for every coding agent. Keep it short: only what applies to
+most changes. The reasoning behind each rule lives in
+[`docs/engineering-conventions.md`](docs/engineering-conventions.md);
+situational playbooks live in `.claude/skills/`.
 
-Engineering methodology — the gate sequence, risk tiers, evidence language, review lenses and the human-owned operations list — comes from the **`himoa`** plugin and is deliberately **not restated here**. A second copy drifts and nothing can detect that it has.
-
-**Precedence.** Where a generic framework standard conflicts with a rule in this file, **this file wins**: the framework describes how to work, this file describes what is true. This file also supersedes any parent-workspace `CLAUDE.md` for work in this repository — in particular, plans are presented through Claude Code's plan flow, and this repository has no `tasks/` directory; do not create one.
+Engineering methodology (gates, risk tiers, evidence language, review lenses,
+`/work-item`) comes from the `himoa` plugin and is not restated here.
+**Where a framework standard conflicts with this file, this file wins.** It
+also supersedes any parent-workspace `CLAUDE.md`. No `tasks/` directory.
 
 ## Project
 
-A **Laravel 13 / PHP 8.5 API starter template** — the base every new API project is forked from. It ships a small set of framework resources (`User` with Passport auth, `AppVersion`, `DeviceToken`, `ActivityLog`, `JobStatus`, `Constant`) and a strict layered architecture every new resource must follow.
+Laravel 13 / PHP 8.5 **API starter template**: the base every new API is
+forked from, so a defect here propagates into every fork. Ships `User`
+(Passport auth), `AppVersion`, `DeviceToken`, `ActivityLog`, `JobStatus`,
+`Constant`.
 
-**Stack:** PostgreSQL; Redis queues via Laravel Horizon; Laravel Passport (OAuth2 bearer tokens) for authentication; Spatie `laravel-permission` for roles/permissions, `laravel-activitylog` for audit, `laravel-data` for typed DTOs; `brick/math` for decimals; `dedoc/scramble` for generated OpenAPI; Snappy (wkhtmltopdf) + PhpSpreadsheet for exports; `spatie/laravel-google-cloud-storage` for object storage; Mailgun via `symfony/mailgun-mailer`; `imtigger/laravel-job-status` for job tracking.
+PostgreSQL; Redis queues via Horizon; Passport bearer tokens; Spatie
+`laravel-permission`, `laravel-activitylog`, `laravel-data`; `brick/math`;
+`dedoc/scramble` for OpenAPI. Composer, `composer.lock` committed.
 
-**Package manager:** Composer. `composer.lock` is committed.
-
-**Runtime:** the whole stack runs in Docker. Almost every command below runs *inside* the `${SERVICE_NAME}-api` container — `SERVICE_NAME=laravel` by default, so the container is `laravel-api`; a fork renames this in `.env`.
-
-**Local dev and production run DIFFERENT images.** `docker-compose.yml` uses the base image directly (nginx + php-fpm + Horizon in one container, serving on `:80` → host `8000`). The production image is built from the `Dockerfile`, which installs `docker/entrypoint.sh` and selects one runtime per container via `APP_RUNTIME_MODE` (`api` | `worker` | `scheduler` | `migrate` | `artisan` | `all`). `DEPLOYMENT.md` is authoritative for the runtime contract.
+Everything runs in Docker. Most commands run inside the
+`${SERVICE_NAME}-api` container (`laravel-api` by default):
+`docker exec -it laravel-api bash -c "php artisan <cmd>"`. Local dev and
+production use different images; `DEPLOYMENT.md` owns the runtime contract.
 
 ## Canonical commands
 
-Run inside the container unless the row says otherwise:
-
-```
-docker exec -it laravel-api bash -c "php artisan <cmd>"
-```
-
 | Purpose | Command | Notes |
 |---|---|---|
-| Install | `composer install` | |
-| Lint / format check | `php artisan app:format --check` | Non-zero exit + list of offending files |
-| Format (apply) | `php artisan app:format` | **Mandatory closing step on every change** |
-| Unit + feature tests | `php artisan test --parallel` | |
-| Full test run (host) | `./test.sh` | Wrapper: `migrate:fresh --seed --env=testing`, recreates Passport clients, clears caches, then `--parallel` |
-| Single test (host) | `./test.sh <FilterName> <path/to/File.php>` | e.g. `./test.sh AppVersionFeatureTest tests/Feature/AppVersionFeatureTest.php` |
+| Install | `composer install` | In container |
+| Lint / format check | `php artisan app:format --check` | Evidence is `--check` |
+| Format (apply) | `php artisan app:format` | Mandatory closing step on every change |
+| Unit + feature tests | `php artisan test --parallel` | In container |
+| Full test run (host) | `./test.sh` | Fresh migrate + seed on `testing`, then `--parallel` |
+| Single test (host) | `./test.sh <Filter> <path/to/Test.php>` | |
 | CI flavour (host) | `./test-pipeline.sh` | What `.github/workflows/test.yml` runs |
-| Migration status | `php artisan migrate:status` | Read-only; applying migrations is human-owned |
-| Dependency advisories | `composer audit` | |
-| Validate runtime config | `php artisan app:check-config` | Run automatically at container start for the `api`/`worker` runtimes |
-| Start / stop (host) | `./start.sh` / `./stop.sh` | `./start.sh fresh` and `reset` are **destructive and human-owned** |
+| Migration status | `php artisan migrate:status` | Read-only; applying is human-owned |
+| Security scan | `composer audit` | |
+| Validate runtime config | `php artisan app:check-config` | Runs at container start |
+| Run locally (host) | `./start.sh` / `./stop.sh` | `fresh` / `reset` are destructive, human-owned |
 
-**Build: none. Type check: none.** This stack has neither — `N/A`, not a gap. Never report either as evidence.
+No build and no type check exist: `N/A`, never evidence.
 
 ## High-risk paths
 
-A change touching one of these is classified at least **High** risk,
-whatever the diff looks like. This raises ceremony and widens the review
-panel; it blocks no edit.
+| Path pattern | Why |
+|---|---|
+| `app/Http/Requests/*`, `app/Http/Resources/*` | The request/response contract |
+| `app/Http/Middleware/*`, `routes/api.php`, `config/auth.php` | Auth and route exposure |
+| `database/migrations/*` | Schema |
+| `app/Providers/AppServiceProvider.php`, `bootstrap/app.php` | Rate limits, middleware, proxies |
+| `config/custom.php` | Non-table defaults and limits |
+| `app/Models/BaseModel.php`, `app/Data/BaseData.php`, `app/Http/Requests/BaseRequest.php` | Every resource inherits them |
 
-- `*/app/Http/Requests/*`
-- `*/app/Http/Resources/*`
-- `*/app/Http/Middleware/*`
-- `*/routes/api.php`
-- `*/database/migrations/*`
-- `*/app/Providers/AppServiceProvider.php`
-- `*/bootstrap/app.php`
-- `*/config/custom.php`
-- `*/config/auth.php`
-- `*/app/Models/BaseModel.php`
-- `*/app/Data/BaseData.php`
-- `*/app/Http/Requests/BaseRequest.php`
+## Architecture
 
-This repository is the starter template every new API project is forked from, so a defect here propagates into every fork rather than affecting one system. Authorization is enforced per-endpoint through Passport plus Spatie permissions, and ownership isolation lives inside repository query methods rather than at the connection level — a repository method that forgets its scope leaks across accounts with no other layer to catch it. Money and decimal values are Brick\Math\BigDecimal end to end; introducing a float anywhere in that path is a correctness defect, not a style choice. Almost every command runs inside the laravel-api container, so a guard that only classifies host commands sees very little of what actually happens here.
-
-## Architecture — the layered request pipeline
-
-Every resource follows the **same** strict pipeline. Trace an existing one before adding a new one — `AppVersion` is the cleanest CRUD reference; `User` adds auth. Do not introduce alternate patterns.
+Every resource follows one pipeline. `AppVersion` is the cleanest CRUD
+reference; `User` adds auth. No alternate patterns.
 
 ```
 Route (routes/api.php)
-  → Controller (thin; no business logic, no error branching)
-    → Request (validates + builds a typed Data object)      extends BaseRequest
-      → Service (all business rules; throws BadRequestException on failure)
-        → Repository (all Eloquent/DB access — services never touch the query builder)
-          → Model                                            extends BaseModel
-  → Resource (App\Http\Resources\*) shapes the JSON response
+  → Controller    thin; no business logic, no error branching
+    → Request     validates, builds typed Data         extends BaseRequest
+      → Service   all business rules; throws BadRequestException
+        → Repository  all Eloquent/DB access (plain class, no base)
+          → Model                                      extends BaseModel
+  → Resource (App\Http\Resources\*) shapes the JSON
 ```
 
-- **Controllers** — constructor-inject the Service. Build typed data via `$request->toData()` / `toFilterData()`, call the service, wrap with `ResponseUtil::resource(...)` (create/read/update/list) or `ResponseUtil::success('X deleted successfully.')` (delete/action). Controllers **never branch on service results** — there is no `if ($x->failed())`. List/get endpoints take `GenericRequest` and re-hydrate via `XRequest::createFrom($request)->toFilterData()`.
-- **Requests** (`extends BaseRequest`) — `rules()`, `messages()`, `toData()`, `toFilterData()`. Read input through helpers, **never raw `$request->input()`**: `bigDecimal()`, `arrayIds()`, `getRelations()`, `getColumns()`, `getMetaData()`, `getAuthUserData()` are defined on `BaseRequest`; `enum()` and `boolean()` are Laravel's own (`Illuminate\Support\Traits\InteractsWithData`), inherited — don't go looking for them in `BaseRequest`.
-- **Data objects** (`app/Data`, Spatie Laravel Data, `extends BaseData`) — two per resource: `XData` (full record) and `XFilterData` (list/query params). `BaseData` carries `id`, audit timestamps/users, `authUser`, and `meta`. **`MetaData` is the universal query envelope**: `relations`, `columns`, `search`, `sortField`/`sortDirection`, `page`/`perPage`/`offset`, `groupBy`, `filters`.
-- **Services** — the only place for business rules. On success **return the payload directly**: `create`/`update`/`getById` → `?Model`, `getPaginated` → `LengthAwarePaginator`, `getAll` → `Collection`, `delete` → `bool`, actions → `void`.
-- **Repositories** — **plain classes, no shared base class.** Each implements `save()`, `findById()`, `exists()`, `getPaginated()`, `getAll()`, `delete()`, plus domain finders. `save(XData $data, ?Model $model = null)` does create-or-update and returns `$model->refresh()`. All query building lives here.
-
-Laravel 11+ streamlined structure: **there is no `app/Http/Kernel.php` or `app/Console/Kernel.php`.** Middleware, exception rendering and routing are configured in `bootstrap/app.php`; providers in `bootstrap/providers.php`; commands in `app/Console/Commands/` self-register; scheduled tasks in `routes/console.php`.
+No `app/Http/Kernel.php` or `app/Console/Kernel.php`: middleware, exceptions
+and routing live in `bootstrap/app.php`, providers in `bootstrap/providers.php`,
+schedules in `routes/console.php`.
 
 ## Cross-cutting conventions
 
-- **Error contract — one shape, everywhere.** Services throw `App\Exceptions\BadRequestException('message')` for *any* failure (not found, validation, uniqueness). Its `render()` returns `{"success": false, "message": "..."}` at **HTTP 400** — identical to `ResponseUtil::error()` and to request-validation failures. That uniformity is why controllers need no error branching. There is no `ServiceResponseData` / `$response->failed()` pattern; never introduce one. When wrapping a `try/catch`, **re-throw `BadRequestException` before the generic `catch (Throwable)`** or its message is swallowed.
-- **Validation contract.** Every input is validated in a Form Request, never in a controller or service. Validate enums with `Rule::enum(EnumClass::class)`.
-- **Authorization contract.** Non-public routes stay under `auth:api` (Passport). Roles/permissions via Spatie; expose permission sets through `ConstantController`. Constrain numeric route ids with `->where('xId', config('custom.numeric_regex'))`. **Ownership isolation lives inside repository query methods** — there is no connection-level or global-scope safety net, so a repository method that forgets its scope leaks across accounts silently.
-- **Persistence contract.** All models extend `App\Models\BaseModel` → `SoftDeletes` + `HasFactory`, auto-stamping `created_by`/`updated_by`/`deleted_by` from `Auth::id()`. **`$fillable` stays empty** — assignment is explicit in repositories, which structurally removes mass-assignment as a class of bug. Casts go in a **`protected function casts(): array` method**, never a `$casts` property. Table names come from `App\Constants\DatabaseTableConstant` — never a literal.
-- **Money and decimals.** `Brick\Math\BigDecimal`, **never float**. Cast with `App\Casts\BigDecimalCast`, parse via `BaseRequest::bigDecimal()`, divide with `App\Utils\MathUtil::divide()` (20-decimal scale, `RoundingMode::DOWN`, divide-by-zero safe).
-- **Separation.** Static lookup tables/registries live in `app/Constants`, not in services. Pure reusable transforms live in `app/Utils/*Util.php`. Third-party integrations sit behind an `app/Utils/<Domain>Util` boundary. Non-table defaults live in `config/custom.php`, read with `config()` — **never `env()` outside `config/`**.
-- **Enums** (`app/Enums`) are string-backed and `use App\Traits\EnumTrait` (`names()`/`values()`/`toArray()`).
+- **Controllers:** `$request->toData()` / `toFilterData()` → service →
+  `ResponseUtil::resource(...)` or `ResponseUtil::success('...')`. Never
+  branch on service results. List/get handlers take `GenericRequest`.
+- **Requests:** read input via `BaseRequest` helpers, never raw
+  `$request->input()`. Enums use `Rule::enum()`.
+- **Data:** two per resource, `XData` and `XFilterData` (`extends BaseData`).
+  `MetaData` is the universal query envelope.
+- **Services** return the payload directly (`?Model`, paginator, `Collection`,
+  `bool`, `void`).
+- **Errors:** throw `BadRequestException('message')` for any failure → HTTP
+  400 `{"success": false, "message": ...}`. Never add a result-object
+  pattern. Re-throw it before a generic `catch (Throwable)`.
+- **Authorization:** non-public routes under `auth:api`; Spatie roles and
+  permissions. Ownership scoping lives in repository queries only; there is
+  no global safety net. Constrain numeric ids with
+  `config('custom.numeric_regex')`.
+- **Models** extend `BaseModel` (soft deletes, audit stamps). `$fillable`
+  stays empty; casts go in a `casts()` method; table names come from
+  `DatabaseTableConstant`.
+- **Money:** `Brick\Math\BigDecimal`, never float. `BigDecimalCast`,
+  `BaseRequest::bigDecimal()`, `MathUtil::divide()`.
+- **Placement:** lookups in `app/Constants`, pure transforms in
+  `app/Utils/*Util.php`, integrations behind `app/Utils/<Domain>Util`.
+  Never `env()` outside `config/`.
+- **Enums** are string-backed and `use EnumTrait`.
+- **Style:** camelCase methods including tests (`#[Test]`), no space after
+  `!`, method braces on their own line, blank line after a class `{` and
+  before `}`, type-hint everything, full PHPDoc. Run `app:format --check`
+  after any `make:*` generator.
+- **OpenAPI is generated** by Scramble from rules, Resources and route
+  middleware. Fix the code, never an annotation.
 
 ## Non-obvious invariants
 
-These look wrong, look deletable, or look like they could be simplified. They must not be.
-
-- **Formatting is `php artisan app:format` — never Pint.** `laravel/pint` is deliberately **not** a dependency. Its stock preset actively fights these conventions (adds a space after `!`, collapses the constructor brace to `) {}`, strips `new` parens) and structurally cannot express the blank-line-after-`{`/before-`}` rules. Adding it also makes Laravel Boost generate "you must run Pint" guidance that contradicts this file.
-- **CI runs `app:format --check`, never the fixing form.** `app:format` exits 0 *after* rewriting what it repaired, so a fixing formatter in CI silently patches the runner's copy, passes, and throws the fixes away with the container — enforcing the style nowhere.
-- **There is deliberately no default sort direction.** `getPaginated()`/`getAll()` apply `sortField` + `sortDirection` only when `sortField` is set. Adding a default silently reorders every existing list response.
-- **A migration that modifies a column must restate every attribute it already had** (`nullable`, `default`, length, `unsigned`, …). Laravel rewrites the column from the definition given, so any omitted attribute is silently dropped.
-- **The image must NOT contain `bootstrap/cache/config.php`.** `config:cache` freezes the value of every `env()` call and then Laravel stops reading `.env` and `config/*.php` entirely. Run at build time — where `.dockerignore` has excluded `.env`, so only defaults exist — it bakes `DB_HOST=127.0.0.1` into the image and silently ignores every value the platform injects at runtime. The `Dockerfile` caches **views only**; `docker/entrypoint.sh` caches config and routes at container start. The `docker` job in `test.yml` asserts the cache is absent from the image *and* that a `docker run -e DB_HOST=…` value is what the app resolves. Do not "optimise" this back into the build.
-- **`api` mode disables the base image's Horizon supervisor program, deliberately.** The base image starts nginx, php-fpm and `php artisan horizon` from one supervisord config. Leaving that on means every horizontally scaled API replica also runs a Horizon master, so queue concurrency tracks web traffic and `horizon:terminate` races across replicas — with no error anywhere. `all` mode is the single-container exception.
-- **Trusted proxies are split across two files, deliberately.** WHICH PROXIES lives in `config/trustedproxy.php` — that filename and the `proxies` key are what Laravel's `TrustProxies` middleware reads as its own fallback, and the framework does the comma-splitting, trimming and `*` handling itself. WHICH HEADERS lives in `bootstrap/app.php`. The split exists because the `withMiddleware()` closure runs via `afterResolving(HttpKernel::class)`, *before* the bootstrappers load configuration, so `config()` returns nothing there — but headers are integer constants and need no lookup. Do not "tidy" this by re-parsing `TRUSTED_PROXIES` into an array yourself and pushing it in from a provider — that reimplements parsing the framework already does, in a place where the value is read too late to be trusted. `X-Forwarded-Host` and `X-Forwarded-Prefix` are excluded from the trusted set on purpose (host-header and path poisoning of generated URLs).
-- **`LIKE` is case-SENSITIVE on PostgreSQL.** MySQL's `_ci` collation made it case-insensitive; the move to PostgreSQL silently turned every search into an exact-case match, with no error and no failing query. Use `App\Utils\DatabaseUtil::caseInsensitiveLikeOperator()` and `containsPattern()` for any user-facing search.
-- **A migration must not use MySQL-only syntax.** `DB::raw('CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP')` fails on PostgreSQL; the portable form is `->useCurrent()->useCurrentOnUpdate()`, which the PostgreSQL grammar ignores (Eloquent maintains `updated_at` anyway).
-- **Rate limits are config, not magic numbers.** The named limiters (`public`, `sensitive`, `api`, `heavy`) are defined in `AppServiceProvider::boot()` but read `config('custom.rate_limits.*')`. The defaults are the **production floor**; the env overrides exist for one legitimate case — an ephemeral throwaway environment being probed by a scanner (see the DAST workflow). Never raise them in a real environment to make a client or load test look better.
-- **List/get handlers type-hint `GenericRequest`**, so Scramble cannot see their query parameters and documents none. Do **not** "fix" this by type-hinting the concrete Request on those handlers without a plan — that changes when validation runs.
-- **`.dockerignore` excludes `storage/*.key`, and that exclusion is load-bearing.** `.gitignore` has no say in what `COPY . .` copies, so before this line a `docker build` on any machine that had run `php artisan passport:keys` baked the developer's **private signing key** into a distributable image layer — invisibly, because a fresh CI checkout has no key files and the layer was clean there. Excluding them is also what keeps the failure loud: with no key files in the image, a deployment that forgot to inject `PASSPORT_PRIVATE_KEY`/`PASSPORT_PUBLIC_KEY` is refused at startup by `app:check-config` instead of quietly signing tokens with a laptop's key. The same applies to `storage/app`, `.env*` and `database/*.sqlite`; the `docker` job in `test.yml` asserts none of them ship.
-- **Docs routes are gated by `App\Http\Middleware\RestrictApiDocsAccess`, not by a gate.** `GET /docs/api` and `/docs/api.json` are open in `local`, denied unconditionally in `production`, and elsewhere require `API_DOCS_ENABLED` plus a shared HTTP Basic credential (`API_DOCS_USERNAME`/`API_DOCS_PASSWORD`, `config/custom.php` → `api_docs`) — every one of which fails closed. Scramble's own `RestrictedDocsAccess` was replaced because its `viewApiDocs` gate can never pass here: these routes carry the `web` group and this API has no session login, so the caller is always a guest. That is the opposite of the Horizon dashboard, whose `viewHorizon` gate works because Horizon authenticates first. `api.json` is generated output and gitignored; `scramble:export` writes it from the console, so the DAST workflow never depends on the route being reachable.
-
-## Code style
-
-`php artisan app:format` applies the standard; `--check` verifies it. It encodes the whitespace/brace/`!`/indentation rules mechanically. The rest is yours to apply by hand — run `--check` after any `make:*` generator, which emits Laravel defaults that violate several:
-
-- One blank line after a class/enum/trait opening `{` and one before its closing `}` — including a migration's anonymous class.
-- Method/constructor opening brace **on its own line**; promoted constructors expand fully even with an empty body.
-- **No space after `!`:** `!empty($x)`, `if (!$isDeleted)`.
-- Four spaces, never hard tabs. `new Foo()` for named classes; argument-less anonymous classes keep no parens (`return new class extends Migration`).
-- **Method and function names are camelCase — always, including tests:** `public function testCreate()` with the `#[Test]` attribute, never `test_create`. snake_case is only ever a DB column, array key, or enum value.
-- **Type-hint every parameter and return type**, including closures and arrow functions: `fn (User $user): string => ...`.
-- Full PHPDoc: class-level `@property` on models/DTOs, `@var` on `$table`, and summary + `@param`/`@return`/`@throws` on every method (including `casts()`, which carries `@return array<string, string>`).
-
-The only permitted abbreviations are idioms already established repo-wide (`id`, `url`, `db`, `ttl`) and the idiomatic `catch (Throwable $e)`.
-
-## API documentation (OpenAPI)
-
-The OpenAPI 3.1 document is **generated, never hand-written** — `dedoc/scramble` derives request shape from the Form Request's `rules()`, response shape from the API Resource, parameters from the route, and **security from route middleware**: `auth:api` routes are marked bearer-secured, anything else is marked `security: []`, i.e. explicitly public. That last point is load-bearing — a route accidentally left outside `auth:api` shows up as public in `api.json`, which is where you want to notice it. `php artisan scramble:export` writes `api.json`. Config in `config/scramble.php`.
-
-**Who can read it is a separate decision from how it is generated.** The two routes are gated by `App\Http\Middleware\RestrictApiDocsAccess` (see the bullet in *Things that will bite you*), not by Scramble's `viewApiDocs` gate — open in `local`, denied outright in `production`, and behind a shared HTTP Basic credential everywhere else. `scramble:export` is a console command and bypasses all of it, which is why the DAST workflow uses it instead of fetching the route.
-
-**A new resource is documented for free** if it follows the pipeline. If an endpoint documents badly the usual cause is a real defect — a `rules()` that does not describe what the endpoint accepts, or a Resource that does not describe what it returns. Fix the code, not the annotation.
+- **Format with `app:format`, never Pint.** Pint is deliberately not a
+  dependency. CI runs `--check`, never the fixing form.
+- **No default sort direction.** Adding one reorders every list response.
+- **A column-modifying migration restates every existing attribute**
+  (`nullable`, `default`, length, ...) or it is silently dropped.
+- **No MySQL-only migration syntax**; use `->useCurrent()->useCurrentOnUpdate()`.
+- **`LIKE` is case-sensitive on PostgreSQL.** Use
+  `DatabaseUtil::caseInsensitiveLikeOperator()` / `containsPattern()`.
+- **The image must not contain `bootstrap/cache/config.php`.** The
+  `Dockerfile` caches views only; `docker/entrypoint.sh` caches config.
+- **`api` mode disables Horizon on purpose**; `all` is the single-container
+  exception.
+- **Trusted proxies are split on purpose:** which proxies in
+  `config/trustedproxy.php`, which headers in `bootstrap/app.php`.
+- **Rate limits read `config('custom.rate_limits.*')`.** Defaults are the
+  production floor; never raise them in a real environment.
+- **Don't type-hint concrete Requests on list/get handlers** without a plan;
+  it changes when validation runs.
+- **`.dockerignore` excluding `storage/*.key` is load-bearing** (also
+  `storage/app`, `.env*`, `database/*.sqlite`).
+- **API docs are gated by `RestrictApiDocsAccess`**, not a gate: open in
+  `local`, denied in `production`, Basic auth elsewhere.
+- **Destructive commands are denied in `.claude/settings.json`** in both host
+  and container forms. Add a new artisan rule in every form.
 
 ## Consumers
 
-_(none — this repository is the starter template every API project is forked from, so it has no clients of its own. A fork must replace this row with its real consumers before its first contract change.)_
+| Consumer | Repository / location | Audience | Owner |
+|---|---|---|---|
+| (none — internal only: starter template with no clients of its own) | | | |
 
-A **contract change** — any Form Request rule, Resource field, error message, HTTP status, required/optional/nullable change, enum value, pagination or ordering change, or queued-job payload — is not done when this API parses. It is done when every consumer above has either been updated or explicitly recorded as unaffected, with the deployment order stated. **In a fork, an unfilled table makes every contract change report "no consumers" and cross-repository breakage ship silently.**
+A fork must replace this row with its real consumers before its first
+contract change. A contract change is done only when every consumer is
+updated or recorded as unaffected, with the deploy order stated.
 
 ## Deep references
 
 | Task | Where |
 |---|---|
-| Scaffold a CRUD resource (pipeline, migration, routes, Resource, tests) | `resource-pattern` skill |
-| Auth, Passport tokens, verification, Spatie RBAC/Gates, rate limiting | `auth-security` skill |
-| Write feature/unit tests (harness, `./test.sh`, auth helpers, factories) | `feature-testing` skill |
-| Money, rates, any decimal arithmetic | `money-precision` skill |
-| Queued jobs (Redis/Horizon), console and scheduled commands | `background-work` skill |
-| Third-party integrations behind an `app/Utils/<Domain>Util` boundary | `external-integration` skill |
-| Horizon supervisors, metrics, dashboards | `configuring-horizon` skill |
-| Passport OAuth2 grants, clients, scopes | `passport-development` skill |
-| General Laravel best practices by topic | `laravel-best-practices` skill |
-| API contract worksheet (envelope, pagination, consumer handoff) | `docs/api-contract.md` |
-| Database design worksheet (audit columns, soft deletes, indexes) | `docs/database-design.md` |
-| CI: merge gate and migration safety | `.github/workflows/test.yml` |
-| CI: dependency advisories, Trivy, OWASP ZAP | `.github/workflows/security.yml`, `security-dast.yml`, `.zap/rules.tsv` |
-| Deployment: what the app expects and how to wire a real target | `DEPLOYMENT.md` |
-
-**Settings and framework integration:**
-
-- `.claude/settings.json` (committed) — the permissions floor plus the `app:format` hook, and the only layer here that actually blocks anything. The himoa plugin is methodology only: it ships no permission rules, so a destructive command is merely *reserved* by the session charter — which stops and hands off — rather than denied. A deny rule here is what makes the reservation unbypassable. So the destructive `./start.sh` forms and migrations are denied, and Passport key rotation is `ask`. **Every rule is written in both the host and the containerised form** (`php artisan …` *and* `docker exec*artisan …`, `docker compose exec*artisan …`): a rule written only as `php artisan db:wipe*` matches nothing, because almost nothing here is run from the host. Add a new artisan rule in every form or it does not apply.
-- **Canonical commands** and **High-risk paths** above are read directly by the gates — those two headings are an interface, not documentation. There is no separate policy file; changing what the gates run or how they classify a change means editing those sections.
-- `.claude/settings.local.json` (per-developer, gitignored) — personal allowlist and enabled MCP servers.
-- `/himoa:framework-doctor` — audits this repository against the framework contract (the `himoa-doctor` binary the plugin puts on `PATH`). Not to be confused with `php artisan app:check-config`, which validates *runtime* configuration.
+| Reasoning behind every rule above | `docs/engineering-conventions.md` |
+| Scaffold a CRUD resource | `resource-pattern` skill |
+| Auth, Passport, verification, RBAC, rate limiting | `auth-security` skill |
+| Feature/unit tests | `feature-testing` skill |
+| Money and decimal arithmetic | `money-precision` skill |
+| Queued jobs, console and scheduled commands | `background-work` skill |
+| Third-party integrations | `external-integration` skill |
+| Horizon / Passport / general Laravel | `configuring-horizon`, `passport-development`, `laravel-best-practices` skills |
+| API contract worksheet | `docs/api-contract.md` |
+| Database design worksheet | `docs/database-design.md` |
+| CI and security workflows | `.github/workflows/test.yml`, `security.yml`, `security-dast.yml` |
+| Deployment and runtime modes | `DEPLOYMENT.md` |
