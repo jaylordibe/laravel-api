@@ -6,8 +6,11 @@ use App\Enums\UserRole;
 use App\Models\User;
 use App\Utils\AppUtil;
 use App\Utils\DateUtil;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -114,8 +117,9 @@ class UserFeatureTest extends TestCase
         $user = User::factory()->create();
         $token = $this->login($user->email);
         $payload = [
-            'password' => 'password',
-            'passwordConfirmation' => 'password'
+            'currentPassword' => 'password',
+            'password' => 'new-password',
+            'passwordConfirmation' => 'new-password'
         ];
         $response = $this->withToken($token)->put("{$this->resource}/auth/password", $payload);
 
@@ -123,6 +127,111 @@ class UserFeatureTest extends TestCase
             'success' => true
         ];
         $response->assertOk()->assertJson($expected);
+        self::assertTrue(Hash::check('new-password', $user->refresh()->password));
+
+        // Every session re-authenticates with the new password, the caller's included.
+        $this->forgetAuthenticatedUsers();
+        $this->withToken($token)->get("{$this->resource}/auth")->assertUnauthorized();
+    }
+
+    /**
+     * A bearer token alone must not be able to change its owner's password: that would let a stolen
+     * token take the account over — the change signs every session out — however short it lives.
+     *
+     * @return array<string, array{array<string, string>}>
+     */
+    public static function missingOrWrongCurrentPassword(): array
+    {
+        return [
+            'missing' => [[]],
+            'empty' => [['currentPassword' => '']],
+            'wrong' => [['currentPassword' => 'not-the-password']],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('missingOrWrongCurrentPassword')]
+    public function selfPasswordChangeRequiresTheCurrentPassword(array $currentPassword): void
+    {
+        /** @var User $user */
+        $user = User::factory()->create();
+        $token = $this->login($user->email);
+        $payload = $currentPassword + [
+            'password' => 'new-password',
+            'passwordConfirmation' => 'new-password'
+        ];
+
+        $this->withToken($token)->put("{$this->resource}/auth/password", $payload)
+            ->assertBadRequest()
+            ->assertJson(['success' => false, 'message' => 'Current password is incorrect.']);
+
+        self::assertTrue(Hash::check('password', $user->refresh()->password), 'The password must be unchanged.');
+        $this->forgetAuthenticatedUsers();
+        $this->withToken($token)->get("{$this->resource}/auth")->assertOk();
+    }
+
+    /**
+     * A factory admin, never the seeded one: these tests change passwords, and the shared test
+     * database is not refreshed between runs, so a regression here must not break every other test
+     * that signs in as the seeded system admin.
+     *
+     * @return User
+     */
+    private function createAdmin(): User
+    {
+        return User::factory()->withRole(UserRole::SYSTEM_ADMIN)->create();
+    }
+
+    #[Test]
+    public function adminChangingTheirOwnPasswordAlsoNeedsTheCurrentPassword(): void
+    {
+        $admin = $this->createAdmin();
+        $token = $this->login($admin->email);
+        $payload = [
+            'password' => 'new-password',
+            'passwordConfirmation' => 'new-password'
+        ];
+
+        $this->forgetAuthenticatedUsers();
+        $this->withToken($token)->put("{$this->resource}/{$admin->id}/password", $payload)
+            ->assertBadRequest()
+            ->assertJson(['message' => 'Current password is incorrect.']);
+
+        self::assertTrue(Hash::check('password', $admin->refresh()->password), 'The password must be unchanged.');
+    }
+
+    #[Test]
+    public function adminChangingTheirOwnPasswordWithTheCurrentPasswordSucceeds(): void
+    {
+        $admin = $this->createAdmin();
+        $token = $this->login($admin->email);
+        $payload = [
+            'currentPassword' => 'password',
+            'password' => 'new-password',
+            'passwordConfirmation' => 'new-password'
+        ];
+
+        $this->forgetAuthenticatedUsers();
+        $this->withToken($token)->put("{$this->resource}/{$admin->id}/password", $payload)->assertOk();
+
+        self::assertTrue(Hash::check('new-password', $admin->refresh()->password));
+        $this->forgetAuthenticatedUsers();
+        $this->withToken($token)->get("{$this->resource}/auth")->assertUnauthorized();
+    }
+
+    #[Test]
+    public function passwordRoutesAreRateLimitedLikeSignIn(): void
+    {
+        // The current password makes these routes a guessing surface; AGENTS.md's auth rule puts
+        // every auth-input endpoint under `sensitive`. The suite disables throttling globally, so
+        // the limiter is asserted on the route itself.
+        foreach (['users/auth/password', 'users/{userId}/password'] as $uri) {
+            $route = collect(Route::getRoutes()->getRoutes())
+                ->first(fn ($candidate): bool => $candidate->uri() === "api/{$uri}" && in_array('PUT', $candidate->methods(), true));
+
+            self::assertNotNull($route, "Route PUT api/{$uri} is missing.");
+            self::assertContains('throttle:sensitive', $route->gatherMiddleware(), "PUT api/{$uri} must use the sensitive limiter.");
+        }
     }
 
     #[Test]
@@ -260,19 +369,28 @@ class UserFeatureTest extends TestCase
     #[Test]
     public function testUpdateUserPassword(): void
     {
+        // An admin resetting SOMEONE ELSE's password needs no current password — the one path that
+        // skips it — and the reset still signs the target out everywhere.
         /** @var User $user */
         $user = User::factory()->create();
-        $token = $this->loginSystemAdminUser();
+        $userToken = $this->login($user->email);
+        $this->forgetAuthenticatedUsers();
+        $token = $this->login($this->createAdmin()->email);
         $payload = [
-            'password' => 'password',
-            'passwordConfirmation' => 'password'
+            'password' => 'reset-password',
+            'passwordConfirmation' => 'reset-password'
         ];
+        $this->forgetAuthenticatedUsers();
         $response = $this->withToken($token)->put("{$this->resource}/{$user->id}/password", $payload);
 
         $expected = [
             'success' => true
         ];
         $response->assertOk()->assertJson($expected);
+        self::assertTrue(Hash::check('reset-password', $user->refresh()->password));
+
+        $this->forgetAuthenticatedUsers();
+        $this->withToken($userToken)->get("{$this->resource}/auth")->assertUnauthorized();
     }
 
 }

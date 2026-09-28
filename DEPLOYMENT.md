@@ -189,6 +189,7 @@ correct.
 |---|---|
 | `APP_NAME`, `APP_ENV=production`, `APP_URL` | Identity; `APP_URL` backs generated links |
 | `APP_DEBUG=false` | **Must** be false — startup fails otherwise |
+| `AUTH_TOKEN_TTL_MINUTES` | Sign-in session lifetime in minutes. Optional — default and bounds in `config/custom.php` / `App\Utils\AuthUtil`; an empty or out-of-bounds value stops the app from booting. Applies to newly issued tokens only |
 | `APP_RUNTIME_MODE` | `api` \| `worker` \| `scheduler` \| `migrate` \| `artisan` \| `all` |
 | `PORT` | HTTP port; defaults to 80 |
 | `TRUSTED_PROXIES` | See below — **required behind a load balancer** |

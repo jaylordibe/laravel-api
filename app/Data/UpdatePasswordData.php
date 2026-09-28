@@ -10,7 +10,8 @@ class UpdatePasswordData extends Data
     public function __construct(
         public int $userId,
         public string $password,
-        public string $passwordConfirmation
+        public string $passwordConfirmation,
+        public string $currentPassword
     )
     {
     }

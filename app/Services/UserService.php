@@ -18,6 +18,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Laravel\Passport\RefreshToken;
@@ -35,8 +36,7 @@ class UserService
 
     /**
      * Revoke all user tokens.
-     * This is used when the user changes their password
-     * or when an admin wants to revoke all tokens for a user.
+     * Used when a password changes and when the user signs out of every session.
      *
      * @param User $user
      *
@@ -368,6 +368,17 @@ class UserService
 
         if (!$isAdmin && $authUser->id !== $changePasswordData->userId) {
             throw new BadRequestException('Unauthorized to update password.');
+        }
+
+        // Changing your OWN password — on either route, admins included — needs the current one. The
+        // bearer token alone is not enough: a stolen token would otherwise set a new password, sign
+        // the owner out everywhere below, and keep the account however short the token's lifetime.
+        // An admin resetting SOMEONE ELSE's password is the one path that skips it — so a stolen ADMIN
+        // token can still take over another account; closing that needs step-up re-authentication.
+        $isSelfChange = $authUser->id === $changePasswordData->userId;
+
+        if ($isSelfChange && !Hash::check($changePasswordData->currentPassword, $authUser->password)) {
+            throw new BadRequestException('Current password is incorrect.');
         }
 
         $user = $this->userRepository->updatePassword($changePasswordData);

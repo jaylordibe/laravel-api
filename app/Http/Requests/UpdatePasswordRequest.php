@@ -16,7 +16,9 @@ class UpdatePasswordRequest extends BaseRequest
     {
         return [
             'password' => ['required', 'string', 'min:8'],
-            'passwordConfirmation' => ['required', 'same:password', 'min:8']
+            'passwordConfirmation' => ['required', 'same:password', 'min:8'],
+            // Required when changing your own password; a missing or wrong value is rejected with 400.
+            'currentPassword' => ['nullable', 'string']
         ];
     }
 
@@ -41,6 +43,7 @@ class UpdatePasswordRequest extends BaseRequest
             userId: $this->getAuthUserData()->id,
             password: $this->string('password'),
             passwordConfirmation: $this->string('passwordConfirmation'),
+            currentPassword: $this->string('currentPassword'),
         );
     }
 

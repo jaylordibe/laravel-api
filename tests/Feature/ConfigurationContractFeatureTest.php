@@ -2,6 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Utils\AuthUtil;
+use Illuminate\Console\Scheduling\Event;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use PHPUnit\Framework\Attributes\Test;
@@ -73,6 +76,36 @@ class ConfigurationContractFeatureTest extends TestCase
 
             self::assertEmpty($config['proxies'], 'No proxy may be trusted by default.');
         });
+    }
+
+    #[Test]
+    public function signInSessionsDefaultToThirtyDaysWithinTheCeiling(): void
+    {
+        // The committed default, read with the variable unset — not whatever the
+        // test environment sets — so raising it cannot pass unnoticed.
+        $this->withEnv('AUTH_TOKEN_TTL_MINUTES', null, function (): void {
+            $config = require config_path('custom.php');
+            $minutes = (int) $config['auth']['token_ttl_minutes'];
+
+            self::assertSame(43200, $minutes, 'Sign-in sessions default to 30 days.');
+            self::assertLessThanOrEqual(AuthUtil::MAX_TOKEN_TTL_MINUTES, $minutes);
+        });
+    }
+
+    #[Test]
+    public function expiredAndRevokedTokensArePurgedDailyOnOneServer(): void
+    {
+        // Every sign-in adds a token row and nothing else removes one.
+        $events = collect(app(Schedule::class)->events())
+            ->filter(fn (Event $event): bool => str_contains((string) $event->command, 'passport:purge'));
+
+        self::assertCount(1, $events, 'passport:purge must be scheduled exactly once.');
+
+        /** @var Event $purge */
+        $purge = $events->first();
+        self::assertSame('0 0 * * *', $purge->expression);
+        self::assertTrue($purge->onOneServer, 'The purge is global; once per run, not once per replica.');
+        self::assertTrue($purge->withoutOverlapping);
     }
 
     #[Test]

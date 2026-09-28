@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\AuthRequest;
 use App\Http\Requests\GenericRequest;
+use App\Services\UserService;
 use App\Utils\ResponseUtil;
 use App\Utils\AppUtil;
 use Illuminate\Http\JsonResponse;
@@ -11,13 +12,14 @@ use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Laravel\Passport\PersonalAccessTokenResult;
+use Throwable;
 
 class AuthController extends Controller
 {
 
-    public function __construct()
+    public function __construct(private readonly UserService $userService)
     {
-        $this->middleware('guest')->except('signOut');
+        $this->middleware('guest')->except(['signOut', 'signOutAll']);
     }
 
     /**
@@ -50,7 +52,11 @@ class AuthController extends Controller
         $personalAccessTokenResult = $user->createToken(config('app.name'));
 
         $response = [
-            'token' => $personalAccessTokenResult->accessToken
+            'token' => $personalAccessTokenResult->accessToken,
+            /**
+             * Seconds until the token expires. There is no refresh flow: sign in again before then.
+             */
+            'expiresIn' => (int) $personalAccessTokenResult->expiresIn
         ];
 
         return ResponseUtil::json($response);
@@ -64,6 +70,18 @@ class AuthController extends Controller
         Auth::user()->token()->delete();
 
         return ResponseUtil::success('Logout successful.');
+    }
+
+    /**
+     * Sign the user out of every session, including this one.
+     *
+     * @throws Throwable
+     */
+    public function signOutAll(GenericRequest $request): JsonResponse
+    {
+        $this->userService->revokeAllUserTokens(Auth::user());
+
+        return ResponseUtil::success('Signed out of all sessions.');
     }
 
 }

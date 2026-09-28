@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Enums\UserPermission;
 use App\Models\User;
+use App\Utils\AuthUtil;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -37,11 +38,14 @@ class AppServiceProvider extends ServiceProvider
         // Disable the wrapping of the outermost resource
         JsonResource::withoutWrapping();
 
-        // OAuth grant access and refresh tokens: inert while the /oauth/* routes are not registered (see register())
+        // OAuth grant access and refresh tokens: INERT while the /oauth/* routes are not registered (see
+        // register()), so they do not affect sign-in. Kept rather than deleted: without them Passport defaults
+        // both to one year, which a fork re-enabling a grant would inherit silently.
         Passport::tokensExpireIn(now()->addHours(8));
         Passport::refreshTokensExpireIn(now()->addDays(30));
-        // Personal access tokens: what sign-in issues through createToken(), so this is the session lifetime
-        Passport::personalAccessTokensExpireIn(now()->addDays(90));
+        // Personal access tokens: what sign-in issues through createToken(), so this IS the session lifetime.
+        // Throws on an invalid configured value rather than falling back (see AuthUtil).
+        Passport::personalAccessTokensExpireIn(AuthUtil::personalAccessTokenLifetime());
 
         // Public limiter for unauthenticated endpoints
         RateLimiter::for('public', function (Request $request) {

@@ -46,6 +46,7 @@ Route::middleware(['throttle:sensitive'])->group(function () {
 Route::middleware(['auth:api', 'throttle:api'])->group(function () {
     // Auth
     Route::post('auth/sign-out', [AuthController::class, 'signOut']);
+    Route::post('auth/sign-out-all', [AuthController::class, 'signOutAll']);
 
     // Constant routes
     Route::prefix('constants')->group(function () {
@@ -75,9 +76,10 @@ Route::middleware(['auth:api', 'throttle:api'])->group(function () {
         Route::delete('/auth', [UserController::class, 'deleteAuthUser']);
         Route::put('/auth/username', [UserController::class, 'updateAuthUsername']);
         Route::put('/auth/email', [UserController::class, 'updateAuthUserEmail']);
-        Route::put('/auth/password', [UserController::class, 'updateAuthUserPassword']);
+        // Password changes take the current password, so they are a guessing surface: `sensitive`, like sign-in.
+        Route::put('/auth/password', [UserController::class, 'updateAuthUserPassword'])->middleware('throttle:sensitive');
         Route::post('/auth/profile-image', [UserController::class, 'updateAuthUserProfileImage']);
-        Route::put('/{userId}/password', [UserController::class, 'updatePassword'])->where('userId', config('custom.numeric_regex'));
+        Route::put('/{userId}/password', [UserController::class, 'updatePassword'])->where('userId', config('custom.numeric_regex'))->middleware('throttle:sensitive');
         Route::get('/{userId}', [UserController::class, 'getById'])->where('userId', config('custom.numeric_regex'));
         Route::put('/{userId}', [UserController::class, 'update'])->where('userId', config('custom.numeric_regex'));
         Route::delete('/{userId}', [UserController::class, 'delete'])->where('userId', config('custom.numeric_regex'));

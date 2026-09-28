@@ -35,7 +35,13 @@ abstract class TestCase extends BaseTestCase
         ];
         $response = $this->post('/api/auth/sign-in', $data);
 
-        return (string) $response->json('token');
+        // Fail here, not later: an empty token is always 401, so a test asserting that a session
+        // was revoked would otherwise pass without the session ever having existed.
+        $response->assertOk();
+        $token = (string) $response->json('token');
+        self::assertNotSame('', $token);
+
+        return $token;
     }
 
     /**
@@ -46,6 +52,22 @@ abstract class TestCase extends BaseTestCase
     protected function loginSystemAdminUser(): string
     {
         return $this->login(config('custom.sysad_email'), config('custom.sysad_password'));
+    }
+
+    /**
+     * Drop every guard's resolved user and the session sign-in wrote.
+     *
+     * The application instance and session are shared by all requests in a test, so without this a
+     * guard can keep answering with the user it resolved for an earlier request — a revoked token
+     * would look valid — and the session login `Auth::attempt` leaves behind trips the `guest`
+     * middleware on the next sign-in. Call it between requests that must each authenticate afresh.
+     *
+     * @return void
+     */
+    protected function forgetAuthenticatedUsers(): void
+    {
+        $this->flushSession();
+        $this->app['auth']->forgetGuards();
     }
 
     /**
