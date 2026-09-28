@@ -387,22 +387,12 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
-      # A fresh checkout never contains a developer's local secrets, so the
-      # "no secret may ship in a layer" assertions below would pass here even
-      # with .dockerignore emptied. Plant them, exactly where local setup puts
-      # them, so those assertions test the exclusions instead of the checkout.
-      - name: Plant local-developer artefacts in the build context
-        run: |
-          set -euo pipefail
-          canary="${BUILD_CONTEXT_CANARY}"
-          echo "APP_KEY=${canary}" > .env
-          echo "APP_KEY=${canary}" > .env.production
-          echo "${canary}" > storage/oauth-private.key
-          printf '<?php return [%s];\n' "'${canary}'" > bootstrap/cache/config.php
-          echo "${canary}" > database/database.sqlite
-          echo "${canary}" > storage/logs/laravel.log
-          echo "${canary}" > storage/framework/sessions/canary
-          echo "${canary}" > storage/app/canary.txt
+      # A fresh checkout never contains a developer's local files, so a missing
+      # .dockerignore rule would pass here and leak on every laptop. Plant a
+      # canary at the path of every git-ignore rule — the rule and its
+      # reasoning live in .dockerignore and check-exposure.sh.
+      - name: Plant a canary at every git-ignored path in the build context
+        run: .github/scripts/check-exposure.sh plant "${BUILD_CONTEXT_CANARY}"
 
       - name: Build the production image
         uses: docker/build-push-action@v7
@@ -414,28 +404,8 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # Reading the image's final filesystem is not enough. composer's
-      # post-autoload-dump deletes bootstrap/cache/config.php in a later layer,
-      # so the file is absent at runtime while the `COPY . .` layer underneath
-      # still carries it — readable by anyone who can pull the image. Search
-      # every layer's bytes for the canary the plant step wrote instead.
-      - name: Verify no planted artefact reached any image layer
-        run: |
-          set -euo pipefail
-          docker save laravel-api:ci > "${RUNNER_TEMP}/image.tar"
-
-          # Positive control: a marker known to ship (public/index.php) must be
-          # found, or the layers are not plain-byte searchable and the check
-          # below would pass without having looked.
-          grep -aq 'LARAVEL_START' "${RUNNER_TEMP}/image.tar" \
-            || { echo '::error::image layers are not searchable as plain bytes; the canary search would be vacuous'; exit 1; }
-
-          if grep -aq "${BUILD_CONTEXT_CANARY}" "${RUNNER_TEMP}/image.tar"; then
-            echo '::error::a file planted by "Plant local-developer artefacts" is inside an image layer — a .dockerignore exclusion is missing'
-            exit 1
-          fi
-          rm -f "${RUNNER_TEMP}/image.tar"
-          echo 'no planted artefact in any layer'
+      - name: Verify no git-ignored file reached any image layer
+        run: .github/scripts/check-exposure.sh layers laravel-api:ci "${BUILD_CONTEXT_CANARY}"
 
       # CVEs in the base image's OS packages and in the installed vendor tree —
       # the half `composer audit` in security.yml cannot see, because it reads
@@ -492,10 +462,9 @@ jobs:
             # signing key into a distributable image — invisibly, because a fresh
             # CI checkout has no key files and the layer was clean here.
             #
-            # A fresh checkout has none of these files, so the "Plant local-developer
-            # artefacts" step puts each one in the build context first. These
-            # checks read the final filesystem; the layer search above catches
-            # the case where a later layer deleted a file the COPY layer still holds.
+            # These read the final filesystem. The planted-canary layer search
+            # above is the authoritative check; it also catches a file a later
+            # layer deleted while the COPY layer still holds it.
             if ls storage/*.key >/dev/null 2>&1; then
               echo "a Passport signing key was baked into the image" >&2
               exit 1
@@ -641,9 +610,18 @@ jobs:
             > "${fixtures}/profiled/docker-compose.yml"
           printf '%s\n' "${loopback_service[@]}" '  tool:' '    image: busybox' '    network_mode: host' \
             > "${fixtures}/host-network/docker-compose.yml"
-          for fixture in profiled host-network; do
-            if .github/scripts/check-exposure.sh compose "${fixtures}/${fixture}/docker-compose.yml"; then
+          # Each fixture must be rejected for ITS reason — any other failure
+          # (compose could not parse it, no ports found) would not exercise the
+          # branch the fixture exists for.
+          for case in 'profiled|bind every host interface' 'host-network|network_mode: host'; do
+            fixture=${case%%|*}
+            expected=${case#*|}
+            if output=$(.github/scripts/check-exposure.sh compose "${fixtures}/${fixture}/docker-compose.yml" 2>&1); then
               echo "::error::the compose check accepted the '${fixture}' fixture, which publishes on every interface"
+              exit 1
+            fi
+            if ! grep -qF "$expected" <<<"$output"; then
+              echo "::error::the compose check rejected the '${fixture}' fixture for the wrong reason: ${output}"
               exit 1
             fi
           done

@@ -8,7 +8,7 @@ COPY . .
 # Install dependencies (production only)
 #
 # The runtime-writable directories are recreated first. .dockerignore excludes
-# storage/logs, storage/framework/cache and storage/framework/views on purpose —
+# storage/logs and storage/framework on purpose —
 # they hold a developer's local log/cache output, which must never ship inside an
 # image — but excluding them also removes the DIRECTORIES, and `view:cache` runs
 # `view:clear` first, which aborts with "View path not found" when the view path

@@ -8,6 +8,12 @@
 #                                    mode, serves nothing over HTTP but public/
 #                                    and the application, and listens on nothing
 #                                    else
+#   check-exposure.sh plant <canary> run in a CHECKOUT before `docker build`:
+#                                    writes <canary> at the path of every
+#                                    git-ignore rule in the repository
+#   check-exposure.sh layers <tag> <canary>
+#                                    no planted canary reached any layer of the
+#                                    image built from that checkout
 #
 # STRUCTURAL, NOT A BLACKLIST. The image check does not hold a list of "sensitive
 # paths". It enumerates every file the image actually ships outside public/ and
@@ -30,6 +36,75 @@ set -euo pipefail
 die() { echo "check-exposure: FAIL: $*" >&2; exit 1; }
 failures=0
 fail() { echo "  FAIL: $*" >&2; failures=$((failures + 1)); }
+
+# Written by `plant` into a path nothing ignores, and required by `layers`. It
+# proves the search can see the COPY layer specifically: a marker that also lives
+# in vendor/ (installed in a later RUN layer) would prove only that SOME layer
+# is searchable. Must not contain the canary as a substring.
+BUILD_CONTEXT_CONTROL_FILE=resources/build-context-control.txt
+BUILD_CONTEXT_CONTROL=EXPOSURE_BUILD_CONTEXT_POSITIVE_CONTROL
+
+# Derives the canaries from the git-ignore rules themselves, so "git-ignored
+# implies docker-ignored" is enforced without a second hand-kept list: a new
+# rule is covered the moment it is committed. Each rule is resolved against the
+# directory of the .gitignore that declares it; `*` becomes a literal name.
+# Negations (`!`) are skipped, and so is a path that is a symlink (writing
+# through it would land outside the build context).
+plant_build_context() {
+    local canary="$1" rules_file dir pattern path
+
+    case "$BUILD_CONTEXT_CONTROL" in *"$canary"*) die "the canary must not be a substring of the positive control." ;; esac
+
+    while IFS= read -r rules_file; do
+        dir="$(dirname "$rules_file")"
+
+        while IFS= read -r pattern || [ -n "$pattern" ]; do
+            case "$pattern" in ''|'#'*|'!'*) continue ;; esac
+
+            pattern="${pattern#/}"
+            pattern="${pattern%/}"
+            path="${dir}/${pattern//\*/canary}"
+            path="${path#./}"
+
+            [ -L "$path" ] && continue
+            if [ -d "$path" ]; then
+                path="${path}/canary"
+            else
+                mkdir -p "$(dirname "$path")"
+            fi
+
+            printf '%s\n' "$canary" > "$path"
+            echo "planted: ${path}"
+        done < "$rules_file"
+    done < <(git ls-files '*.gitignore')
+
+    # Not a git-ignore rule — git owns the directory — but it can hold a remote
+    # URL with a credential in it, and the CI checkout token.
+    printf '%s\n' "$canary" > .git/canary
+    echo "planted: .git/canary"
+
+    printf '%s\n' "$BUILD_CONTEXT_CONTROL" > "$BUILD_CONTEXT_CONTROL_FILE"
+}
+
+# Searches the bytes of every layer, not the final filesystem: a file deleted by
+# a later layer (composer's post-autoload-dump removes bootstrap/cache/config.php)
+# is absent at runtime but still readable by anyone who can pull the image.
+check_layers() {
+    local image="$1" canary="$2" saved
+
+    saved="$(mktemp)"
+    trap 'rm -f "'"$saved"'"' EXIT
+    docker save "$image" > "$saved"
+
+    grep -aqF "$BUILD_CONTEXT_CONTROL" "$saved" \
+        || die "the positive control from ${BUILD_CONTEXT_CONTROL_FILE} is not in any layer — either \`plant\` did not run before the build, or the layers are not searchable as plain bytes. The canary search would be vacuous."
+
+    if grep -aqF "$canary" "$saved"; then
+        die "a git-ignored file planted in the build context is inside an image layer. Mirror its .gitignore rule in .dockerignore."
+    fi
+
+    echo "check-exposure: layers: no git-ignored file reached any layer of ${image}."
+}
 
 check_compose() {
     local compose_file="${1:-docker-compose.yml}"
@@ -257,5 +332,13 @@ case "${1:-}" in
         [ -n "${2:-}" ] || die "usage: $0 image <tag>"
         check_image "$2"
         ;;
-    *) die "usage: $0 compose [file] | image <tag>" ;;
+    plant)
+        [ -n "${2:-}" ] || die "usage: $0 plant <canary>"
+        plant_build_context "$2"
+        ;;
+    layers)
+        [ -n "${2:-}" ] && [ -n "${3:-}" ] || die "usage: $0 layers <tag> <canary>"
+        check_layers "$2" "$3"
+        ;;
+    *) die "usage: $0 compose [file] | image <tag> | plant <canary> | layers <tag> <canary>" ;;
 esac

@@ -1,11 +1,19 @@
+# THE RULE: anything a .gitignore file ignores is local to one machine, and must
+# be excluded here too — `COPY . .` copies the build context, and git has no say
+# in what that contains. CI enforces it without a second list to maintain:
+# `.github/scripts/check-exposure.sh plant` writes a canary at the path of every
+# git-ignore rule in the repository, and `check-exposure.sh layers` fails if any
+# canary reaches any image layer. A new git-ignore rule therefore fails CI until
+# it is mirrored here.
 .git
 .gitignore
 .gitattributes
 .editorconfig
 tests
 storage/logs
-storage/framework/cache
-storage/framework/views
+# Laravel's runtime state: caches, compiled views, sessions, test disks and the
+# maintenance-mode `down` file. The Dockerfile recreates the directories it needs.
+storage/framework
 # Every .env variant. Runtime configuration is injected by the platform; an image
 # that carries a .env would override it (Laravel reads .env before the process
 # environment) and would bake credentials into a distributable layer.
@@ -29,19 +37,32 @@ storage/*.key
 # RESOLVED .env value — database, Redis and mail credentials, APP_KEY — and it is
 # git-ignored, so nothing else keeps it out of a local build. The Dockerfile
 # recreates the directory; composer and docker/entrypoint.sh regenerate the rest.
-bootstrap/cache/*.php
+bootstrap/cache/*
 # A developer's local uploads and scratch files. The Dockerfile recreates the
 # directory; nothing durable may live in the image anyway.
 storage/app
-storage/framework/sessions
-# A local SQLite file, created by composer's post-create-project script. Never
-# used by this template (the engine is PostgreSQL) and it can carry real rows.
-database/*.sqlite
+# A local SQLite file (and its -journal/-wal siblings), created by composer's
+# post-create-project script. Never used by this template (the engine is
+# PostgreSQL) and it can carry real rows.
+database/*.sqlite*
 docker-compose.yml
 # Only the PostgreSQL data volumes — docker/entrypoint.sh and docker/healthcheck.sh
 # are COPYed into the image and must stay in the build context.
 docker/database/
-vendor/bin
+# The Dockerfile installs dependencies from composer.lock with --no-dev. A host
+# vendor/ would otherwise put every dev package into the COPY layer underneath.
+vendor
+# Local-only files that can hold credentials or data: Composer registry
+# credentials, ad-hoc backups and dumps, editor and VM settings.
+**/auth.json
+**/*.bak
+**/.phpactor.json
+**/Homestead.json
+**/Homestead.yaml
+**/.DS_Store
+**/supervisord.pid
+.fleet
+.vscode
 *.md
 start.sh
 stop.sh
