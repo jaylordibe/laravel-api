@@ -5,8 +5,12 @@
             "url": "https://mcp.atlassian.com/v1/mcp/authv2"
         },
         "laravel-boost": {
-            "command": "php",
+            "command": "docker",
             "args": [
+                "exec",
+                "-i",
+                "laravel-api",
+                "php",
                 "artisan",
                 "boost:mcp"
             ]
