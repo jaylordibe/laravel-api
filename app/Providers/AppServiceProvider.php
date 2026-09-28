@@ -17,10 +17,16 @@ class AppServiceProvider extends ServiceProvider
 
     /**
      * Register any application services.
+     *
+     * Passport's own HTTP routes (`/oauth/*`) are not registered. Sign-in issues tokens in-process
+     * through `createToken()`, so no client calls them, and they are attack surface only: the browser
+     * authorization and device-code flows need a session-login guard this API does not have. Must run
+     * in register(), before PassportServiceProvider boots and loads its routes. A fork that adopts an
+     * OAuth grant registers the routes it needs deliberately rather than inheriting all of them.
      */
     public function register(): void
     {
-        //
+        Passport::ignoreRoutes();
     }
 
     /**
@@ -31,11 +37,10 @@ class AppServiceProvider extends ServiceProvider
         // Disable the wrapping of the outermost resource
         JsonResource::withoutWrapping();
 
-        // Access tokens: used on every request
+        // OAuth grant access and refresh tokens: inert while the /oauth/* routes are not registered (see register())
         Passport::tokensExpireIn(now()->addHours(8));
-        // Refresh tokens: used to rotate access tokens
         Passport::refreshTokensExpireIn(now()->addDays(30));
-        // Personal access tokens: used for long-lived tokens (e.g. for CLI or third-party integrations)
+        // Personal access tokens: what sign-in issues through createToken(), so this is the session lifetime
         Passport::personalAccessTokensExpireIn(now()->addDays(90));
 
         // Public limiter for unauthenticated endpoints

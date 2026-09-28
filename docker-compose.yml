@@ -10,6 +10,14 @@
 # installs docker/entrypoint.sh and defaults to APP_RUNTIME_MODE=api, so a
 # horizontally scaled API replica never carries a Horizon master. See
 # DEPLOYMENT.md.
+#
+# EVERY PUBLISHED PORT BINDS 127.0.0.1. A bare "6378:6379" publishes on ALL host
+# interfaces, and Docker writes its own firewall rules ahead of the host's (ufw,
+# the macOS firewall), so the unauthenticated Redis, the databases, the login-less
+# pgAdmin and the APP_DEBUG=true API would all answer anyone on the same Wi-Fi.
+# Containers reach each other by service name on app-network and never need a
+# published port at all; the host-side tooling reaches them on localhost.
+# Enforced by .github/scripts/check-exposure.sh (`compose`).
 services:
   app-api:
     image: jaylordibe/laravel-php:8.5
@@ -18,7 +26,7 @@ services:
     tty: true
     platform: linux/amd64
     ports:
-      - "8000:80"
+      - "127.0.0.1:8000:80"
     volumes:
       - .:/var/www/html
     working_dir: /var/www/html
@@ -38,7 +46,7 @@ services:
     tty: true
     platform: linux/amd64
     ports:
-      - "5433:5432"
+      - "127.0.0.1:5433:5432"
     environment:
       POSTGRES_DB: ${DB_DATABASE}
       POSTGRES_USER: ${DB_USERNAME}
@@ -70,13 +78,13 @@ services:
     restart: unless-stopped
     platform: linux/amd64
     ports:
-      - "8001:80"
+      - "127.0.0.1:8001:80"
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
       # Local-only convenience. These disable pgAdmin's own login and its
-      # first-run wizard on a container that is reachable from localhost only and
-      # holds nothing but throwaway development data. Never carry this file, or
+      # first-run wizard on a container published on the loopback interface only
+      # that holds nothing but throwaway development data. Never carry this file, or
       # these settings, into a deployed environment.
       PGADMIN_CONFIG_SERVER_MODE: "False"
       PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
@@ -92,7 +100,7 @@ services:
     # 5434, and two templates in the same workspace must be able to run at the
     # same time. The dev database keeps 5433 (5432 + 1).
     ports:
-      - "5435:5432"
+      - "127.0.0.1:5435:5432"
     environment:
       POSTGRES_DB: ${TEST_DB_DATABASE}
       POSTGRES_USER: ${TEST_DB_USERNAME}
@@ -114,7 +122,7 @@ services:
     restart: unless-stopped
     platform: linux/amd64
     ports:
-      - "8002:80"
+      - "127.0.0.1:8002:80"
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
@@ -127,7 +135,7 @@ services:
     container_name: ${SERVICE_NAME}-redis
     restart: unless-stopped
     ports:
-      - "6378:6379"
+      - "127.0.0.1:6378:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 2s

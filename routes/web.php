@@ -7,7 +7,12 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 
 Route::get('/', function () {
-    return new RedirectResponse(config('custom.app_frontend_url'));
+    $frontendUrl = config('custom.app_frontend_url');
+
+    // A pure API has no frontend to send visitors to; answer 404 rather than a 500.
+    abort_if(empty($frontendUrl), 404);
+
+    return new RedirectResponse($frontendUrl);
 });
 
 if (app()->environment('local')) {

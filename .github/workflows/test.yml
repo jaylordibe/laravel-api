@@ -375,6 +375,10 @@ jobs:
     name: Build and scan the production image
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      # Written into the build context by the plant step and searched for in
+      # every image layer afterwards; one definition so the two cannot drift.
+      BUILD_CONTEXT_CANARY: CI_BUILD_CONTEXT_CANARY
 
     steps:
       - name: Checkout
@@ -382,6 +386,23 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
+
+      # A fresh checkout never contains a developer's local secrets, so the
+      # "no secret may ship in a layer" assertions below would pass here even
+      # with .dockerignore emptied. Plant them, exactly where local setup puts
+      # them, so those assertions test the exclusions instead of the checkout.
+      - name: Plant local-developer artefacts in the build context
+        run: |
+          set -euo pipefail
+          canary="${BUILD_CONTEXT_CANARY}"
+          echo "APP_KEY=${canary}" > .env
+          echo "APP_KEY=${canary}" > .env.production
+          echo "${canary}" > storage/oauth-private.key
+          printf '<?php return [%s];\n' "'${canary}'" > bootstrap/cache/config.php
+          echo "${canary}" > database/database.sqlite
+          echo "${canary}" > storage/logs/laravel.log
+          echo "${canary}" > storage/framework/sessions/canary
+          echo "${canary}" > storage/app/canary.txt
 
       - name: Build the production image
         uses: docker/build-push-action@v7
@@ -392,6 +413,29 @@ jobs:
           tags: laravel-api:ci
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      # Reading the image's final filesystem is not enough. composer's
+      # post-autoload-dump deletes bootstrap/cache/config.php in a later layer,
+      # so the file is absent at runtime while the `COPY . .` layer underneath
+      # still carries it — readable by anyone who can pull the image. Search
+      # every layer's bytes for the canary the plant step wrote instead.
+      - name: Verify no planted artefact reached any image layer
+        run: |
+          set -euo pipefail
+          docker save laravel-api:ci > "${RUNNER_TEMP}/image.tar"
+
+          # Positive control: a marker known to ship (public/index.php) must be
+          # found, or the layers are not plain-byte searchable and the check
+          # below would pass without having looked.
+          grep -aq 'LARAVEL_START' "${RUNNER_TEMP}/image.tar" \
+            || { echo '::error::image layers are not searchable as plain bytes; the canary search would be vacuous'; exit 1; }
+
+          if grep -aq "${BUILD_CONTEXT_CANARY}" "${RUNNER_TEMP}/image.tar"; then
+            echo '::error::a file planted by "Plant local-developer artefacts" is inside an image layer — a .dockerignore exclusion is missing'
+            exit 1
+          fi
+          rm -f "${RUNNER_TEMP}/image.tar"
+          echo 'no planted artefact in any layer'
 
       # CVEs in the base image's OS packages and in the installed vendor tree —
       # the half `composer audit` in security.yml cannot see, because it reads
@@ -448,10 +492,10 @@ jobs:
             # signing key into a distributable image — invisibly, because a fresh
             # CI checkout has no key files and the layer was clean here.
             #
-            # This runs in CI, where those files never exist, so it can only fail
-            # if the exclusions are removed AND someone rebuilds locally. Keep it
-            # anyway: it states the requirement where it is enforced, and it also
-            # catches a .env or a local SQLite database entering the image.
+            # A fresh checkout has none of these files, so the "Plant local-developer
+            # artefacts" step puts each one in the build context first. These
+            # checks read the final filesystem; the layer search above catches
+            # the case where a later layer deleted a file the COPY layer still holds.
             if ls storage/*.key >/dev/null 2>&1; then
               echo "a Passport signing key was baked into the image" >&2
               exit 1
@@ -568,6 +612,44 @@ jobs:
             exit 1
           fi
           echo '::endgroup::'
+
+      # THE EXTERNAL SURFACE.
+      #
+      # Everything above reads the image from the inside. This requests it from
+      # the outside, the way the internet does: every file the image ships outside
+      # public/ must be neither retrievable nor executable over HTTP — judged on
+      # body content across redirects, not status codes — and nothing but the
+      # application port may listen beyond loopback. The nginx site config comes
+      # from the base image, so this is also the only place a base-image change to
+      # the document root or the php-fpm listener would be noticed.
+      #
+      # The compose check guards the development stack's published ports, which
+      # otherwise put an unauthenticated Redis and the databases on the LAN.
+      - name: Verify nothing but the application is reachable from outside
+        run: |
+          set -euo pipefail
+
+          # Self-test: the repository's compose file has no profiles and no host
+          # networking, so without these two fixtures neither branch of the
+          # compose check would ever execute here, and deleting one stays green.
+          # Each fixture also has a loopback-only service, so the check cannot
+          # fail it for the wrong reason ("no published ports").
+          fixtures="${RUNNER_TEMP}/compose-fixtures"
+          mkdir -p "${fixtures}/profiled" "${fixtures}/host-network"
+          loopback_service=('services:' '  api:' '    image: busybox' '    ports: ["127.0.0.1:8000:80"]')
+          printf '%s\n' "${loopback_service[@]}" '  tool:' '    image: busybox' '    profiles: ["tools"]' '    ports: ["8025:8025"]' \
+            > "${fixtures}/profiled/docker-compose.yml"
+          printf '%s\n' "${loopback_service[@]}" '  tool:' '    image: busybox' '    network_mode: host' \
+            > "${fixtures}/host-network/docker-compose.yml"
+          for fixture in profiled host-network; do
+            if .github/scripts/check-exposure.sh compose "${fixtures}/${fixture}/docker-compose.yml"; then
+              echo "::error::the compose check accepted the '${fixture}' fixture, which publishes on every interface"
+              exit 1
+            fi
+          done
+
+          .github/scripts/check-exposure.sh compose
+          .github/scripts/check-exposure.sh image laravel-api:ci
 
       # THE RUNTIME SPLIT.
       #

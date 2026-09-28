@@ -24,6 +24,12 @@ storage/framework/views
 # PASSPORT_PRIVATE_KEY/PASSPORT_PUBLIC_KEY is refused at startup by
 # app:check-config, instead of quietly signing tokens with a key from a laptop.
 storage/*.key
+# A developer's framework caches. `php artisan config:cache` (or `optimize`) in the
+# bind-mounted dev container writes bootstrap/cache/config.php holding every
+# RESOLVED .env value — database, Redis and mail credentials, APP_KEY — and it is
+# git-ignored, so nothing else keeps it out of a local build. The Dockerfile
+# recreates the directory; composer and docker/entrypoint.sh regenerate the rest.
+bootstrap/cache/*.php
 # A developer's local uploads and scratch files. The Dockerfile recreates the
 # directory; nothing durable may live in the image anyway.
 storage/app
