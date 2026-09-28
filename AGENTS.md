@@ -168,6 +168,10 @@ Engineering methodology (gates, risk tiers, evidence language, review lenses,
 **Where a framework standard conflicts with this file, this file wins.** It
 also supersedes any parent-workspace `CLAUDE.md`. No `tasks/` directory.
 
+**This file holds rules, not history.** Add a rule only when a change alters
+something most changes need; feature detail belongs in the code, its tests and
+`docs/`, and what changed and when belongs in the commit history.
+
 ## Project
 
 Laravel 13 / PHP 8.5 **API starter template**: the base every new API is
