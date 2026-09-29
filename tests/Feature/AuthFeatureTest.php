@@ -3,12 +3,10 @@
 namespace Tests\Feature;
 
 use App\Models\User;
-use App\Providers\AppServiceProvider;
-use App\Utils\AuthUtil;
 use Illuminate\Routing\Route as RoutingRoute;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
-use InvalidArgumentException;
+use Illuminate\Routing\Middleware\ThrottleRequests;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -30,16 +28,12 @@ class AuthFeatureTest extends TestCase
     }
 
     /**
-     * The signed token carries the configured lifetime, and the response reports it.
-     *
-     * Asserted on the JWT's own `exp - iat` rather than by travelling in time: Passport issues and
-     * validates with the native clock, which `travel()` does not move, so a time-travel test would
-     * pass without proving anything.
+     * The token carries the configured lifetime (read from the JWT: `travel()` does not move Passport's clock).
      */
     #[Test]
     public function signInTokenLivesForTheConfiguredLifetime(): void
     {
-        $lifetimeSeconds = (int) AuthUtil::personalAccessTokenLifetime()->totalSeconds;
+        $lifetimeSeconds = config('custom.auth.token_ttl_minutes') * 60;
 
         $response = $this->post("{$this->resource}/sign-in", [
             'identifier' => config('custom.sysad_email'),
@@ -87,20 +81,6 @@ class AuthFeatureTest extends TestCase
         $this->withToken($otherToken)->get('/api/users/auth')->assertOk();
     }
 
-    /**
-     * The provider refuses to boot on an invalid lifetime instead of falling back to a default.
-     */
-    #[Test]
-    public function anInvalidLifetimeStopsTheApplicationBooting(): void
-    {
-        config()->set('custom.auth.token_ttl_minutes', 'abc');
-
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('AUTH_TOKEN_TTL_MINUTES');
-
-        (new AppServiceProvider($this->app))->boot();
-    }
-
     #[Test]
     public function signOutAllRequiresAToken(): void
     {
@@ -117,12 +97,7 @@ class AuthFeatureTest extends TestCase
     }
 
     /**
-     * Passport's `/oauth/*` routes stay unregistered: tokens come from sign-in, and the browser
-     * authorization and device-code flows are unusable surface on an API with no session login.
-     *
-     * Checked against the route table by Passport's `passport.` route-name prefix rather than a list
-     * of paths or the `oauth` URI prefix: the name is fixed by Passport's route group, while the URI
-     * prefix follows `passport.path`, which a fork may change.
+     * Passport's `/oauth/*` routes stay unregistered (matched by the `passport.` route-name prefix).
      */
     #[Test]
     public function passportHttpRoutesAreNotRegistered(): void
@@ -155,8 +130,7 @@ class AuthFeatureTest extends TestCase
     }
 
     /**
-     * Sign in with no user left over from an earlier request in this test, which would otherwise
-     * trip the `guest` middleware on the sign-in route.
+     * Sign in afresh within one test.
      *
      * @param string $email
      *
@@ -181,6 +155,22 @@ class AuthFeatureTest extends TestCase
         $payload = explode('.', $jwt)[1] ?? '';
 
         return (array) json_decode(base64_decode(strtr($payload, '-_', '+/')), true);
+    }
+
+    #[Test]
+    public function signInIsRateLimitedPerAccountAndIp(): void
+    {
+        $this->withMiddleware(ThrottleRequests::class);
+        $limit = (int) config('custom.rate_limits.sensitive');
+
+        foreach (range(1, $limit + 1) as $attempt) {
+            $this->postJson("{$this->resource}/sign-in", ['identifier' => 'someone@example.test', 'password' => 'wrong'])
+                ->assertStatus($attempt <= $limit ? 400 : 429);
+        }
+
+        // Someone else on the same IP is not locked out.
+        $this->postJson("{$this->resource}/sign-in", ['identifier' => 'someone-else@example.test', 'password' => 'wrong'])
+            ->assertBadRequest();
     }
 
 }

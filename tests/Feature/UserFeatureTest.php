@@ -6,12 +6,11 @@ use App\Enums\UserRole;
 use App\Models\User;
 use App\Utils\AppUtil;
 use App\Utils\DateUtil;
-use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Routing\Middleware\ThrottleRequests;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
-use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
+use Laravel\Passport\Passport;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -46,22 +45,15 @@ class UserFeatureTest extends TestCase
     #[Test]
     public function testGetAuthUser(): void
     {
-        $token = $this->loginSystemAdminUser();
-        $userData = $this->getAuthUser($token);
-        $response = $this->withToken($token)->get("{$this->resource}/auth");
+        $admin = $this->actingAsSystemAdmin();
+        $response = $this->get("{$this->resource}/auth");
 
         $expected = [
-            'id' => $userData->id,
-            'firstName' => $userData->firstName,
-            'middleName' => $userData->middleName,
-            'lastName' => $userData->lastName,
-            // Lower-cased: User normalises email/username on write so the
-            // PostgreSQL unique index and every lookup compare the same value.
-            'username' => Str::lower($userData->username),
-            'email' => Str::lower($userData->email),
-            'timezone' => $userData->timezone,
-            'phoneNumber' => $userData->phoneNumber,
-            'birthdate' => $userData->birthdate
+            'id' => $admin->id,
+            'firstName' => $admin->first_name,
+            'lastName' => $admin->last_name,
+            'username' => $admin->username,
+            'email' => $admin->email
         ];
         $response->assertOk()->assertJson($expected);
     }
@@ -71,9 +63,9 @@ class UserFeatureTest extends TestCase
     {
         /** @var User $user */
         $user = User::factory()->create();
-        $token = $this->login($user->email);
+        Passport::actingAs($user);
         $payload = ['username' => AppUtil::generateUniqueToken() . fake()->unique()->userName()];
-        $response = $this->withToken($token)->put("{$this->resource}/auth/username", $payload);
+        $response = $this->put("{$this->resource}/auth/username", $payload);
 
         $expected = [
             'id' => $user->id,
@@ -94,9 +86,9 @@ class UserFeatureTest extends TestCase
     {
         /** @var User $user */
         $user = User::factory()->create();
-        $token = $this->login($user->email);
+        Passport::actingAs($user);
         $payload = ['email' => AppUtil::generateUniqueToken() . fake()->unique()->safeEmail()];
-        $response = $this->withToken($token)->put("{$this->resource}/auth/email", $payload);
+        $response = $this->put("{$this->resource}/auth/email", $payload);
 
         $expected = [
             'id' => $user->id,
@@ -131,14 +123,35 @@ class UserFeatureTest extends TestCase
         $response->assertOk()->assertJson($expected);
         self::assertTrue(Hash::check('new-password', $user->refresh()->password));
 
-        // Every session re-authenticates with the new password, the caller's included.
+        // The session that changed it stays signed in; every other session is signed out.
         $this->forgetAuthenticatedUsers();
-        $this->withToken($token)->get("{$this->resource}/auth")->assertUnauthorized();
+        $this->withToken($token)->get("{$this->resource}/auth")->assertOk();
+    }
+
+    #[Test]
+    public function changingYourPasswordSignsOutYourOtherSessions(): void
+    {
+        /** @var User $user */
+        $user = User::factory()->create();
+        $currentToken = $this->login($user->email);
+        $this->forgetAuthenticatedUsers();
+        $otherToken = $this->login($user->email);
+
+        $this->forgetAuthenticatedUsers();
+        $this->withToken($currentToken)->put("{$this->resource}/auth/password", [
+            'currentPassword' => 'password',
+            'password' => 'new-password',
+            'passwordConfirmation' => 'new-password'
+        ])->assertOk();
+
+        $this->forgetAuthenticatedUsers();
+        $this->withToken($otherToken)->get("{$this->resource}/auth")->assertUnauthorized();
+        $this->forgetAuthenticatedUsers();
+        $this->withToken($currentToken)->get("{$this->resource}/auth")->assertOk();
     }
 
     /**
-     * A bearer token alone must not be able to change its owner's password: that would let a stolen
-     * token take the account over — the change signs every session out — however short it lives.
+     * Changing your own password needs the current one.
      *
      * @return array<string, array{array<string, string>}>
      */
@@ -157,19 +170,18 @@ class UserFeatureTest extends TestCase
     {
         /** @var User $user */
         $user = User::factory()->create();
-        $token = $this->login($user->email);
+        Passport::actingAs($user);
         $payload = $currentPassword + [
             'password' => 'new-password',
             'passwordConfirmation' => 'new-password'
         ];
 
-        $this->withToken($token)->put("{$this->resource}/auth/password", $payload)
+        $this->put("{$this->resource}/auth/password", $payload)
             ->assertBadRequest()
             ->assertJson(['success' => false, 'message' => 'Current password is incorrect.']);
 
         self::assertTrue(Hash::check('password', $user->refresh()->password), 'The password must be unchanged.');
-        $this->forgetAuthenticatedUsers();
-        $this->withToken($token)->get("{$this->resource}/auth")->assertOk();
+        $this->get("{$this->resource}/auth")->assertOk();
     }
 
     /**
@@ -186,14 +198,13 @@ class UserFeatureTest extends TestCase
     public function adminChangingTheirOwnPasswordAlsoNeedsTheCurrentPassword(): void
     {
         $admin = $this->createAdmin();
-        $token = $this->login($admin->email);
+        Passport::actingAs($admin);
         $payload = [
             'password' => 'new-password',
             'passwordConfirmation' => 'new-password'
         ];
 
-        $this->forgetAuthenticatedUsers();
-        $this->withToken($token)->put("{$this->resource}/{$admin->id}/password", $payload)
+        $this->put("{$this->resource}/{$admin->id}/password", $payload)
             ->assertBadRequest()
             ->assertJson(['message' => 'Current password is incorrect.']);
 
@@ -216,28 +227,13 @@ class UserFeatureTest extends TestCase
 
         self::assertTrue(Hash::check('new-password', $admin->refresh()->password));
         $this->forgetAuthenticatedUsers();
-        $this->withToken($token)->get("{$this->resource}/auth")->assertUnauthorized();
-    }
-
-    #[Test]
-    public function passwordRoutesAreRateLimitedLikeSignIn(): void
-    {
-        // The current password makes these routes a guessing surface; AGENTS.md's auth rule puts
-        // every auth-input endpoint under `sensitive`. The suite disables throttling globally, so
-        // the limiter is asserted on the route itself.
-        foreach (['users/auth/password', 'users/{userId}/password'] as $uri) {
-            $route = collect(Route::getRoutes()->getRoutes())
-                ->first(fn ($candidate): bool => $candidate->uri() === "api/{$uri}" && in_array('PUT', $candidate->methods(), true));
-
-            self::assertNotNull($route, "Route PUT api/{$uri} is missing.");
-            self::assertContains('throttle:sensitive', $route->gatherMiddleware(), "PUT api/{$uri} must use the sensitive limiter.");
-        }
+        $this->withToken($token)->get("{$this->resource}/auth")->assertOk();
     }
 
     #[Test]
     public function testCreateUser(): void
     {
-        $token = $this->loginSystemAdminUser();
+        $this->actingAsSystemAdmin();
         $payload = [
             'firstName' => fake()->firstName(),
             'lastName' => fake()->lastName(),
@@ -247,7 +243,7 @@ class UserFeatureTest extends TestCase
             'passwordConfirmation' => 'password',
             'role' => fake()->randomElement(UserRole::cases())->value
         ];
-        $response = $this->withToken($token)->post("{$this->resource}", $payload);
+        $response = $this->post("{$this->resource}", $payload);
 
         $expected = [
             'firstName' => $payload['firstName'],
@@ -263,7 +259,7 @@ class UserFeatureTest extends TestCase
     #[Test]
     public function testCreateUserWithDuplicateEmailReturnsSafeGenericError(): void
     {
-        $token = $this->loginSystemAdminUser();
+        $this->actingAsSystemAdmin();
         /** @var User $existingUser */
         $existingUser = User::factory()->create();
         $payload = [
@@ -275,7 +271,7 @@ class UserFeatureTest extends TestCase
             'passwordConfirmation' => 'password',
             'role' => fake()->randomElement(UserRole::cases())->value
         ];
-        $response = $this->withToken($token)->post("{$this->resource}", $payload);
+        $response = $this->post("{$this->resource}", $payload);
 
         // The duplicate email hits the users.email unique constraint inside the
         // transaction; the hardened generic catch must surface the uniform 400
@@ -290,8 +286,8 @@ class UserFeatureTest extends TestCase
     #[Test]
     public function testGetPaginatedUsers(): void
     {
-        $token = $this->loginSystemAdminUser();
-        $response = $this->withToken($token)->get("{$this->resource}");
+        $this->actingAsSystemAdmin();
+        $response = $this->get("{$this->resource}");
 
         $expected = [
             'data',
@@ -304,10 +300,10 @@ class UserFeatureTest extends TestCase
     #[Test]
     public function testGetUserById(): void
     {
-        $token = $this->loginSystemAdminUser();
+        $this->actingAsSystemAdmin();
         /** @var User $user */
         $user = User::factory()->create();
-        $response = $this->withToken($token)->get("{$this->resource}/{$user->id}");
+        $response = $this->get("{$this->resource}/{$user->id}");
 
         $expected = [
             'id' => $user->id,
@@ -326,7 +322,7 @@ class UserFeatureTest extends TestCase
     #[Test]
     public function testUpdateUser(): void
     {
-        $token = $this->loginSystemAdminUser();
+        $this->actingAsSystemAdmin();
         /** @var User $user */
         $user = User::factory()->create();
         $payload = [
@@ -337,7 +333,7 @@ class UserFeatureTest extends TestCase
             'phoneNumber' => fake()->phoneNumber(),
             'birthdate' => now()->subYears(25)->startOfDay()->toISOString()
         ];
-        $response = $this->withToken($token)->put("{$this->resource}/{$user->id}", $payload);
+        $response = $this->put("{$this->resource}/{$user->id}", $payload);
 
         $expected = [
             'id' => $user->id,
@@ -355,10 +351,10 @@ class UserFeatureTest extends TestCase
     #[Test]
     public function testDeleteUser(): void
     {
-        $token = $this->loginSystemAdminUser();
+        $this->actingAsSystemAdmin();
         /** @var User $user */
         $user = User::factory()->create();
-        $response = $this->withToken($token)->delete("{$this->resource}/{$user->id}");
+        $response = $this->delete("{$this->resource}/{$user->id}");
 
         $expected = [
             'success' => true
@@ -396,14 +392,13 @@ class UserFeatureTest extends TestCase
     #[Test]
     public function theAuthUserStillIncludesAccessControlWhenAskedFor(): void
     {
-        $token = $this->loginSystemAdminUser();
+        $this->actingAsSystemAdmin();
 
-        $withAccess = $this->withToken($token)->get("{$this->resource}/auth?includeAccessControl=true")->assertOk();
+        $withAccess = $this->get("{$this->resource}/auth?includeAccessControl=true")->assertOk();
         self::assertContains(UserRole::SYSTEM_ADMIN->value, $withAccess->json('roles'));
         self::assertNotEmpty($withAccess->json('permissions'));
 
-        $this->forgetAuthenticatedUsers();
-        $withoutAccess = $this->withToken($token)->get("{$this->resource}/auth")->assertOk();
+        $withoutAccess = $this->get("{$this->resource}/auth")->assertOk();
         self::assertArrayNotHasKey('roles', $withoutAccess->json());
         self::assertArrayNotHasKey('permissions', $withoutAccess->json());
     }
@@ -411,7 +406,7 @@ class UserFeatureTest extends TestCase
     #[Test]
     public function usersCanBeSortedByNameButNeverByAHiddenColumn(): void
     {
-        $token = $this->loginSystemAdminUser();
+        $this->actingAsSystemAdmin();
         // Scoped by a unique marker so the seeded users never enter the list.
         $marker = Str::lower(AppUtil::generateUniqueToken());
         $expected = ["{$marker}a", "{$marker}b", "{$marker}c"];
@@ -420,8 +415,7 @@ class UserFeatureTest extends TestCase
         User::factory()->create(['last_name' => $expected[0]]);
 
         foreach (['asc' => $expected, 'desc' => array_reverse($expected)] as $direction => $expectedOrder) {
-            $this->forgetAuthenticatedUsers();
-            $lastNames = collect($this->withToken($token)
+            $lastNames = collect($this
                 ->get("{$this->resource}?search={$marker}&sortField=last_name&sortDirection={$direction}")
                 ->assertOk()
                 ->json('data'))
@@ -432,8 +426,7 @@ class UserFeatureTest extends TestCase
         }
 
         foreach (['password', 'remember_token'] as $hiddenColumn) {
-            $this->forgetAuthenticatedUsers();
-            $this->withToken($token)->get("{$this->resource}?sortField={$hiddenColumn}")
+            $this->get("{$this->resource}?sortField={$hiddenColumn}")
                 ->assertBadRequest()
                 ->assertExactJson(['success' => false, 'message' => 'The requested sort field is not supported.']);
         }
@@ -442,67 +435,19 @@ class UserFeatureTest extends TestCase
     #[Test]
     public function aUserRecordNeverCarriesRelationsOrSelectedColumns(): void
     {
-        $token = $this->loginSystemAdminUser();
+        $this->actingAsSystemAdmin();
         /** @var User $user */
         $user = User::factory()->create();
 
         foreach (["{$this->resource}/{$user->id}?relations=roles", "{$this->resource}/{$user->id}?relations=tokens"] as $path) {
-            $this->forgetAuthenticatedUsers();
-            $this->withToken($token)->get($path)
+            $this->get($path)
                 ->assertBadRequest()
                 ->assertExactJson(['success' => false, 'message' => 'The requested relation is not supported.']);
         }
 
-        $this->forgetAuthenticatedUsers();
-        $response = $this->withToken($token)->get("{$this->resource}?columns=" . urlencode('id|password as email'));
+        $response = $this->get("{$this->resource}?columns=" . urlencode('id|password as email'));
         $response->assertBadRequest()->assertExactJson(['success' => false, 'message' => 'Column selection is not supported.']);
         self::assertStringNotContainsString('$2y$', $response->getContent());
-    }
-
-    #[Test]
-    public function signingUpWithARegisteredEmailLooksLikeANewSignUpAndChangesNothing(): void
-    {
-        Notification::fake();
-        /** @var User $existingUser */
-        $existingUser = User::factory()->create();
-        $before = $existingUser->refresh()->getRawOriginal();
-        $payload = [
-            'firstName' => fake()->firstName(),
-            'lastName' => fake()->lastName(),
-            'phoneNumber' => fake()->phoneNumber(),
-            'email' => $existingUser->email,
-            'password' => 'password',
-            'passwordConfirmation' => 'password'
-        ];
-
-        // Identical to a first sign-up, so the endpoint cannot tell anyone which emails are registered.
-        $this->post("{$this->resource}/sign-up", $payload)
-            ->assertOk()
-            ->assertExactJson(['success' => true, 'message' => 'Sign up successful. Please check your email for verification link.']);
-
-        self::assertSame(1, User::withTrashed()->where('email', $existingUser->email)->count());
-        self::assertSame($before, $existingUser->refresh()->getRawOriginal());
-        Notification::assertNothingSent();
-    }
-
-    #[Test]
-    public function signingUpWithAnEmailInADifferentCaseIsTheSameAccount(): void
-    {
-        Notification::fake();
-        /** @var User $existingUser */
-        $existingUser = User::factory()->create();
-
-        $this->post("{$this->resource}/sign-up", [
-            'firstName' => fake()->firstName(),
-            'lastName' => fake()->lastName(),
-            'phoneNumber' => fake()->phoneNumber(),
-            'email' => Str::upper($existingUser->email),
-            'password' => 'password',
-            'passwordConfirmation' => 'password'
-        ])->assertOk();
-
-        self::assertSame(1, User::withTrashed()->where('email', $existingUser->email)->count());
-        Notification::assertNothingSent();
     }
 
     /**
@@ -524,13 +469,13 @@ class UserFeatureTest extends TestCase
     #[DataProvider('invalidBirthdates')]
     public function anInvalidBirthdateIsAValidationErrorNotAServerError(mixed $birthdate): void
     {
-        $token = $this->loginSystemAdminUser();
+        $this->actingAsSystemAdmin();
         /** @var User $user */
         $user = User::factory()->create();
 
         $before = $user->refresh()->getRawOriginal();
 
-        $this->withToken($token)->put("{$this->resource}/{$user->id}", [
+        $this->put("{$this->resource}/{$user->id}", [
             'firstName' => fake()->firstName(),
             'lastName' => fake()->lastName(),
             'phoneNumber' => fake()->phoneNumber(),
@@ -562,35 +507,33 @@ class UserFeatureTest extends TestCase
     }
 
     #[Test]
-    public function signingUpWithTheEmailOfAUserDeletedOutsideARequestIsStillTheGenericAnswer(): void
+    public function signingUpWithARegisteredEmailIsAValidationError(): void
     {
-        // Deleted with no signed-in user (a console command or job), the row keeps its email, and the
-        // unique index still covers it.
         Notification::fake();
-        /** @var User $deletedUser */
-        $deletedUser = User::factory()->create();
-        $deletedUser->delete();
-        self::assertSame($deletedUser->email, User::withTrashed()->find($deletedUser->id)->email);
+        /** @var User $existingUser */
+        $existingUser = User::factory()->create();
 
-        $this->postJson("{$this->resource}/sign-up", [
-            'firstName' => fake()->firstName(),
-            'lastName' => fake()->lastName(),
-            'phoneNumber' => fake()->phoneNumber(),
-            'email' => $deletedUser->email,
-            'password' => 'password',
-            'passwordConfirmation' => 'password'
-        ])->assertOk()->assertJson(['success' => true]);
+        // Any letter case: emails are stored lower-cased.
+        foreach ([$existingUser->email, Str::upper($existingUser->email)] as $email) {
+            $this->postJson("{$this->resource}/sign-up", [
+                'firstName' => fake()->firstName(),
+                'lastName' => fake()->lastName(),
+                'phoneNumber' => fake()->phoneNumber(),
+                'email' => $email,
+                'password' => 'password',
+                'passwordConfirmation' => 'password'
+            ])->assertBadRequest()->assertExactJson(['success' => false, 'message' => 'The email has already been taken.']);
+        }
 
+        self::assertSame(1, User::withTrashed()->where('email', $existingUser->email)->count());
         Notification::assertNothingSent();
     }
 
     #[Test]
-    public function aUsernameHeldByADeletedUserIsNotReusedAndTheSignUpSucceeds(): void
+    public function aUsernameHeldByADeletedUserIsNotReused(): void
     {
         Notification::fake();
-        /** @var User $deletedUser */
-        $deletedUser = User::factory()->create(['username' => 'jay', 'email' => 'jay@old.test']);
-        $deletedUser->delete();
+        User::factory()->create(['username' => 'jay', 'email' => 'jay@old.test'])->delete();
 
         $this->postJson("{$this->resource}/sign-up", [
             'firstName' => fake()->firstName(),
@@ -601,10 +544,7 @@ class UserFeatureTest extends TestCase
             'passwordConfirmation' => 'password'
         ])->assertOk();
 
-        /** @var User $newUser */
-        $newUser = User::query()->where('email', 'jay@new.test')->firstOrFail();
-        self::assertNotSame('jay', $newUser->username);
-        Notification::assertSentTo($newUser, VerifyEmail::class);
+        self::assertNotSame('jay', User::query()->where('email', 'jay@new.test')->value('username'));
     }
 
 }

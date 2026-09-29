@@ -4,12 +4,12 @@ namespace App\Providers;
 
 use App\Enums\UserPermission;
 use App\Models\User;
-use App\Utils\AuthUtil;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Passport\Passport;
 
@@ -19,11 +19,7 @@ class AppServiceProvider extends ServiceProvider
     /**
      * Register any application services.
      *
-     * Passport's own HTTP routes (`/oauth/*`) are not registered. Sign-in issues tokens in-process
-     * through `createToken()`, so no client calls them, and they are attack surface only: the browser
-     * authorization and device-code flows need a session-login guard this API does not have. Must run
-     * in register(), before PassportServiceProvider boots and loads its routes. A fork that adopts an
-     * OAuth grant registers the routes it needs deliberately rather than inheriting all of them.
+     * Passport's `/oauth/*` routes are not registered: sign-in issues tokens with `createToken()`.
      */
     public function register(): void
     {
@@ -38,14 +34,11 @@ class AppServiceProvider extends ServiceProvider
         // Disable the wrapping of the outermost resource
         JsonResource::withoutWrapping();
 
-        // OAuth grant access and refresh tokens: INERT while the /oauth/* routes are not registered (see
-        // register()), so they do not affect sign-in. Kept rather than deleted: without them Passport defaults
-        // both to one year, which a fork re-enabling a grant would inherit silently.
+        // OAuth grant tokens (unused while /oauth/* routes are off).
         Passport::tokensExpireIn(now()->addHours(8));
         Passport::refreshTokensExpireIn(now()->addDays(30));
-        // Personal access tokens: what sign-in issues through createToken(), so this IS the session lifetime.
-        // Throws on an invalid configured value rather than falling back (see AuthUtil).
-        Passport::personalAccessTokensExpireIn(AuthUtil::personalAccessTokenLifetime());
+        // Personal access tokens: what sign-in issues through createToken(), so this is the session lifetime.
+        Passport::personalAccessTokensExpireIn(now()->addMinutes(config('custom.auth.token_ttl_minutes')));
 
         // Public limiter for unauthenticated endpoints
         RateLimiter::for('public', function (Request $request) {
@@ -55,6 +48,13 @@ class AppServiceProvider extends ServiceProvider
         // Very strict limiter for highly sensitive endpoints
         RateLimiter::for('sensitive', function (Request $request) {
             return Limit::perMinute(config('custom.rate_limits.sensitive'))->by('ip:' . $request->ip());
+        });
+
+        // Sign-in, keyed by account and IP like Laravel's starter kits.
+        RateLimiter::for('sign-in', function (Request $request) {
+            $identifier = Str::lower(trim((string) $request->input('identifier')));
+
+            return Limit::perMinute(config('custom.rate_limits.sensitive'))->by("sign-in:{$identifier}|{$request->ip()}");
         });
 
         // Primary limiter for authenticated endpoints, with multiple layers to mitigate different abuse scenarios
@@ -99,8 +99,7 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(config('custom.rate_limits.api_docs'))->by('ip:' . $request->ip());
         });
 
-        // Define the gate permissions. checkPermissionTo, not hasPermissionTo: a permission an environment
-        // has not seeded yet then DENIES (403) instead of throwing PermissionDoesNotExist (500).
+        // Define the gate permissions. checkPermissionTo denies an unseeded permission instead of throwing.
         foreach (UserPermission::cases() as $permission) {
             Gate::define($permission, function (User $user) use ($permission) {
                 return $user->checkPermissionTo($permission, UserPermission::getApiGuardName());

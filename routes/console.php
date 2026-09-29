@@ -40,14 +40,7 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote')->hourly();
 
 /*
- * Every sign-in writes an oauth_access_tokens row, and nothing else ever removes
- * one: without this the table grows forever, and every authenticated request
- * looks its token up in it. passport:purge deletes revoked tokens and tokens
- * expired for over a week. A deleted row reads as revoked, so purging can never
- * make a token valid again.
- *
- * onOneServer() because the purge is global — once is enough. In the foreground
- * for the reason given on horizon:snapshot below — never ->runInBackground().
+ * Deletes revoked and expired Passport tokens, as Passport's docs recommend.
  */
 Schedule::command('passport:purge')
     ->daily()

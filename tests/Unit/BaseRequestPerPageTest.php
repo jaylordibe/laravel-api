@@ -27,7 +27,7 @@ class BaseRequestPerPageTest extends TestCase
             'zero' => [0, 10],
             'negative' => [-2, 10],
             'large negative' => [-1000, 10],
-            'above the maximum' => [1001, 10],
+            'above the maximum is capped' => [1001, 1000],
             'not a number' => ['abc', 10],
         ];
     }

@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Utils\AuthUtil;
 use Illuminate\Console\Scheduling\Event;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Http\Request;
@@ -79,7 +78,7 @@ class ConfigurationContractFeatureTest extends TestCase
     }
 
     #[Test]
-    public function signInSessionsDefaultToThirtyDaysWithinTheCeiling(): void
+    public function signInSessionsDefaultToThirtyDays(): void
     {
         // The committed default, read with the variable unset — not whatever the
         // test environment sets — so raising it cannot pass unnoticed.
@@ -88,7 +87,13 @@ class ConfigurationContractFeatureTest extends TestCase
             $minutes = (int) $config['auth']['token_ttl_minutes'];
 
             self::assertSame(43200, $minutes, 'Sign-in sessions default to 30 days.');
-            self::assertLessThanOrEqual(AuthUtil::MAX_TOKEN_TTL_MINUTES, $minutes);
+        });
+
+        // An uncommented but empty line falls back to the default too.
+        $this->withEnv('AUTH_TOKEN_TTL_MINUTES', '', function (): void {
+            $config = require config_path('custom.php');
+
+            self::assertSame(43200, $config['auth']['token_ttl_minutes']);
         });
     }
 

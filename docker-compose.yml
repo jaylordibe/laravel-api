@@ -11,13 +11,9 @@
 # horizontally scaled API replica never carries a Horizon master. See
 # DEPLOYMENT.md.
 #
-# EVERY PUBLISHED PORT BINDS 127.0.0.1. A bare "6378:6379" publishes on ALL host
-# interfaces, and Docker writes its own firewall rules ahead of the host's (ufw,
-# the macOS firewall), so the unauthenticated Redis, the databases, the login-less
-# pgAdmin and the APP_DEBUG=true API would all answer anyone on the same Wi-Fi.
-# Containers reach each other by service name on app-network and never need a
-# published port at all; the host-side tooling reaches them on localhost.
-# Enforced by .github/scripts/check-exposure.sh (`compose`).
+# The API port is published normally so phones and other devices on your network can
+# reach it. Databases, Redis and pgAdmin have no real authentication here, so they
+# bind to localhost only.
 services:
   app-api:
     image: jaylordibe/laravel-php:8.5
@@ -26,7 +22,7 @@ services:
     tty: true
     platform: linux/amd64
     ports:
-      - "127.0.0.1:8000:80"
+      - "8000:80"
     volumes:
       - .:/var/www/html
     working_dir: /var/www/html
@@ -83,8 +79,8 @@ services:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
       # Local-only convenience. These disable pgAdmin's own login and its
-      # first-run wizard on a container published on the loopback interface only
-      # that holds nothing but throwaway development data. Never carry this file, or
+      # first-run wizard on a container that is reachable from localhost only and
+      # holds nothing but throwaway development data. Never carry this file, or
       # these settings, into a deployed environment.
       PGADMIN_CONFIG_SERVER_MODE: "False"
       PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"

@@ -2,9 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Enums\UserRole;
 use App\Models\User;
+use App\Notifications\VerifyEmailNotification;
 use App\Utils\AppUtil;
-use Illuminate\Auth\Notifications\VerifyEmail;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
@@ -42,7 +44,7 @@ class EmailVerificationFeatureTest extends TestCase
         // Stored lower-cased — the canonical form User keeps.
         $user = User::where('email', Str::lower($email))->firstOrFail();
         $link = '';
-        Notification::assertSentTo($user, VerifyEmail::class, function (VerifyEmail $notification) use ($user, &$link): bool {
+        Notification::assertSentTo($user, VerifyEmailNotification::class, function (VerifyEmailNotification $notification) use ($user, &$link): bool {
             $link = $notification->toMail($user)->actionUrl;
 
             return true;
@@ -83,11 +85,9 @@ class EmailVerificationFeatureTest extends TestCase
     {
         [$user, $link] = $this->signUpAndCaptureLink();
 
-        $this->forgetAuthenticatedUsers();
         $this->get($link)->assertOk()->assertJson(['success' => true, 'message' => 'Email verified successfully.']);
 
         self::assertNotNull($user->refresh()->email_verified_at);
-        $this->forgetAuthenticatedUsers();
         $this->login($user->email);
     }
 
@@ -96,9 +96,7 @@ class EmailVerificationFeatureTest extends TestCase
     {
         [$user, $link] = $this->signUpAndCaptureLink();
 
-        $this->forgetAuthenticatedUsers();
         $this->get($link)->assertOk();
-        $this->forgetAuthenticatedUsers();
         $this->get($link)->assertOk()->assertJson(['success' => true]);
     }
 
@@ -107,7 +105,6 @@ class EmailVerificationFeatureTest extends TestCase
     {
         [$user, $link] = $this->signUpAndCaptureLink();
 
-        $this->forgetAuthenticatedUsers();
         $this->get(preg_replace('/signature=[0-9a-f]+/', 'signature=' . str_repeat('0', 64), $link))
             ->assertBadRequest()
             ->assertJson(['success' => false, 'message' => 'Invalid verification link.']);
@@ -121,7 +118,6 @@ class EmailVerificationFeatureTest extends TestCase
         [$user, $link] = $this->signUpAndCaptureLink();
 
         $this->travel(config('auth.verification.expire', 60) + 1)->minutes();
-        $this->forgetAuthenticatedUsers();
         $this->get($link)->assertBadRequest()->assertJson(['message' => 'Invalid verification link.']);
 
         self::assertNull($user->refresh()->email_verified_at);
@@ -134,7 +130,6 @@ class EmailVerificationFeatureTest extends TestCase
         // email change. It must not verify the current address.
         [$user] = $this->signUpAndCaptureLink();
 
-        $this->forgetAuthenticatedUsers();
         $this->get($this->signedLink($user->id, sha1('previous@example.test')))
             ->assertBadRequest()
             ->assertJson(['message' => 'Invalid verification link.']);
@@ -156,10 +151,63 @@ class EmailVerificationFeatureTest extends TestCase
     {
         $missingId = (int) User::withTrashed()->max('id') + 1000;
 
-        $this->forgetAuthenticatedUsers();
         $this->get($this->signedLink($missingId, sha1('nobody@example.test')))
             ->assertBadRequest()
             ->assertJson(['message' => 'Invalid verification link.']);
+    }
+
+    #[Test]
+    public function theVerificationEmailIsQueued(): void
+    {
+        self::assertInstanceOf(ShouldQueue::class, new VerifyEmailNotification());
+    }
+
+    #[Test]
+    public function anAdminCreatedUserIsSentAVerificationLinkAndCanThenSignIn(): void
+    {
+        Notification::fake();
+        $this->actingAsSystemAdmin();
+
+        $this->post('/api/users', [
+            'firstName' => 'Invited',
+            'lastName' => 'User',
+            'phoneNumber' => '5550100',
+            'email' => 'invited@example.test',
+            'password' => 'invited-password',
+            'passwordConfirmation' => 'invited-password',
+            'role' => UserRole::APP_ADMIN->value
+        ])->assertCreated();
+
+        /** @var User $user */
+        $user = User::where('email', 'invited@example.test')->firstOrFail();
+        $link = '';
+        Notification::assertSentTo($user, VerifyEmailNotification::class, function (VerifyEmailNotification $notification) use ($user, &$link): bool {
+            $link = $notification->toMail($user)->actionUrl;
+
+            return true;
+        });
+
+        $this->get($this->pathAndQuery($link))->assertOk();
+        $this->forgetAuthenticatedUsers();
+        $this->login('invited@example.test', 'invited-password');
+    }
+
+    #[Test]
+    public function aNewLinkCanBeRequestedForAnUnverifiedAccount(): void
+    {
+        Notification::fake();
+        /** @var User $unverifiedUser */
+        $unverifiedUser = User::factory()->create(['email_verified_at' => null]);
+        /** @var User $verifiedUser */
+        $verifiedUser = User::factory()->create();
+        $expected = ['success' => true, 'message' => 'If that email needs verification, a new link has been sent.'];
+
+        foreach ([$unverifiedUser->email, $verifiedUser->email, 'nobody@example.test'] as $email) {
+            $this->postJson('/api/email/verification-notification', ['email' => $email])->assertOk()->assertExactJson($expected);
+        }
+
+        Notification::assertSentTo($unverifiedUser, VerifyEmailNotification::class);
+        Notification::assertNotSentTo($verifiedUser, VerifyEmailNotification::class);
     }
 
 }

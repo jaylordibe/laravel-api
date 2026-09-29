@@ -37,14 +37,9 @@ return [
     | no refresh flow, so when it ends the user signs in again. Default 43200
     | (30 days).
     |
-    | Left RAW on purpose — no (int) cast. App\Utils\AuthUtil validates it and
-    | refuses to boot on anything that is not a whole number within its bounds:
-    | a cast would turn a typo into 0 (every token born expired) and an unset
-    | value handed to Passport silently means one year.
-    |
     */
     'auth' => [
-        'token_ttl_minutes' => env('AUTH_TOKEN_TTL_MINUTES', 43200),
+        'token_ttl_minutes' => (int) (env('AUTH_TOKEN_TTL_MINUTES') ?: 43200),
     ],
 
     /*

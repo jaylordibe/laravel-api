@@ -71,9 +71,7 @@ class ActivityLogRequest extends BaseRequest
      */
     public function toFilterData(): ActivityFilterData
     {
-        // The caller's own logs unless a specific other user is asked for. 0, a non-number or an empty
-        // value is never "no filter" — it falls back to the caller. Reading another user's logs is
-        // authorized in ActivityLogService::getPaginated.
+        // The caller's own logs unless another user is asked for (authorized in ActivityLogService).
         $requestedUserId = $this->integer('userId');
 
         return new ActivityFilterData(

@@ -143,11 +143,11 @@ class IdentityCaseFeatureTest extends TestCase
         // The other half of the same engine change, via DatabaseUtil's ILIKE.
         // DatabaseUtilTest only asserts the operator STRING; this proves the
         // query actually matches.
-        $token = $this->loginSystemAdminUser();
+        $this->actingAsSystemAdmin();
         $marker = 'Zeta' . Str::random(8);
         User::factory()->create(['last_name' => $marker]);
 
-        $response = $this->withToken($token)
+        $response = $this
             ->getJson('/api/users?search=' . Str::lower($marker))
             ->assertOk();
 
@@ -162,10 +162,10 @@ class IdentityCaseFeatureTest extends TestCase
     {
         // Unescaped, `_` matches any single character — so "no results" silently
         // became "every row".
-        $token = $this->loginSystemAdminUser();
+        $this->actingAsSystemAdmin();
         User::factory()->create(['last_name' => 'Alpha' . Str::random(6)]);
 
-        $response = $this->withToken($token)
+        $response = $this
             ->getJson('/api/users?search=' . urlencode('_'))
             ->assertOk();
 

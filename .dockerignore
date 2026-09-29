@@ -1,59 +1,25 @@
-# THE RULE: anything a .gitignore file ignores is local to one machine, and must
-# be excluded here too — `COPY . .` copies the build context, and git has no say
-# in what that contains. CI enforces it without a second list to maintain:
-# `.github/scripts/check-exposure.sh plant` writes a canary at the path of every
-# git-ignore rule in the repository, and `check-exposure.sh layers` fails if any
-# canary reaches any image layer. A new git-ignore rule therefore fails CI until
-# it is mirrored here.
+# Keep local-only and secret files out of the image (`COPY . .` copies the whole build context).
 .git
 .gitignore
 .gitattributes
 .editorconfig
 tests
 storage/logs
-# Laravel's runtime state: caches, compiled views, sessions, test disks and the
-# maintenance-mode `down` file. The Dockerfile recreates the directories it needs.
 storage/framework
-# Every .env variant. Runtime configuration is injected by the platform; an image
-# that carries a .env would override it (Laravel reads .env before the process
-# environment) and would bake credentials into a distributable layer.
+# Runtime configuration is injected by the platform, never baked in.
 .env
 .env.*
-# THE PASSPORT SIGNING KEYS. `php artisan passport:keys` writes these into
-# storage/ during local setup, and .gitignore keeps them out of git — but git is
-# not the build context. `COPY . .` was therefore baking a developer's private
-# signing key into a distributable image layer on every local `docker build`,
-# where it survives every later deletion and is readable by anyone who can pull
-# the image. CI never noticed: a fresh checkout has no key files, so the layer
-# was clean there and dirty on exactly the machines that had a key to leak.
-#
-# Excluding them is also what makes the failure LOUD rather than silent. With no
-# key files in the image, a deployment that forgot to inject
-# PASSPORT_PRIVATE_KEY/PASSPORT_PUBLIC_KEY is refused at startup by
-# app:check-config, instead of quietly signing tokens with a key from a laptop.
+# Passport signing keys from local `passport:keys`; production injects them via env.
 storage/*.key
-# A developer's framework caches. `php artisan config:cache` (or `optimize`) in the
-# bind-mounted dev container writes bootstrap/cache/config.php holding every
-# RESOLVED .env value — database, Redis and mail credentials, APP_KEY — and it is
-# git-ignored, so nothing else keeps it out of a local build. The Dockerfile
-# recreates the directory; composer and docker/entrypoint.sh regenerate the rest.
+# Local framework caches can hold resolved credentials; the entrypoint rebuilds them.
 bootstrap/cache/*
-# A developer's local uploads and scratch files. The Dockerfile recreates the
-# directory; nothing durable may live in the image anyway.
 storage/app
-# A local SQLite file (and its -journal/-wal siblings), created by composer's
-# post-create-project script. Never used by this template (the engine is
-# PostgreSQL) and it can carry real rows.
 database/*.sqlite*
 docker-compose.yml
-# Only the PostgreSQL data volumes — docker/entrypoint.sh and docker/healthcheck.sh
-# are COPYed into the image and must stay in the build context.
+# Database volumes only: docker/entrypoint.sh and docker/healthcheck.sh are COPYed.
 docker/database/
-# The Dockerfile installs dependencies from composer.lock with --no-dev. A host
-# vendor/ would otherwise put every dev package into the COPY layer underneath.
+# Installed from composer.lock with --no-dev inside the image.
 vendor
-# Local-only files that can hold credentials or data: Composer registry
-# credentials, ad-hoc backups and dumps, editor and VM settings.
 **/auth.json
 **/*.bak
 **/.phpactor.json
@@ -68,9 +34,6 @@ start.sh
 stop.sh
 test.sh
 test-pipeline.sh
-# Tooling and generated artifacts with no role at runtime. Excluding them keeps
-# the context small and keeps CI config, editor settings and the generated
-# OpenAPI document out of the shipped image.
 .github
 .claude
 .junie

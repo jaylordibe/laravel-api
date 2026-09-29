@@ -35,11 +35,13 @@ Route::middleware(['throttle:public'])->group(function () {
     Route::get('app-versions/latest', [AppVersionController::class, 'getLatest']);
 });
 
+Route::post('auth/sign-in', [AuthController::class, 'signIn'])->middleware('throttle:sign-in');
+
 // Sensitive Routes
 Route::middleware(['throttle:sensitive'])->group(function () {
-    Route::post('auth/sign-in', [AuthController::class, 'signIn']);
     Route::post('users/sign-up', [UserController::class, 'signUp']);
     Route::get('email/verify/{id}', [UserController::class, 'verifyEmail'])->where('id', config('custom.numeric_regex'))->name('verification.verify');
+    Route::post('email/verification-notification', [UserController::class, 'resendEmailVerification'])->name('verification.send');
 });
 
 // Authenticated Routes
@@ -76,10 +78,9 @@ Route::middleware(['auth:api', 'throttle:api'])->group(function () {
         Route::delete('/auth', [UserController::class, 'deleteAuthUser']);
         Route::put('/auth/username', [UserController::class, 'updateAuthUsername']);
         Route::put('/auth/email', [UserController::class, 'updateAuthUserEmail']);
-        // Password changes take the current password, so they are a guessing surface: `sensitive`, like sign-in.
-        Route::put('/auth/password', [UserController::class, 'updateAuthUserPassword'])->middleware('throttle:sensitive');
+        Route::put('/auth/password', [UserController::class, 'updateAuthUserPassword']);
         Route::post('/auth/profile-image', [UserController::class, 'updateAuthUserProfileImage']);
-        Route::put('/{userId}/password', [UserController::class, 'updatePassword'])->where('userId', config('custom.numeric_regex'))->middleware('throttle:sensitive');
+        Route::put('/{userId}/password', [UserController::class, 'updatePassword'])->where('userId', config('custom.numeric_regex'));
         Route::get('/{userId}', [UserController::class, 'getById'])->where('userId', config('custom.numeric_regex'));
         Route::put('/{userId}', [UserController::class, 'update'])->where('userId', config('custom.numeric_regex'));
         Route::delete('/{userId}', [UserController::class, 'delete'])->where('userId', config('custom.numeric_regex'));

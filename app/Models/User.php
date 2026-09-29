@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\Gender;
+use App\Notifications\VerifyEmailNotification;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Constants\DatabaseTableConstant;
 use Illuminate\Database\Eloquent\Builder;
@@ -199,6 +200,16 @@ class User extends Authenticatable implements MustVerifyEmail
                 return $fullName;
             }
         );
+    }
+
+    /**
+     * Send the email verification notification (queued).
+     *
+     * @return void
+     */
+    public function sendEmailVerificationNotification(): void
+    {
+        $this->notify(new VerifyEmailNotification());
     }
 
 }

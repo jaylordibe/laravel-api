@@ -10,6 +10,7 @@ use App\Models\DeviceToken;
 use App\Models\User;
 use App\Repositories\DeviceTokenRepository;
 use Illuminate\Support\Str;
+use Laravel\Passport\Passport;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -25,17 +26,17 @@ class DeviceTokenFeatureTest extends TestCase
     private string $resource = '/api/device-tokens';
 
     /**
-     * A signed-in plain user and their token.
+     * A plain user, authenticated for the following requests.
      *
-     * @return array{User, string}
+     * @return User
      */
-    private function signedInUser(): array
+    private function signedInUser(): User
     {
         /** @var User $user */
         $user = User::factory()->create();
-        $this->forgetAuthenticatedUsers();
+        Passport::actingAs($user);
 
-        return [$user, $this->login($user->email)];
+        return $user;
     }
 
     /**
@@ -55,11 +56,10 @@ class DeviceTokenFeatureTest extends TestCase
     #[Test]
     public function testCreate(): void
     {
-        [$user, $token] = $this->signedInUser();
+        $user = $this->signedInUser();
         $payload = $this->payload();
 
-        $this->forgetAuthenticatedUsers();
-        $response = $this->withToken($token)->post($this->resource, $payload);
+        $response = $this->post($this->resource, $payload);
 
         $response->assertCreated()->assertJson(['userId' => $user->id] + $payload);
     }
@@ -67,12 +67,11 @@ class DeviceTokenFeatureTest extends TestCase
     #[Test]
     public function testGetPaginatedListsOnlyTheCallersTokens(): void
     {
-        [$user, $token] = $this->signedInUser();
+        $user = $this->signedInUser();
         $ownTokens = DeviceToken::factory()->count(3)->create(['user_id' => $user->id]);
         $foreignToken = DeviceToken::factory()->create();
 
-        $this->forgetAuthenticatedUsers();
-        $response = $this->withToken($token)->get($this->resource);
+        $response = $this->get($this->resource);
 
         $response->assertOk()->assertJsonStructure(['data', 'links', 'meta']);
         $ids = collect($response->json('data'))->pluck('id');
@@ -83,11 +82,10 @@ class DeviceTokenFeatureTest extends TestCase
     #[Test]
     public function aNegativePageSizeStillReturnsABoundedPage(): void
     {
-        [$user, $token] = $this->signedInUser();
+        $user = $this->signedInUser();
         DeviceToken::factory()->count(12)->create(['user_id' => $user->id]);
 
-        $this->forgetAuthenticatedUsers();
-        $response = $this->withToken($token)->get("{$this->resource}?perPage=-2");
+        $response = $this->get("{$this->resource}?perPage=-2");
 
         $response->assertOk();
         self::assertCount(10, $response->json('data'));
@@ -97,12 +95,11 @@ class DeviceTokenFeatureTest extends TestCase
     #[Test]
     public function testGetPaginatedFiltersByDeviceOs(): void
     {
-        [$user, $token] = $this->signedInUser();
+        $user = $this->signedInUser();
         $ios = DeviceToken::factory()->create(['user_id' => $user->id, 'device_os' => DeviceOs::IOS->value]);
         DeviceToken::factory()->create(['user_id' => $user->id, 'device_os' => DeviceOs::ANDROID->value]);
 
-        $this->forgetAuthenticatedUsers();
-        $response = $this->withToken($token)->get("{$this->resource}?deviceOs=" . DeviceOs::IOS->value);
+        $response = $this->get("{$this->resource}?deviceOs=" . DeviceOs::IOS->value);
 
         $response->assertOk();
         self::assertSame([$ios->id], collect($response->json('data'))->pluck('id')->all());
@@ -111,11 +108,10 @@ class DeviceTokenFeatureTest extends TestCase
     #[Test]
     public function testGetById(): void
     {
-        [$user, $token] = $this->signedInUser();
+        $user = $this->signedInUser();
         $deviceToken = DeviceToken::factory()->create(['user_id' => $user->id]);
 
-        $this->forgetAuthenticatedUsers();
-        $this->withToken($token)->get("{$this->resource}/{$deviceToken->id}")
+        $this->get("{$this->resource}/{$deviceToken->id}")
             ->assertOk()
             ->assertJson(['id' => $deviceToken->id]);
     }
@@ -123,12 +119,11 @@ class DeviceTokenFeatureTest extends TestCase
     #[Test]
     public function testUpdate(): void
     {
-        [$user, $token] = $this->signedInUser();
+        $user = $this->signedInUser();
         $deviceToken = DeviceToken::factory()->create(['user_id' => $user->id]);
         $payload = $this->payload();
 
-        $this->forgetAuthenticatedUsers();
-        $this->withToken($token)->put("{$this->resource}/{$deviceToken->id}", $payload)
+        $this->put("{$this->resource}/{$deviceToken->id}", $payload)
             ->assertOk()
             ->assertJson(['id' => $deviceToken->id, 'userId' => $user->id, 'token' => $payload['token']]);
     }
@@ -136,11 +131,10 @@ class DeviceTokenFeatureTest extends TestCase
     #[Test]
     public function testDelete(): void
     {
-        [$user, $token] = $this->signedInUser();
+        $user = $this->signedInUser();
         $deviceToken = DeviceToken::factory()->create(['user_id' => $user->id]);
 
-        $this->forgetAuthenticatedUsers();
-        $this->withToken($token)->delete("{$this->resource}/{$deviceToken->id}")
+        $this->delete("{$this->resource}/{$deviceToken->id}")
             ->assertOk()
             ->assertJson(['success' => true]);
 
@@ -150,19 +144,16 @@ class DeviceTokenFeatureTest extends TestCase
     #[Test]
     public function anotherUsersTokenCannotBeReadUpdatedOrDeleted(): void
     {
-        [, $token] = $this->signedInUser();
+        $this->signedInUser();
         /** @var DeviceToken $victimToken */
         $victimToken = DeviceToken::factory()->create();
         $before = $victimToken->only(['user_id', 'token', 'device_os', 'deleted_at']);
         $uri = "{$this->resource}/{$victimToken->id}";
 
         // Each answers exactly as for an id that does not exist, so ids cannot be probed.
-        $this->forgetAuthenticatedUsers();
-        $this->withToken($token)->get($uri)->assertBadRequest()->assertJson(['message' => 'Device token not found.']);
-        $this->forgetAuthenticatedUsers();
-        $this->withToken($token)->put($uri, $this->payload())->assertBadRequest()->assertJson(['message' => 'Failed to update device token.']);
-        $this->forgetAuthenticatedUsers();
-        $this->withToken($token)->delete($uri)->assertBadRequest()->assertJson(['message' => 'Failed to delete device token.']);
+        $this->get($uri)->assertBadRequest()->assertJson(['message' => 'Device token not found.']);
+        $this->put($uri, $this->payload())->assertBadRequest()->assertJson(['message' => 'Failed to update device token.']);
+        $this->delete($uri)->assertBadRequest()->assertJson(['message' => 'Failed to delete device token.']);
 
         self::assertSame($before, $victimToken->refresh()->only(['user_id', 'token', 'device_os', 'deleted_at']));
     }
@@ -193,11 +184,10 @@ class DeviceTokenFeatureTest extends TestCase
     #[Test]
     public function aMissingTokenAnswersLikeAnotherUsersToken(): void
     {
-        [, $token] = $this->signedInUser();
+        $this->signedInUser();
         $missingId = (int) DeviceToken::withTrashed()->max('id') + 1000;
 
-        $this->forgetAuthenticatedUsers();
-        $this->withToken($token)->get("{$this->resource}/{$missingId}")
+        $this->get("{$this->resource}/{$missingId}")
             ->assertBadRequest()
             ->assertJson(['message' => 'Device token not found.']);
     }
@@ -206,12 +196,11 @@ class DeviceTokenFeatureTest extends TestCase
     public function relationsCannotBeLoadedOnDeviceTokens(): void
     {
         // A device token's owner is the caller; nothing about the owner is loaded through this resource.
-        [$user, $token] = $this->signedInUser();
+        $user = $this->signedInUser();
         $deviceToken = DeviceToken::factory()->create(['user_id' => $user->id]);
 
         foreach ([$this->resource, "{$this->resource}/{$deviceToken->id}"] as $path) {
-            $this->forgetAuthenticatedUsers();
-            $this->withToken($token)->get("{$path}?relations=user")
+            $this->get("{$path}?relations=user")
                 ->assertBadRequest()
                 ->assertExactJson(['success' => false, 'message' => 'The requested relation is not supported.']);
         }
@@ -235,12 +224,11 @@ class DeviceTokenFeatureTest extends TestCase
     #[DataProvider('invalidDeviceTokenFields')]
     public function anInvalidFieldIsAValidationErrorAndCreatesNothing(string $field, mixed $value): void
     {
-        [, $token] = $this->signedInUser();
+        $this->signedInUser();
         $payload = $this->payload();
         $payload[$field] = $value;
 
-        $this->forgetAuthenticatedUsers();
-        $this->withToken($token)->postJson($this->resource, $payload)
+        $this->postJson($this->resource, $payload)
             ->assertBadRequest()
             ->assertJson(['success' => false])
             ->assertJsonPath('message', fn (string $message): bool => str_contains(strtolower($message), strtolower(Str::snake($field, ' '))));

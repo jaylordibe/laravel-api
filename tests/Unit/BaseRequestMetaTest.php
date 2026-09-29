@@ -200,4 +200,14 @@ class BaseRequestMetaTest extends TestCase
         $this->assertRejected(fn () => $request->getSortDirection(), 'The sort direction must be asc or desc.');
     }
 
+    #[Test]
+    public function aWriteIgnoresRelationsColumnsAndSorting(): void
+    {
+        $meta = UserRequest::create('/', 'POST', ['relations' => 'tokens', 'columns' => 'x', 'sortField' => 'password'])->getMetaData();
+
+        self::assertSame([], $meta->relations);
+        self::assertSame(['*'], $meta->columns);
+        self::assertSame('created_at', $meta->sortField);
+    }
+
 }

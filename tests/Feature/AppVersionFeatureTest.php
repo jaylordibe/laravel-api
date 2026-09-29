@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Utils\AppUtil;
 use Illuminate\Support\Str;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Laravel\Passport\Passport;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -19,7 +20,7 @@ class AppVersionFeatureTest extends TestCase
     #[Test]
     public function testCreateAppVersion(): void
     {
-        $token = $this->loginSystemAdminUser();
+        $this->actingAsSystemAdmin();
         $payload = [
             'version' => fake()->unique()->numerify('##.##.##'),
             'description' => fake()->text(),
@@ -28,7 +29,7 @@ class AppVersionFeatureTest extends TestCase
             'downloadUrl' => fake()->url(),
             'forceUpdate' => fake()->boolean()
         ];
-        $response = $this->withToken($token)->post($this->resource, $payload);
+        $response = $this->post($this->resource, $payload);
 
         $response->assertCreated()->assertJson($payload);
     }
@@ -42,7 +43,7 @@ class AppVersionFeatureTest extends TestCase
     {
         /** @var User $user */
         $user = User::factory()->create();
-        $token = $this->login($user->email);
+        Passport::actingAs($user);
         /** @var AppVersion $appVersion */
         $appVersion = AppVersion::factory()->create();
         $before = $appVersion->only(['version', 'force_update', 'download_url', 'deleted_at']);
@@ -56,12 +57,9 @@ class AppVersionFeatureTest extends TestCase
             'forceUpdate' => true
         ];
 
-        $this->forgetAuthenticatedUsers();
-        $this->withToken($token)->post($this->resource, $payload)->assertForbidden();
-        $this->forgetAuthenticatedUsers();
-        $this->withToken($token)->put("{$this->resource}/{$appVersion->id}", $payload)->assertForbidden();
-        $this->forgetAuthenticatedUsers();
-        $this->withToken($token)->delete("{$this->resource}/{$appVersion->id}")->assertForbidden();
+        $this->post($this->resource, $payload)->assertForbidden();
+        $this->put("{$this->resource}/{$appVersion->id}", $payload)->assertForbidden();
+        $this->delete("{$this->resource}/{$appVersion->id}")->assertForbidden();
 
         self::assertSame($before, $appVersion->refresh()->only(['version', 'force_update', 'download_url', 'deleted_at']));
         self::assertFalse(AppVersion::withTrashed()->where('download_url', $attackerUrl)->exists());
@@ -70,9 +68,9 @@ class AppVersionFeatureTest extends TestCase
     #[Test]
     public function testGetPaginatedAppVersions(): void
     {
-        $token = $this->loginSystemAdminUser();
+        $this->actingAsSystemAdmin();
         AppVersion::factory()->count(15)->create();
-        $response = $this->withToken($token)->get($this->resource);
+        $response = $this->get($this->resource);
 
         $response->assertOk()->assertJsonStructure(['data', 'links', 'meta']);
 
@@ -109,13 +107,12 @@ class AppVersionFeatureTest extends TestCase
     #[DataProvider('unsupportedRelations')]
     public function anUnsupportedRelationIsRejected(string $relations): void
     {
-        $token = $this->loginSystemAdminUser();
+        $this->actingAsSystemAdmin();
         /** @var AppVersion $appVersion */
         $appVersion = AppVersion::factory()->create();
 
         foreach ([$this->resource, "{$this->resource}/{$appVersion->id}"] as $path) {
-            $this->forgetAuthenticatedUsers();
-            $this->withToken($token)
+            $this
                 ->get("{$path}?relations={$relations}")
                 ->assertBadRequest()
                 ->assertExactJson(['success' => false, 'message' => 'The requested relation is not supported.']);
@@ -140,9 +137,9 @@ class AppVersionFeatureTest extends TestCase
     #[DataProvider('unsupportedListQueries')]
     public function anUnsupportedListQueryIsRejected(string $query, string $message): void
     {
-        $token = $this->loginSystemAdminUser();
+        $this->actingAsSystemAdmin();
 
-        $this->withToken($token)
+        $this
             ->get("{$this->resource}?{$query}")
             ->assertBadRequest()
             ->assertExactJson(['success' => false, 'message' => $message]);
@@ -166,17 +163,15 @@ class AppVersionFeatureTest extends TestCase
     /**
      * The given ids in the order a list request returns them.
      *
-     * @param string $token
      * @param string $query
      * @param array<int> $ids
      *
      * @return array<int>
      */
-    private function listedOrderOf(string $token, string $query, array $ids): array
+    private function listedOrderOf(string $query, array $ids): array
     {
-        $this->forgetAuthenticatedUsers();
 
-        return collect($this->withToken($token)->get("{$this->resource}?perPage=-1{$query}")->assertOk()->json('data'))
+        return collect($this->get("{$this->resource}?perPage=-1{$query}")->assertOk()->json('data'))
             ->pluck('id')
             ->intersect($ids)
             ->values()
@@ -186,54 +181,48 @@ class AppVersionFeatureTest extends TestCase
     #[Test]
     public function aListCanBeSortedByAnAllowedFieldInEitherDirection(): void
     {
-        $token = $this->loginSystemAdminUser();
+        $this->actingAsSystemAdmin();
         $oldestFirst = $this->createDatedAppVersions();
 
-        self::assertSame($oldestFirst, $this->listedOrderOf($token, '&sortField=release_date&sortDirection=asc', $oldestFirst));
-        self::assertSame(array_reverse($oldestFirst), $this->listedOrderOf($token, '&sortField=release_date&sortDirection=DESC', $oldestFirst));
+        self::assertSame($oldestFirst, $this->listedOrderOf('&sortField=release_date&sortDirection=asc', $oldestFirst));
+        self::assertSame(array_reverse($oldestFirst), $this->listedOrderOf('&sortField=release_date&sortDirection=DESC', $oldestFirst));
     }
 
     #[Test]
     public function aListIsNewestFirstByDefault(): void
     {
-        $token = $this->loginSystemAdminUser();
+        $this->actingAsSystemAdmin();
         $oldestFirst = $this->createDatedAppVersions();
 
-        self::assertSame(array_reverse($oldestFirst), $this->listedOrderOf($token, '', $oldestFirst));
+        self::assertSame(array_reverse($oldestFirst), $this->listedOrderOf('', $oldestFirst));
     }
 
     #[Test]
-    public function aWriteCarryingAnUnsupportedQueryValueIsRejectedAndChangesNothing(): void
+    public function aWriteIgnoresListQueryValues(): void
     {
-        $token = $this->loginSystemAdminUser();
+        $this->actingAsSystemAdmin();
         /** @var AppVersion $appVersion */
         $appVersion = AppVersion::factory()->create();
-        $before = $appVersion->only(['version', 'description', 'download_url']);
         $payload = [
             'version' => $appVersion->version,
-            'description' => 'Changed by a rejected request',
+            'description' => 'Changed',
             'platform' => $appVersion->platform->value,
             'releaseDate' => now()->millisecond(0)->toISOString(),
             'forceUpdate' => false
         ];
 
-        $this->withToken($token)->put("{$this->resource}/{$appVersion->id}?relations=createdByUser", $payload)
-            ->assertBadRequest()
-            ->assertExactJson(['success' => false, 'message' => 'The requested relation is not supported.']);
-        $this->forgetAuthenticatedUsers();
-        $this->withToken($token)->put("{$this->resource}/{$appVersion->id}", $payload + ['columns' => 'id'])
-            ->assertBadRequest()
-            ->assertExactJson(['success' => false, 'message' => 'Column selection is not supported.']);
-
-        self::assertSame($before, $appVersion->refresh()->only(['version', 'description', 'download_url']));
+        $this->put("{$this->resource}/{$appVersion->id}?relations=createdByUser&sortField=x", $payload + ['columns' => 'id'])
+            ->assertOk()
+            ->assertJson(['description' => 'Changed'])
+            ->assertJsonMissingPath('createdByUser');
     }
 
     #[Test]
     public function testGetAppVersionById(): void
     {
-        $token = $this->loginSystemAdminUser();
+        $this->actingAsSystemAdmin();
         $appVersion = AppVersion::factory()->create();
-        $response = $this->withToken($token)->get("{$this->resource}/{$appVersion->id}");
+        $response = $this->get("{$this->resource}/{$appVersion->id}");
 
         $response->assertOk()->assertJson(['id' => $appVersion->id]);
     }
@@ -253,7 +242,7 @@ class AppVersionFeatureTest extends TestCase
     #[Test]
     public function testUpdateAppVersion(): void
     {
-        $token = $this->loginSystemAdminUser();
+        $this->actingAsSystemAdmin();
         $appVersion = AppVersion::factory()->create();
         $payload = [
             'version' => $appVersion->version,
@@ -263,7 +252,7 @@ class AppVersionFeatureTest extends TestCase
             'downloadUrl' => fake()->url(),
             'forceUpdate' => fake()->boolean()
         ];
-        $response = $this->withToken($token)->put("{$this->resource}/{$appVersion->id}", $payload);
+        $response = $this->put("{$this->resource}/{$appVersion->id}", $payload);
 
         // For assertion
         $payload['id'] = $appVersion->id;
@@ -274,9 +263,9 @@ class AppVersionFeatureTest extends TestCase
     #[Test]
     public function testDeleteAppVersion(): void
     {
-        $token = $this->loginSystemAdminUser();
+        $this->actingAsSystemAdmin();
         $appVersion = AppVersion::factory()->create();
-        $response = $this->withToken($token)->delete("{$this->resource}/{$appVersion->id}");
+        $response = $this->delete("{$this->resource}/{$appVersion->id}");
 
         $response->assertOk()->assertJsonStructure(['success']);
     }
@@ -285,12 +274,12 @@ class AppVersionFeatureTest extends TestCase
     public function paginationReportsExactTotalsAndPages(): void
     {
         // Each test runs in its own rolled-back transaction, so these are the only app versions.
-        $token = $this->loginSystemAdminUser();
+        $this->actingAsSystemAdmin();
         $oldestFirst = collect(range(25, 1))
             ->map(fn (int $daysAgo): int => AppVersion::factory()->create(['created_at' => now()->subDays($daysAgo)])->id)
             ->all();
 
-        $response = $this->withToken($token)->getJson("{$this->resource}?perPage=10&page=3")->assertOk();
+        $response = $this->getJson("{$this->resource}?perPage=10&page=3")->assertOk();
 
         self::assertSame(25, $response->json('meta.total'));
         self::assertSame(10, $response->json('meta.per_page'));
@@ -319,7 +308,7 @@ class AppVersionFeatureTest extends TestCase
     #[DataProvider('invalidAppVersionFields')]
     public function anInvalidFieldIsAValidationErrorAndCreatesNothing(string $field, mixed $value): void
     {
-        $token = $this->loginSystemAdminUser();
+        $this->actingAsSystemAdmin();
         $payload = [
             'version' => '1.2.3',
             'platform' => fake()->randomElement(AppPlatform::cases())->value,
@@ -328,7 +317,7 @@ class AppVersionFeatureTest extends TestCase
         ];
         $payload[$field] = $value;
 
-        $this->withToken($token)->postJson($this->resource, $payload)
+        $this->postJson($this->resource, $payload)
             ->assertBadRequest()
             ->assertJson(['success' => false])
             ->assertJsonPath('message', fn (string $message): bool => str_contains(strtolower($message), strtolower(Str::snake($field, ' '))));
@@ -339,11 +328,10 @@ class AppVersionFeatureTest extends TestCase
     #[Test]
     public function anUnparseableReleaseDateFilterIsABadRequest(): void
     {
-        $token = $this->loginSystemAdminUser();
+        $this->actingAsSystemAdmin();
 
         foreach (['releaseDateStart' => 'releaseDateStart=soon', 'releaseDateEnd' => 'releaseDateEnd[]=2024-01-01'] as $filter => $query) {
-            $this->forgetAuthenticatedUsers();
-            $this->withToken($token)->getJson("{$this->resource}?{$query}")
+            $this->getJson("{$this->resource}?{$query}")
                 ->assertBadRequest()
                 ->assertExactJson(['success' => false, 'message' => "The {$filter} must be a valid date."]);
         }

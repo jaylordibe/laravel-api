@@ -7,6 +7,7 @@ use App\Enums\AppPlatform;
 use App\Enums\UserRole;
 use App\Models\AppVersion;
 use App\Models\User;
+use Laravel\Passport\Passport;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -18,7 +19,7 @@ class ActivityLogFeatureTest extends TestCase
     #[Test]
     public function testCreate(): void
     {
-        $token = $this->loginSystemAdminUser();
+        $this->actingAsSystemAdmin();
         $payload = [
             'logName' => fake()->randomElement(ActivityLogType::cases())->value,
             'description' => fake()->sentence,
@@ -26,7 +27,7 @@ class ActivityLogFeatureTest extends TestCase
                 'platform' => fake()->randomElement(AppPlatform::cases())->value
             ]
         ];
-        $response = $this->withToken($token)->post($this->resource, $payload);
+        $response = $this->post($this->resource, $payload);
 
         $expected = [
             'logName' => $payload['logName'],
@@ -53,15 +54,13 @@ class ActivityLogFeatureTest extends TestCase
     /**
      * The ids returned by a list request.
      *
-     * @param string $token
      * @param string $query
      *
      * @return array<int>
      */
-    private function listedIds(string $token, string $query = ''): array
+    private function listedIds(string $query = ''): array
     {
-        $this->forgetAuthenticatedUsers();
-        $response = $this->withToken($token)->get("{$this->resource}?perPage=-1{$query}");
+        $response = $this->get("{$this->resource}?perPage=-1{$query}");
         $response->assertOk()->assertJsonStructure(['data', 'links', 'meta']);
 
         return collect($response->json('data'))->pluck('id')->all();
@@ -76,11 +75,11 @@ class ActivityLogFeatureTest extends TestCase
         $otherUser = User::factory()->create();
         $ownIds = $this->logActivitiesFor($user, 3);
         $otherIds = $this->logActivitiesFor($otherUser, 2);
-        $token = $this->login($user->email);
+        Passport::actingAs($user);
 
         // Omitted, 0 and a non-number all mean "my own" — never "everyone's".
         foreach (['', '&userId=0', '&userId=abc', "&userId={$user->id}"] as $query) {
-            $ids = $this->listedIds($token, $query);
+            $ids = $this->listedIds($query);
             self::assertEqualsCanonicalizing($ownIds, $ids, "Query '{$query}' must list only the caller's activity.");
             self::assertEmpty(array_intersect($otherIds, $ids));
         }
@@ -93,16 +92,15 @@ class ActivityLogFeatureTest extends TestCase
         // must agree, or a user's own activity would silently vanish from their list.
         /** @var User $user */
         $user = User::factory()->create();
-        $token = $this->login($user->email);
+        Passport::actingAs($user);
 
-        $this->forgetAuthenticatedUsers();
-        $createdId = $this->withToken($token)->post($this->resource, [
+        $createdId = $this->post($this->resource, [
             'logName' => fake()->randomElement(ActivityLogType::cases())->value,
             'description' => fake()->sentence,
             'properties' => ['platform' => fake()->randomElement(AppPlatform::cases())->value]
         ])->assertCreated()->json('id');
 
-        self::assertSame([$createdId], $this->listedIds($token));
+        self::assertSame([$createdId], $this->listedIds());
     }
 
     #[Test]
@@ -116,9 +114,9 @@ class ActivityLogFeatureTest extends TestCase
         $foreign->causer_type = AppVersion::class;
         $foreign->causer_id = $user->id;
         $foreign->save();
-        $token = $this->login($user->email);
+        Passport::actingAs($user);
 
-        self::assertSame([$ownId], $this->listedIds($token));
+        self::assertSame([$ownId], $this->listedIds());
     }
 
     #[Test]
@@ -129,10 +127,9 @@ class ActivityLogFeatureTest extends TestCase
         /** @var User $otherUser */
         $otherUser = User::factory()->create();
         $this->logActivitiesFor($otherUser, 2);
-        $token = $this->login($user->email);
+        Passport::actingAs($user);
 
-        $this->forgetAuthenticatedUsers();
-        $this->withToken($token)->get("{$this->resource}?userId={$otherUser->id}")->assertForbidden();
+        $this->get("{$this->resource}?userId={$otherUser->id}")->assertForbidden();
     }
 
     #[Test]
@@ -143,9 +140,9 @@ class ActivityLogFeatureTest extends TestCase
         /** @var User $otherUser */
         $otherUser = User::factory()->create();
         $otherIds = $this->logActivitiesFor($otherUser, 2);
-        $token = $this->login($admin->email);
+        Passport::actingAs($admin);
 
-        self::assertEqualsCanonicalizing($otherIds, $this->listedIds($token, "&userId={$otherUser->id}"));
+        self::assertEqualsCanonicalizing($otherIds, $this->listedIds("&userId={$otherUser->id}"));
     }
 
     #[Test]
@@ -154,10 +151,9 @@ class ActivityLogFeatureTest extends TestCase
         /** @var User $user */
         $user = User::factory()->create();
         $this->logActivitiesFor($user, 1);
-        $token = $this->login($user->email);
+        Passport::actingAs($user);
 
-        $this->forgetAuthenticatedUsers();
-        $response = $this->withToken($token)->get("{$this->resource}?relations=causer")->assertOk();
+        $response = $this->get("{$this->resource}?relations=causer")->assertOk();
 
         $item = $response->json('data.0');
         self::assertSame($user->id, $item['user']['id']);
@@ -171,11 +167,10 @@ class ActivityLogFeatureTest extends TestCase
     {
         /** @var User $user */
         $user = User::factory()->create();
-        $token = $this->login($user->email);
+        Passport::actingAs($user);
 
         foreach (['subject', 'causer.roles', 'causer:id,email'] as $relations) {
-            $this->forgetAuthenticatedUsers();
-            $this->withToken($token)->get("{$this->resource}?relations=" . urlencode($relations))
+            $this->get("{$this->resource}?relations=" . urlencode($relations))
                 ->assertBadRequest()
                 ->assertExactJson(['success' => false, 'message' => 'The requested relation is not supported.']);
         }
@@ -186,12 +181,11 @@ class ActivityLogFeatureTest extends TestCase
     {
         /** @var User $user */
         $user = User::factory()->create();
-        $token = $this->login($user->email);
+        Passport::actingAs($user);
 
         foreach (['startDate', 'endDate'] as $filter) {
             foreach (["{$filter}=not-a-date", "{$filter}[]=2024-01-01"] as $query) {
-                $this->forgetAuthenticatedUsers();
-                $this->withToken($token)->getJson("{$this->resource}?{$query}")
+                $this->getJson("{$this->resource}?{$query}")
                     ->assertBadRequest()
                     ->assertExactJson(['success' => false, 'message' => "The {$filter} must be a valid date."]);
             }

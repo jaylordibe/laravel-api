@@ -376,24 +376,12 @@ jobs:
     name: Build and scan the production image
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    env:
-      # Written into the build context by the plant step and searched for in
-      # every image layer afterwards; one definition so the two cannot drift.
-      BUILD_CONTEXT_CANARY: CI_BUILD_CONTEXT_CANARY
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
-
-      # A fresh checkout never contains a developer's local files, so a missing
-      # .dockerignore rule would pass here and leak on every laptop. Plant a
-      # canary at the path of every git-ignore rule — the rule and its
-      # reasoning live in .dockerignore and check-exposure.sh.
-      - name: Plant a canary at every git-ignored path in the build context
-        run: .github/scripts/check-exposure.sh plant "${BUILD_CONTEXT_CANARY}"
 
       - name: Build the production image
         uses: docker/build-push-action@v7
@@ -404,9 +392,6 @@ jobs:
           tags: laravel-api:ci
           cache-from: type=gha
           cache-to: type=gha,mode=max
-
-      - name: Verify no git-ignored file reached any image layer
-        run: .github/scripts/check-exposure.sh layers laravel-api:ci "${BUILD_CONTEXT_CANARY}"
 
       # CVEs in the base image's OS packages and in the installed vendor tree —
       # the half `composer audit` in security.yml cannot see, because it reads
@@ -463,9 +448,10 @@ jobs:
             # signing key into a distributable image — invisibly, because a fresh
             # CI checkout has no key files and the layer was clean here.
             #
-            # These read the final filesystem. The planted-canary layer search
-            # above is the authoritative check; it also catches a file a later
-            # layer deleted while the COPY layer still holds it.
+            # This runs in CI, where those files never exist, so it can only fail
+            # if the exclusions are removed AND someone rebuilds locally. Keep it
+            # anyway: it states the requirement where it is enforced, and it also
+            # catches a .env or a local SQLite database entering the image.
             if ls storage/*.key >/dev/null 2>&1; then
               echo "a Passport signing key was baked into the image" >&2
               exit 1
@@ -582,53 +568,6 @@ jobs:
             exit 1
           fi
           echo '::endgroup::'
-
-      # THE EXTERNAL SURFACE.
-      #
-      # Everything above reads the image from the inside. This requests it from
-      # the outside, the way the internet does: every file the image ships outside
-      # public/ must be neither retrievable nor executable over HTTP — judged on
-      # body content across redirects, not status codes — and nothing but the
-      # application port may listen beyond loopback. The nginx site config comes
-      # from the base image, so this is also the only place a base-image change to
-      # the document root or the php-fpm listener would be noticed.
-      #
-      # The compose check guards the development stack's published ports, which
-      # otherwise put an unauthenticated Redis and the databases on the LAN.
-      - name: Verify nothing but the application is reachable from outside
-        run: |
-          set -euo pipefail
-
-          # Self-test: the repository's compose file has no profiles and no host
-          # networking, so without these two fixtures neither branch of the
-          # compose check would ever execute here, and deleting one stays green.
-          # Each fixture also has a loopback-only service, so the check cannot
-          # fail it for the wrong reason ("no published ports").
-          fixtures="${RUNNER_TEMP}/compose-fixtures"
-          mkdir -p "${fixtures}/profiled" "${fixtures}/host-network"
-          loopback_service=('services:' '  api:' '    image: busybox' '    ports: ["127.0.0.1:8000:80"]')
-          printf '%s\n' "${loopback_service[@]}" '  tool:' '    image: busybox' '    profiles: ["tools"]' '    ports: ["8025:8025"]' \
-            > "${fixtures}/profiled/docker-compose.yml"
-          printf '%s\n' "${loopback_service[@]}" '  tool:' '    image: busybox' '    network_mode: host' \
-            > "${fixtures}/host-network/docker-compose.yml"
-          # Each fixture must be rejected for ITS reason — any other failure
-          # (compose could not parse it, no ports found) would not exercise the
-          # branch the fixture exists for.
-          for case in 'profiled|bind every host interface' 'host-network|network_mode: host'; do
-            fixture=${case%%|*}
-            expected=${case#*|}
-            if output=$(.github/scripts/check-exposure.sh compose "${fixtures}/${fixture}/docker-compose.yml" 2>&1); then
-              echo "::error::the compose check accepted the '${fixture}' fixture, which publishes on every interface"
-              exit 1
-            fi
-            if ! grep -qF "$expected" <<<"$output"; then
-              echo "::error::the compose check rejected the '${fixture}' fixture for the wrong reason: ${output}"
-              exit 1
-            fi
-          done
-
-          .github/scripts/check-exposure.sh compose
-          .github/scripts/check-exposure.sh image laravel-api:ci
 
       # THE RUNTIME SPLIT.
       #

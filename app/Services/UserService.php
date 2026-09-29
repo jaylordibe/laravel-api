@@ -16,7 +16,6 @@ use App\Utils\AppUtil;
 use App\Utils\FileUtil;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -36,34 +35,32 @@ class UserService
     }
 
     /**
-     * Revoke all user tokens.
+     * Revoke all user tokens, optionally keeping one (the session making the request).
      * Used when a password changes and when the user signs out of every session.
      *
      * @param User $user
+     * @param string|null $exceptTokenId
      *
      * @return void
      * @throws Throwable
      */
-    public function revokeAllUserTokens(User $user): void
+    public function revokeAllUserTokens(User $user, ?string $exceptTokenId = null): void
     {
-        DB::transaction(function () use ($user) {
-            $tokenIds = $user->tokens()->pluck('id');
+        DB::transaction(function () use ($user, $exceptTokenId) {
+            $tokens = $user->tokens()->when($exceptTokenId, fn ($query) => $query->whereKeyNot($exceptTokenId));
+            $tokenIds = (clone $tokens)->pluck('id');
 
             if ($tokenIds->isNotEmpty()) {
                 RefreshToken::whereIn('access_token_id', $tokenIds)
                     ->update(['revoked' => true]);
             }
 
-            $user->tokens()->update(['revoked' => true]);
+            $tokens->update(['revoked' => true]);
         });
     }
 
     /**
-     * Sign up a new user.
-     *
-     * An email that is already registered creates nothing, sends nothing and returns null. The caller
-     * answers with the same status and body as for a new sign-up. Response time still differs (a new
-     * sign-up hashes, inserts and sends mail), so this removes the status/body oracle, not a timing one.
+     * Sign up a new user and send the email verification link.
      *
      * @param SignUpUserData $signUpUserData
      *
@@ -72,10 +69,6 @@ class UserService
      */
     public function signUp(SignUpUserData $signUpUserData): ?User
     {
-        if ($this->isEmailExists($signUpUserData->email)) {
-            return null;
-        }
-
         $userData = new UserData(
             firstName: $signUpUserData->firstName,
             middleName: null,
@@ -90,18 +83,7 @@ class UserService
             profileImage: null,
             address: null
         );
-        try {
-            // In a transaction, so a violation rolls back to a savepoint when a caller already holds one.
-            $user = DB::transaction(fn (): ?User => $this->userRepository->create($userData, $signUpUserData->password));
-        } catch (UniqueConstraintViolationException $exception) {
-            // The email was taken between the check above and the insert (a concurrent sign-up): answer
-            // as for any registered email. Any other collision is a real failure and must surface.
-            if ($this->isEmailExists($signUpUserData->email)) {
-                return null;
-            }
-
-            throw $exception;
-        }
+        $user = $this->userRepository->create($userData, $signUpUserData->password);
 
         if (empty($user)) {
             throw new BadRequestException('Sign up failed.');
@@ -113,13 +95,25 @@ class UserService
     }
 
     /**
+     * Send a new verification link if the email belongs to an account that is not verified yet.
+     *
+     * @param string $email
+     *
+     * @return void
+     */
+    public function resendEmailVerification(string $email): void
+    {
+        $user = $this->userRepository->findByEmail($email);
+
+        if (!empty($user) && !$user->hasVerifiedEmail()) {
+            $user->sendEmailVerificationNotification();
+        }
+    }
+
+    /**
      * Verify user email.
      *
-     * The hash binds the link to the address it was sent to, so a link issued for one address cannot
-     * verify another. (A self-service email change does not yet reset verification — see the
-     * auth-security skill's hardening list.) Every failure answers alike, so a valid
-     * signature for a missing user reveals nothing. Verifying twice succeeds — mail scanners open
-     * links before people do.
+     * The hash binds the link to the current email. Verifying twice succeeds.
      *
      * @param int $userId
      * @param string $hash
@@ -181,6 +175,8 @@ class UserService
                 }
 
                 $user->assignRole($userRole);
+                // Sign-in requires a verified email, so an invited user needs the link too.
+                $user->sendEmailVerificationNotification();
 
                 return $user;
             });
@@ -399,11 +395,7 @@ class UserService
             throw new BadRequestException('Unauthorized to update password.');
         }
 
-        // Changing your OWN password — on either route, admins included — needs the current one. The
-        // bearer token alone is not enough: a stolen token would otherwise set a new password, sign
-        // the owner out everywhere below, and keep the account however short the token's lifetime.
-        // An admin resetting SOMEONE ELSE's password is the one path that skips it — so a stolen ADMIN
-        // token can still take over another account; closing that needs step-up re-authentication.
+        // Changing your own password (on either route) needs the current one; an admin reset does not.
         $isSelfChange = $authUser->id === $changePasswordData->userId;
 
         if ($isSelfChange && !Hash::check($changePasswordData->currentPassword, $authUser->password)) {
@@ -416,8 +408,8 @@ class UserService
             throw new BadRequestException('Failed to update password.');
         }
 
-        // Revoke all existing tokens so every session must re-authenticate with the new password.
-        $this->revokeAllUserTokens($user);
+        // Like logoutOtherDevices(): keep the caller's own session; an admin reset signs out everywhere.
+        $this->revokeAllUserTokens($user, $isSelfChange ? $authUser->token()?->id : null);
 
         return $user;
     }

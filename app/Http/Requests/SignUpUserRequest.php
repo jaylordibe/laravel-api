@@ -3,9 +3,24 @@
 namespace App\Http\Requests;
 
 use App\Data\SignUpUserData;
+use App\Models\User;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class SignUpUserRequest extends BaseRequest
 {
+
+    /**
+     * Prepare the data for validation. Emails are stored lower-cased (User::email), so compare them that way.
+     *
+     * @return void
+     */
+    protected function prepareForValidation(): void
+    {
+        if (is_string($this->input('email'))) {
+            $this->merge(['email' => Str::lower(trim($this->input('email')))]);
+        }
+    }
 
     /**
      * Get the validation rules that apply to the request.
@@ -17,7 +32,7 @@ class SignUpUserRequest extends BaseRequest
         return [
             'firstName' => ['required', 'string'],
             'lastName' => ['required', 'string'],
-            'email' => ['required', 'email'],
+            'email' => ['required', 'email', Rule::unique(User::class, 'email')],
             'phoneNumber' => ['required', 'string'],
             'password' => ['required', 'string', 'min:8'],
             'passwordConfirmation' => ['required', 'same:password', 'min:8']

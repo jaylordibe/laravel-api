@@ -39,9 +39,6 @@ class DeviceTokenRepository
     /**
      * Find a device token by id, among the given user's own tokens only.
      *
-     * Every query in this repository is scoped to the owner: another user's token is
-     * indistinguishable from one that does not exist.
-     *
      * @param int $id
      * @param int $userId
      * @param array $relations
@@ -76,7 +73,6 @@ class DeviceTokenRepository
      */
     public function getPaginated(DeviceTokenFilterData $deviceTokenFilterData): LengthAwarePaginator
     {
-        // Unconditional: a missing owner matches nothing rather than everything.
         $deviceTokenBuilder = DeviceToken::query()->where('user_id', $deviceTokenFilterData->userId);
 
         if (!empty($deviceTokenFilterData->meta->relations)) {
@@ -104,8 +100,6 @@ class DeviceTokenRepository
 
     /**
      * Delete one of the given user's device tokens.
-     *
-     * Through the model, so the soft delete and its deleted_by stamp still happen.
      *
      * @param int $id
      * @param int $userId

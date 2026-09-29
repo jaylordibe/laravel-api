@@ -13,8 +13,8 @@ class ConstantFeatureTest extends TestCase
     #[Test]
     public function testGetActivityLogTypes(): void
     {
-        $token = $this->loginSystemAdminUser();
-        $response = $this->withToken($token)->get("{$this->resource}/activity-log-type");
+        $this->actingAsSystemAdmin();
+        $response = $this->get("{$this->resource}/activity-log-type");
 
         $response->assertOk();
     }
@@ -22,8 +22,8 @@ class ConstantFeatureTest extends TestCase
     #[Test]
     public function testGetAppPlatforms(): void
     {
-        $token = $this->loginSystemAdminUser();
-        $response = $this->withToken($token)->get("{$this->resource}/app-platform");
+        $this->actingAsSystemAdmin();
+        $response = $this->get("{$this->resource}/app-platform");
 
         $response->assertOk();
     }
@@ -31,8 +31,8 @@ class ConstantFeatureTest extends TestCase
     #[Test]
     public function testGetDeviceOs(): void
     {
-        $token = $this->loginSystemAdminUser();
-        $response = $this->withToken($token)->get("{$this->resource}/device-os");
+        $this->actingAsSystemAdmin();
+        $response = $this->get("{$this->resource}/device-os");
 
         $response->assertOk();
     }
@@ -40,8 +40,8 @@ class ConstantFeatureTest extends TestCase
     #[Test]
     public function testGetDeviceTypes(): void
     {
-        $token = $this->loginSystemAdminUser();
-        $response = $this->withToken($token)->get("{$this->resource}/device-type");
+        $this->actingAsSystemAdmin();
+        $response = $this->get("{$this->resource}/device-type");
 
         $response->assertOk();
     }
@@ -49,8 +49,8 @@ class ConstantFeatureTest extends TestCase
     #[Test]
     public function testGetSpreadsheetReaderTypes(): void
     {
-        $token = $this->loginSystemAdminUser();
-        $response = $this->withToken($token)->get("{$this->resource}/spreadsheet-reader-type");
+        $this->actingAsSystemAdmin();
+        $response = $this->get("{$this->resource}/spreadsheet-reader-type");
 
         $response->assertOk();
     }
@@ -58,8 +58,8 @@ class ConstantFeatureTest extends TestCase
     #[Test]
     public function testGetUserRoles(): void
     {
-        $token = $this->loginSystemAdminUser();
-        $response = $this->withToken($token)->get("{$this->resource}/user-role");
+        $this->actingAsSystemAdmin();
+        $response = $this->get("{$this->resource}/user-role");
 
         $response->assertOk();
     }

@@ -48,12 +48,11 @@ class ListQueryEnvelopeFeatureTest extends TestCase
     #[DataProvider('listEndpoints')]
     public function everySortableFieldSortsInBothDirections(string $path, string $requestClass): void
     {
-        $token = $this->loginSystemAdminUser();
+        $this->actingAsSystemAdmin();
 
         foreach ($this->sortableFieldsOf($requestClass) as $sortField) {
             foreach (['asc', 'desc'] as $sortDirection) {
-                $this->forgetAuthenticatedUsers();
-                $this->withToken($token)
+                $this
                     ->get("{$path}?sortField={$sortField}&sortDirection={$sortDirection}")
                     ->assertOk()
                     ->assertJsonStructure(['data', 'links', 'meta']);
@@ -66,7 +65,7 @@ class ListQueryEnvelopeFeatureTest extends TestCase
     public function anythingOutsideTheEnvelopeIsRejected(string $path, string $requestClass): void
     {
         self::assertNotContains('password', $this->sortableFieldsOf($requestClass));
-        $token = $this->loginSystemAdminUser();
+        $this->actingAsSystemAdmin();
         $rejections = [
             'sortField=password' => 'The requested sort field is not supported.',
             'sortField=' . urlencode('id desc, created_at') => 'The requested sort field is not supported.',
@@ -76,8 +75,7 @@ class ListQueryEnvelopeFeatureTest extends TestCase
         ];
 
         foreach ($rejections as $query => $message) {
-            $this->forgetAuthenticatedUsers();
-            $this->withToken($token)
+            $this
                 ->get("{$path}?{$query}")
                 ->assertBadRequest()
                 ->assertExactJson(['success' => false, 'message' => $message]);

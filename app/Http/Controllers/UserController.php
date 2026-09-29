@@ -6,6 +6,7 @@ use App\Enums\UserPermission;
 use App\Exceptions\BadRequestException;
 use App\Http\Requests\CreateUserRequest;
 use App\Http\Requests\GenericRequest;
+use App\Http\Requests\ResendEmailVerificationRequest;
 use App\Http\Requests\SignUpUserRequest;
 use App\Http\Requests\UpdatePasswordRequest;
 use App\Http\Requests\UpdateProfileImageRequest;
@@ -45,10 +46,7 @@ class UserController extends Controller
     /**
      * Verify user email.
      *
-     * Reached from an emailed link, so there is no signed-in user: the signed URL is the only
-     * credential. Laravel's EmailVerificationRequest is not usable here — it authorizes against the
-     * authenticated user. The signature is checked before anything is looked up, so ids cannot be
-     * probed; the email hash is checked in the service.
+     * Opened from the emailed link with no signed-in user, so the signed URL is the credential.
      *
      * @param GenericRequest $request
      * @param int $userId
@@ -65,6 +63,22 @@ class UserController extends Controller
         $this->userService->verifyEmail($userId, $request->string('hash')->toString());
 
         return ResponseUtil::success('Email verified successfully.');
+    }
+
+    /**
+     * Send a new email verification link, for a user whose link expired or never arrived.
+     *
+     * The answer is the same whether or not the address has an unverified account.
+     *
+     * @param ResendEmailVerificationRequest $request
+     *
+     * @return JsonResponse
+     */
+    public function resendEmailVerification(ResendEmailVerificationRequest $request): JsonResponse
+    {
+        $this->userService->resendEmailVerification($request->string('email')->toString());
+
+        return ResponseUtil::success('If that email needs verification, a new link has been sent.');
     }
 
     /**

@@ -6,10 +6,7 @@ use Illuminate\Database\Seeder;
 use Laravel\Passport\ClientRepository;
 
 /**
- * Seeds each test database once, when RefreshDatabase migrates it (see Tests\TestCase).
- *
- * The application's own seed data, plus the Passport personal access client that sign-in needs to issue
- * a token. Outside tests that client is created by `passport:client --personal` (start.sh).
+ * Test database seed: the app's seed data plus the Passport personal access client sign-in needs.
  */
 class TestDatabaseSeeder extends Seeder
 {

@@ -274,7 +274,7 @@ schedules in `routes/console.php`.
 
 - **Format with `app:format`, never Pint.** Pint is deliberately not a
   dependency. CI runs `--check`, never the fixing form.
-- **No default sort direction.** Adding one reorders every list response.
+- **The default list order is fixed at `created_at desc`** (`BaseRequest`). Changing it reorders every list response.
 - **A column-modifying migration restates every existing attribute**
   (`nullable`, `default`, length, ...) or it is silently dropped.
 - **No MySQL-only migration syntax**; use `->useCurrent()->useCurrentOnUpdate()`.

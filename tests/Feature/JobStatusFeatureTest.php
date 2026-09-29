@@ -14,7 +14,7 @@ class JobStatusFeatureTest extends TestCase
     #[Test]
     public function aJobStatusIsReturnedById(): void
     {
-        $token = $this->loginSystemAdminUser();
+        $this->actingAsSystemAdmin();
         $jobStatus = JobStatus::query()->create([
             'type' => 'App\\Jobs\\ExampleJob',
             'status' => JobStatus::STATUS_EXECUTING,
@@ -22,7 +22,7 @@ class JobStatusFeatureTest extends TestCase
             'progress_max' => 100
         ]);
 
-        $this->withToken($token)->getJson("{$this->resource}/{$jobStatus->id}")
+        $this->getJson("{$this->resource}/{$jobStatus->id}")
             ->assertOk()
             ->assertJson([
                 'id' => $jobStatus->id,
@@ -35,9 +35,9 @@ class JobStatusFeatureTest extends TestCase
     #[Test]
     public function aMissingJobStatusIsTheStandardNotFound(): void
     {
-        $token = $this->loginSystemAdminUser();
+        $this->actingAsSystemAdmin();
 
-        $this->withToken($token)->getJson("{$this->resource}/999999")
+        $this->getJson("{$this->resource}/999999")
             ->assertBadRequest()
             ->assertExactJson(['success' => false, 'message' => 'Job status not found.']);
     }
@@ -45,9 +45,9 @@ class JobStatusFeatureTest extends TestCase
     #[Test]
     public function aNonNumericIdIsNotRouted(): void
     {
-        $token = $this->loginSystemAdminUser();
+        $this->actingAsSystemAdmin();
 
-        $this->withToken($token)->getJson("{$this->resource}/abc")->assertNotFound();
+        $this->getJson("{$this->resource}/abc")->assertNotFound();
     }
 
 }

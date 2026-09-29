@@ -14,9 +14,7 @@ class BaseResource extends JsonResource
      * Transforms the resource's attributes into a camelCased array,
      * respecting hidden attributes and custom exclusions.
      *
-     * Attributes only: a loaded relation is never serialized implicitly. A Resource renders a relation
-     * explicitly through that relation's own Resource (`whenLoaded`), so hidden fields and owner scoping
-     * of the related model stay under that Resource's control.
+     * Attributes only: Resources render relations explicitly with `whenLoaded`.
      *
      * @return array
      */

@@ -1,7 +1,7 @@
 ---
 name: feature-testing
 user-invocable: false
-description: Use when writing or running tests (tests/Feature/*, tests/Unit/*) — the Docker-backed live PostgreSQL test database, the ./test.sh wrapper and single-test form, the Tests\TestCase auth helpers (loginSystemAdminUser / login / getAuthUser), model factories, PHPUnit attribute style (#[Test]), and assertion conventions.
+description: Use when writing or running tests (tests/Feature/*, tests/Unit/*) — the Docker-backed live PostgreSQL test database, the ./test.sh wrapper and single-test form, authenticating with Passport::actingAs / actingAsSystemAdmin (real sign-in only for token tests), model factories, PHPUnit attribute style (#[Test]), and assertion conventions.
 ---
 
 # Tests
@@ -26,12 +26,8 @@ Tests run **inside the `laravel-api` container against a real PostgreSQL test da
 
 ## Harness helpers
 
-- `login(string $identifier, string $password = 'password'): string` — POSTs `/api/auth/sign-in`, asserts 200, returns the bearer token.
-- `loginSystemAdminUser(): string` — logs in the seeded sysad (`config('custom.sysad_email')` / `sysad_password`).
-- `getAuthUser(string $token): UserData` — fetches `/api/users/auth`.
-- `forgetAuthenticatedUsers()` — call between requests that must each authenticate afresh (a second sign-in, a revoked token, switching users): the app instance, session and default headers persist across requests within one test.
-
-Authenticate with `$this->withToken($token)->post(...)` / `->get(...)` / `->put(...)` / `->delete(...)`. Prefer factory users with the role under test (`User::factory()->withRole(UserRole::X)->create()`) over the seeded admin when the actor matters.
+- Authenticate with **`Passport::actingAs($user)`**, or `$this->actingAsSystemAdmin()` for the seeded sysad. Prefer a factory user with the role under test (`User::factory()->withRole(UserRole::X)->create()`) when the actor matters.
+- Only tests about sign-in, tokens or sessions sign in for real: `login($identifier, $password = 'password')` returns a bearer token for `withToken()`, and `forgetAuthenticatedUsers()` resets auth between such requests.
 
 ## Writing a feature test
 
@@ -49,18 +45,18 @@ class XFeatureTest extends TestCase
     #[Test]
     public function testCreate(): void
     {
-        $token = $this->loginSystemAdminUser();
+        $this->actingAsSystemAdmin();
         $payload = [ /* build via factories for FK ids */ ];
-        $response = $this->withToken($token)->post($this->resource, $payload);
+        $response = $this->post($this->resource, $payload);
         $response->assertCreated()->assertJson([ /* echoed fields */ ]);
     }
 
     #[Test]
     public function testGetPaginated(): void
     {
-        $token = $this->loginSystemAdminUser();
+        $this->actingAsSystemAdmin();
         X::factory()->count(15)->create();
-        $response = $this->withToken($token)->get($this->resource);
+        $response = $this->get($this->resource);
         $response->assertOk()->assertJsonStructure(['data', 'links', 'meta']);
     }
 }

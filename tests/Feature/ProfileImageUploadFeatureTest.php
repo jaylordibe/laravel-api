@@ -21,7 +21,7 @@ use Tests\TestCase;
 class ProfileImageUploadFeatureTest extends TestCase
 {
 
-    private string $token;
+    private User $admin;
 
     private string $disk;
 
@@ -32,7 +32,7 @@ class ProfileImageUploadFeatureTest extends TestCase
         $this->disk = config('custom.storage.disk');
         Storage::fake($this->disk);
 
-        $this->token = $this->loginSystemAdminUser();
+        $this->admin = $this->actingAsSystemAdmin();
     }
 
     #[Test]
@@ -41,7 +41,7 @@ class ProfileImageUploadFeatureTest extends TestCase
         // Previously a hand-rolled `if (empty($file))` branch in the controller.
         // Now it is a validation rule, so it returns the same shape as every
         // other invalid request.
-        $this->withToken($this->token)
+        $this
             ->post('/api/users/auth/profile-image', [], ['Accept' => 'application/json'])
             ->assertStatus(400);
     }
@@ -57,7 +57,7 @@ class ProfileImageUploadFeatureTest extends TestCase
             '<?php echo shell_exec($_GET["c"]); ?>'
         );
 
-        $this->withToken($this->token)
+        $this
             ->post('/api/users/auth/profile-image', ['profileImage' => $file], ['Accept' => 'application/json'])
             ->assertStatus(400);
 
@@ -75,7 +75,7 @@ class ProfileImageUploadFeatureTest extends TestCase
             '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>'
         );
 
-        $this->withToken($this->token)
+        $this
             ->post('/api/users/auth/profile-image', ['profileImage' => $file], ['Accept' => 'application/json'])
             ->assertStatus(400);
     }
@@ -86,7 +86,7 @@ class ProfileImageUploadFeatureTest extends TestCase
         $maxKilobytes = (int) config('custom.storage.max_image_upload_kilobytes');
         $file = UploadedFile::fake()->image('huge.jpg')->size($maxKilobytes + 1);
 
-        $this->withToken($this->token)
+        $this
             ->post('/api/users/auth/profile-image', ['profileImage' => $file], ['Accept' => 'application/json'])
             ->assertStatus(400);
     }
@@ -94,6 +94,8 @@ class ProfileImageUploadFeatureTest extends TestCase
     #[Test]
     public function itRequiresAuthentication(): void
     {
+        $this->forgetAuthenticatedUsers();
+
         $this->post(
             '/api/users/auth/profile-image',
             ['profileImage' => UploadedFile::fake()->image('avatar.jpg')],
@@ -104,9 +106,9 @@ class ProfileImageUploadFeatureTest extends TestCase
     #[Test]
     public function itStoresAValidImageUnderAServerGeneratedKey(): void
     {
-        $userId = $this->getAuthUser($this->token)->id;
+        $userId = $this->admin->id;
 
-        $this->withToken($this->token)
+        $this
             ->post(
                 '/api/users/auth/profile-image',
                 ['profileImage' => UploadedFile::fake()->image('avatar.jpg', 200, 200)],
@@ -136,9 +138,9 @@ class ProfileImageUploadFeatureTest extends TestCase
     {
         // Traversal in the client filename is the classic way to write outside
         // the intended prefix, or to overwrite somebody else's object.
-        $userId = $this->getAuthUser($this->token)->id;
+        $userId = $this->admin->id;
 
-        $this->withToken($this->token)
+        $this
             ->post(
                 '/api/users/auth/profile-image',
                 ['profileImage' => UploadedFile::fake()->image('../../../etc/passwd.jpg', 50, 50)],
@@ -158,7 +160,7 @@ class ProfileImageUploadFeatureTest extends TestCase
     {
         // The stored value is private; what a client receives is a signed,
         // expiring URL generated per response.
-        $response = $this->withToken($this->token)
+        $response = $this
             ->post(
                 '/api/users/auth/profile-image',
                 ['profileImage' => UploadedFile::fake()->image('avatar.jpg', 120, 120)],

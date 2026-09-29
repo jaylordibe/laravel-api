@@ -7,6 +7,7 @@ use App\Enums\UserRole;
 use App\Models\User;
 use Illuminate\Routing\Route;
 use Illuminate\Support\Facades\Hash;
+use Laravel\Passport\Passport;
 use PHPUnit\Framework\Attributes\Test;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
@@ -61,6 +62,7 @@ class AccessControlFeatureTest extends TestCase
             'POST api/auth/sign-in',
             'POST api/users/sign-up',
             'GET api/email/verify/{id}',
+            'POST api/email/verification-notification',
         ];
 
         $unauthenticated = collect(app('router')->getRoutes()->getRoutes())
@@ -90,7 +92,7 @@ class AccessControlFeatureTest extends TestCase
         $user = User::factory()->create();
         /** @var User $otherUser */
         $otherUser = User::factory()->create();
-        $token = $this->login($user->email);
+        Passport::actingAs($user);
         $validCreate = [
             'firstName' => 'Mallory',
             'lastName' => 'Example',
@@ -116,8 +118,7 @@ class AccessControlFeatureTest extends TestCase
         $before = $otherUser->refresh()->getRawOriginal();
 
         foreach ($requests as [$method, $uri, $payload]) {
-            $this->forgetAuthenticatedUsers();
-            $this->withToken($token)->json($method, $uri, $payload)->assertForbidden()->assertExactJson(['message' => 'Request is forbidden']);
+            $this->json($method, $uri, $payload)->assertForbidden()->assertExactJson(['message' => 'Request is forbidden']);
         }
 
         self::assertSame($before, $otherUser->refresh()->getRawOriginal());
@@ -131,10 +132,9 @@ class AccessControlFeatureTest extends TestCase
         $user = User::factory()->create();
         /** @var User $otherUser */
         $otherUser = User::factory()->create();
-        $token = $this->login($user->email);
+        Passport::actingAs($user);
 
-        $this->forgetAuthenticatedUsers();
-        $this->withToken($token)->putJson("/api/users/{$otherUser->id}/password", [
+        $this->putJson("/api/users/{$otherUser->id}/password", [
             'currentPassword' => 'password',
             'password' => 'taken-over',
             'passwordConfirmation' => 'taken-over'
@@ -151,12 +151,11 @@ class AccessControlFeatureTest extends TestCase
         // throws turns every guarded endpoint into a 500 instead of a 403.
         /** @var User $admin */
         $admin = User::factory()->withRole(UserRole::SYSTEM_ADMIN)->create();
-        $token = $this->login($admin->email);
+        Passport::actingAs($admin);
         Permission::findByName(UserPermission::READ_USER->value, UserPermission::getApiGuardName())->delete();
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
-        $this->forgetAuthenticatedUsers();
-        $this->withToken($token)->getJson('/api/users')->assertForbidden()->assertExactJson(['message' => 'Request is forbidden']);
+        $this->getJson('/api/users')->assertForbidden()->assertExactJson(['message' => 'Request is forbidden']);
     }
 
     #[Test]
@@ -165,11 +164,9 @@ class AccessControlFeatureTest extends TestCase
         foreach ([UserRole::SYSTEM_ADMIN, UserRole::APP_ADMIN] as $role) {
             /** @var User $admin */
             $admin = User::factory()->withRole($role)->create();
-            $this->forgetAuthenticatedUsers();
-            $token = $this->login($admin->email);
+            Passport::actingAs($admin);
 
-            $this->forgetAuthenticatedUsers();
-            $this->withToken($token)->getJson('/api/users')->assertOk();
+            $this->getJson('/api/users')->assertOk();
         }
     }
 

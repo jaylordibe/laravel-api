@@ -101,10 +101,7 @@ class BaseRequest extends FormRequest
     }
 
     /**
-     * Parse an optional date input, rejecting anything unparseable with a 400.
-     *
-     * For inputs no rules() validate — list filters arrive through a GenericRequest — Laravel's date()
-     * would throw on garbage or an array and surface as a 500.
+     * Parse an optional date input (e.g. a list filter no rules() validate); unparseable input is a 400.
      *
      * @param string $key
      *
@@ -178,9 +175,12 @@ class BaseRequest extends FormRequest
             return $maxPerPage;
         }
 
-        // Anything else outside [1, max] falls back to the default. A negative page size must never
-        // reach the query: the builder silently drops a negative LIMIT, so it would return the whole table.
-        return $perPage < 1 || $perPage > $maxPerPage ? 10 : $perPage;
+        // Capped at the maximum; zero or negative falls back to the default.
+        if ($perPage < 1) {
+            return 10;
+        }
+
+        return min($perPage, $maxPerPage);
     }
 
     /**
@@ -198,9 +198,7 @@ class BaseRequest extends FormRequest
     /**
      * Parse the 'relations' input into relation names for Eloquent's `with()`.
      *
-     * Accepts a pipe-separated string ("causer|subject") or an array of names. Only exact names listed in
-     * the request's ALLOWED_RELATIONS are accepted; anything else is rejected before it reaches Eloquent,
-     * because Eloquent resolves an eager-load name by calling the model method of that name.
+     * Accepts a pipe-separated string ("causer|subject") or an array. Only names in ALLOWED_RELATIONS pass.
      *
      * @return array<int, string>
      * @throws BadRequestException
@@ -230,8 +228,7 @@ class BaseRequest extends FormRequest
     /**
      * Get columns for database query.
      *
-     * Client-selected columns are not supported: a column list is a raw SELECT expression, and a
-     * partial record would make every Resource render missing fields as false values.
+     * Client-selected columns are not supported.
      *
      * @return array<int, string>
      * @throws BadRequestException
@@ -296,16 +293,19 @@ class BaseRequest extends FormRequest
      */
     public function getMetaData(): MetaData
     {
+        // Relations, columns and sorting only apply to reads; a write ignores them.
+        $isRead = $this->isMethod('GET');
+
         return new MetaData(
             headers: $this->header(),
             filters: $this->array('filters'),
             ip: $this->ip(),
             search: $this->string('search'),
-            relations: $this->getRelations(),
-            columns: $this->getColumns(),
+            relations: $isRead ? $this->getRelations() : [],
+            columns: $isRead ? $this->getColumns() : ['*'],
             groupBy: $this->string('groupBy'),
-            sortField: $this->getSortField(),
-            sortDirection: $this->getSortDirection(),
+            sortField: $isRead ? $this->getSortField() : self::DEFAULT_SORT_FIELD,
+            sortDirection: $isRead ? $this->getSortDirection() : self::DEFAULT_SORT_DIRECTION,
             page: $this->getPage(),
             perPage: $this->getPerPage(),
             offset: $this->getPageOffset()

@@ -12,19 +12,19 @@ This template ships a deliberately small, uniform auth surface. The rules below 
 
 - Guards (`config/auth.php`): `api` → `passport` driver (every API route), `web` → `session`. Non-public routes sit under `auth:api`.
 - **Passport's `/oauth/*` routes are not registered** (`Passport::ignoreRoutes()` in `AppServiceProvider::register()`). Tokens come only from sign-in's in-process `createToken()`, and no OAuth grant is reachable over HTTP.
-- **Sign-in session lifetime** is `config('custom.auth.token_ttl_minutes')` (env `AUTH_TOKEN_TTL_MINUTES`; the default lives in `config/custom.php`), parsed and bounded **only** by `AuthUtil::personalAccessTokenLifetime()` — a value outside `AuthUtil::MIN_/MAX_TOKEN_TTL_MINUTES` or not a whole number throws at boot rather than falling back (an `(int)` cast would make a typo 0 and lock everyone out; a null handed to Passport means one year). `createToken()` issues a personal access token, so this is the session. There is no refresh flow: when it ends the user signs in again, and sign-in reports `expiresIn` (seconds) so a client can do that before the 401. Expiry is the JWT `exp`, fixed at issue — changing the lifetime affects new tokens only. The 8h access / 30d refresh lifetimes in `boot()` apply only to `/oauth/token` grants and are inert; they stay so a fork re-enabling a grant does not inherit Passport's one-year default. Passport keys/clients are created by `./start.sh fresh` — never commit private keys.
+- **Sign-in session lifetime** is `config('custom.auth.token_ttl_minutes')` (env `AUTH_TOKEN_TTL_MINUTES`, default 30 days in `config/custom.php`). `createToken()` issues a personal access token, so this is the session. There is no refresh flow: when it ends the user signs in again, and sign-in reports `expiresIn` (seconds) so a client can do that before the 401. Expiry is the JWT `exp`, fixed at issue — changing the lifetime affects new tokens only. The 8h access / 30d refresh lifetimes in `boot()` apply only to `/oauth/token` grants and are inert; they stay so a fork re-enabling a grant does not inherit Passport's one-year default. Passport keys/clients are created by `./start.sh fresh` — never commit private keys.
 - **Sign-in** `POST auth/sign-in` (`AuthController`, no service layer — the one auth exception to the pipeline): `identifier` is email **or** username (`AppUtil::isValidEmail` picks the column), `Auth::attempt(...)` then an email-verified gate, returns `{ "token": <accessToken>, "expiresIn": <seconds> }`. Failure is always the generic `Invalid username or password` (`ResponseUtil::error`, 400) — wrong password and unknown user are indistinguishable, so there is **no user enumeration**. The controller is `guest`-middleware'd except `signOut` and `signOutAll`.
 - **Sign-out** `POST auth/sign-out`: `Auth::user()->token()->delete()` — revokes only the **current** access token, not other sessions.
 - **Sign-out everywhere** `POST auth/sign-out-all` (`auth:api`): `UserService::revokeAllUserTokens` for the caller — every session, the current one included; nobody else's.
-- **Password change revokes every session.** `UserService::updatePassword` calls `revokeAllUserTokens($user)` after a successful change (revokes access **and** refresh tokens in a transaction), so a self-change or an admin reset forces re-authentication everywhere — including the caller's current token. Reuse this helper on any new password-mutating path.
+- **Password change signs out other sessions.** `UserService::updatePassword` calls `revokeAllUserTokens()` (access **and** refresh tokens, in a transaction). Changing your own password keeps the session you did it from, like Laravel's `logoutOtherDevices()`; an admin reset signs the user out everywhere. Reuse this helper on any new password-mutating path.
 - **Changing your OWN password needs `currentPassword`** — on `PUT users/auth/password` and on `PUT users/{userId}/password` when `userId` is the caller, admins included. Enforced once, in `UserService::updatePassword` (the admin route sets the target after validation, so the request cannot know). Without it a stolen token could set a new password, sign the owner out everywhere and keep the account however short the token lives. Only an admin resetting **someone else's** password skips it.
-- **No account lockout / failed-attempt counter.** The brute-force floor is purely the `sensitive` rate limiter (5/min/IP, below).
+- **No account lockout / failed-attempt counter.** The brute-force floor is the `sign-in` rate limiter: 5/min per identifier + IP, as in Laravel's starter kits.
 
 ## Sign-up + email verification
 
-- **Sign-up** `POST users/sign-up` (public, `throttle:sensitive`): creates the user with `email_verified_at = null`, auto-generates a unique username from the email, `Hash::make`es the password (model `password` cast is `hashed`), then `sendEmailVerificationNotification()`. Returns a generic success message — no "email already taken" oracle in the response.
-  - `SignUpUserRequest` enforces `password min:8` + `passwordConfirmation same:password`, but does **not** validate `unique:users,email`; a duplicate email currently hits the DB unique constraint → generic 500. Add `Rule::unique(...)` (or a service `isEmailExists` check throwing `BadRequestException`) if you want a clean 400 without leaking existence — decide per fork.
+- **Sign-up** `POST users/sign-up` (public, `throttle:sensitive`): creates the user with `email_verified_at = null`, auto-generates a unique username from the email, `Hash::make`es the password (model `password` cast is `hashed`), then `sendEmailVerificationNotification()`. A taken email is a 400 validation error (`The email has already been taken.`), as in Laravel's starter kits.
 - **Verify** `GET email/verify/{id}` (named `verification.verify`, `throttle:sensitive`, **no auth** — it is opened from an email): the signed URL is the only credential. `UserController::verifyEmail` takes a `GenericRequest` — **not** `EmailVerificationRequest`, which authorizes against a signed-in user and 500s here. Order: `hasValidSignature()` first (400 `Invalid verification link.` before any lookup), then `UserService::verifyEmail` checks `hash_equals(sha1(current email), ?hash)` so a link issued for an old address cannot verify a new one; a missing user answers identically. Opening a link again returns 200 (mail scanners prefetch links).
+- **Resend** `POST email/verification-notification` (`throttle:sensitive`, no auth, `{email}`): sends a new link to an unverified account; the answer is the same for any address. Admin-created users are sent a link on creation. Verification mail is queued (`VerifyEmailNotification`), so a worker must run.
 - **Login gate**: an unverified user who supplies the *correct* password gets `Email not yet verified...`; a wrong password stays generic. Acceptable post-auth signal for this template.
 
 ## RBAC / permissions (spatie/laravel-permission)
@@ -44,11 +44,12 @@ This template ships a deliberately small, uniform auth surface. The rules below 
 | Limiter | Budget | Use for |
 |---|---|---|
 | `public` | 60/min/IP | unauthenticated reads |
-| `sensitive` | 5/min/IP | `auth/sign-in`, `users/sign-up`, email verify — the brute-force / enumeration floor |
+| `sign-in` | 5/min per identifier + IP | `auth/sign-in` — capped per account without locking out a shared IP |
+| `sensitive` | 5/min/IP | `users/sign-up`, email verify |
 | `api` | 60/min/token **+** 120/min/user **+** 300/min/IP | authenticated endpoints (layered: kills a stolen token hard, caps a user across tokens, IP backstop tolerant of NAT) |
 | `heavy` | 10/min/token | resource-intensive endpoints (exports/imports) |
 
-**Any new public or auth-input endpoint (login variants, OTP, password reset, resend) must sit under `sensitive` or a stricter named limiter — never bare.**
+**Any new public or auth-input endpoint (login variants, OTP, password reset, resend) must sit under `sensitive` (or a purpose-keyed limiter like `sign-in`) — never bare.**
 
 ## Hardening opportunities — wire these when a fork's threat model needs them
 
@@ -56,7 +57,7 @@ The base template keeps these minimal on purpose; a fork handling sensitive data
 
 - **Admin reset of another user needs no proof.** Any `SYSTEM_ADMIN`/`APP_ADMIN` can set another user's password (`PUT users/{userId}/password`), including the other admin role's. So a **stolen admin token** can still take over another account — including a second admin, which then resets the first — however short the token lives; closing that needs step-up re-authentication on privileged actions. Also, a fork that makes the two roles unequal should check the target's role.
 - **Email change does not re-verify.** `updateEmail` swaps the address without clearing `email_verified_at`, so a verified account stays "verified" on an unconfirmed address. If the verified flag gates anything, reset it to `null` + resend verification on change.
-- **No lockout.** Only the `sensitive` limiter stands against guessing. Add a failed-attempt lockout if 5/min/IP is insufficient (e.g. distributed attempts).
+- **No lockout.** Only the `sign-in` limiter stands against guessing. Add a failed-attempt lockout if that is insufficient (e.g. distributed attempts).
 
 ## Security review checklist (run on every new endpoint / Request / Resource)
 
