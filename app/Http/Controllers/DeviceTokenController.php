@@ -62,7 +62,7 @@ class DeviceTokenController extends Controller
      */
     public function getById(GenericRequest $request, int $deviceTokenId): JsonResponse|JsonResource
     {
-        $deviceToken = $this->deviceTokenService->getById($deviceTokenId, $request->getRelations());
+        $deviceToken = $this->deviceTokenService->getById($deviceTokenId, $request->getAuthUserData()->id, $request->getRelations());
 
         return ResponseUtil::resource(DeviceTokenResource::class, $deviceToken);
     }
@@ -94,7 +94,7 @@ class DeviceTokenController extends Controller
      */
     public function delete(GenericRequest $request, int $deviceTokenId): JsonResponse
     {
-        $this->deviceTokenService->delete($deviceTokenId);
+        $this->deviceTokenService->delete($deviceTokenId, $request->getAuthUserData()->id);
 
         return ResponseUtil::success('Device token deleted successfully.');
     }

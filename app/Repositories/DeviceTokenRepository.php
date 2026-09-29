@@ -20,8 +20,12 @@ class DeviceTokenRepository
      */
     public function save(DeviceTokenData $deviceTokenData, ?DeviceToken $deviceToken = null): ?DeviceToken
     {
-        $deviceToken ??= new DeviceToken();
-        $deviceToken->user_id = $deviceTokenData->userId;
+        // The owner is set once, on create. An update never moves a device token to another user.
+        if (empty($deviceToken)) {
+            $deviceToken = new DeviceToken();
+            $deviceToken->user_id = $deviceTokenData->userId;
+        }
+
         $deviceToken->token = $deviceTokenData->token;
         $deviceToken->app_platform = $deviceTokenData->appPlatform;
         $deviceToken->device_type = $deviceTokenData->deviceType;
@@ -33,29 +37,34 @@ class DeviceTokenRepository
     }
 
     /**
-     * Find device token by id.
+     * Find a device token by id, among the given user's own tokens only.
+     *
+     * Every query in this repository is scoped to the owner: another user's token is
+     * indistinguishable from one that does not exist.
      *
      * @param int $id
+     * @param int $userId
      * @param array $relations
      * @param array $columns
      *
      * @return DeviceToken|null
      */
-    public function findById(int $id, array $relations = [], array $columns = ['*']): ?DeviceToken
+    public function findById(int $id, int $userId, array $relations = [], array $columns = ['*']): ?DeviceToken
     {
-        return DeviceToken::with($relations)->where('id', $id)->first($columns);
+        return DeviceToken::with($relations)->where('id', $id)->where('user_id', $userId)->first($columns);
     }
 
     /**
-     * Checks if the device token exists.
+     * Checks if the given user owns a device token with this id.
      *
      * @param int $id
+     * @param int $userId
      *
      * @return bool
      */
-    public function exists(int $id): bool
+    public function exists(int $id, int $userId): bool
     {
-        return DeviceToken::where('id', $id)->exists();
+        return DeviceToken::where('id', $id)->where('user_id', $userId)->exists();
     }
 
     /**
@@ -67,7 +76,8 @@ class DeviceTokenRepository
      */
     public function getPaginated(DeviceTokenFilterData $deviceTokenFilterData): LengthAwarePaginator
     {
-        $deviceTokenBuilder = DeviceToken::query();
+        // Unconditional: a missing owner matches nothing rather than everything.
+        $deviceTokenBuilder = DeviceToken::query()->where('user_id', $deviceTokenFilterData->userId);
 
         if (!empty($deviceTokenFilterData->meta->relations)) {
             $deviceTokenBuilder->with($deviceTokenFilterData->meta->relations);
@@ -86,7 +96,7 @@ class DeviceTokenRepository
         }
 
         if (!empty($deviceTokenFilterData->deviceOs)) {
-            $deviceTokenBuilder->where('device_os', $deviceTokenFilterData->deviceType);
+            $deviceTokenBuilder->where('device_os', $deviceTokenFilterData->deviceOs);
         }
 
         if (!empty($deviceTokenFilterData->meta->sortField)) {
@@ -97,15 +107,18 @@ class DeviceTokenRepository
     }
 
     /**
-     * Delete device token.
+     * Delete one of the given user's device tokens.
+     *
+     * Through the model, so the soft delete and its deleted_by stamp still happen.
      *
      * @param int $id
+     * @param int $userId
      *
      * @return bool
      */
-    public function delete(int $id): bool
+    public function delete(int $id, int $userId): bool
     {
-        return DeviceToken::destroy($id) > 0;
+        return (bool) $this->findById($id, $userId)?->delete();
     }
 
 }

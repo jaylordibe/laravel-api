@@ -14,6 +14,10 @@ enum UserPermission: string
     case READ_USER = 'read_user';
     case UPDATE_USER = 'update_user';
     case DELETE_USER = 'delete_user';
+    case CREATE_APP_VERSION = 'create_app_version';
+    case UPDATE_APP_VERSION = 'update_app_version';
+    case DELETE_APP_VERSION = 'delete_app_version';
+    case READ_ACTIVITY_LOG = 'read_activity_log';
 
     /**
      * @param UserRole $userRole

@@ -39,7 +39,7 @@ Route::middleware(['throttle:public'])->group(function () {
 Route::middleware(['throttle:sensitive'])->group(function () {
     Route::post('auth/sign-in', [AuthController::class, 'signIn']);
     Route::post('users/sign-up', [UserController::class, 'signUp']);
-    Route::get('email/verify/{id}', [UserController::class, 'verifyEmail'])->name('verification.verify');
+    Route::get('email/verify/{id}', [UserController::class, 'verifyEmail'])->where('id', config('custom.numeric_regex'))->name('verification.verify');
 });
 
 // Authenticated Routes

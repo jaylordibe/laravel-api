@@ -518,6 +518,10 @@ migration enabled      yes, as an INDEPENDENT one-shot job
 migration command      APP_RUNTIME_MODE=migrate
 migration ordering     before the new build serves traffic
 
+permission sync        yes, as a one-shot job after the migration
+permission command     APP_RUNTIME_MODE=artisan db:seed --class=PermissionsSeeder --force
+permission ordering    after migration, before the new build serves traffic
+
 scheduler enabled      yes, as a one-shot invocation
 scheduler command      APP_RUNTIME_MODE=scheduler
 scheduler cadence      every 1 minute
@@ -558,8 +562,12 @@ repository variable `DEPLOY_ENABLED=true`.
 | `timeout-minutes` | A runaway-job guard. If it trips, find out what got stuck rather than raising the number. |
 | Smoke test | Fails the run when the app does not answer, so a broken build cannot sit silently in production. |
 
-A deploy should run, in order: **migrate → start/replace workers → start/replace
-API → verify**.
+A deploy should run, in order: **migrate → sync permissions → start/replace workers →
+start/replace API → verify**. Syncing permissions is the `permission command` one-shot in the §13 contract (idempotent;
+it adds any new `UserPermission` case to the roles — it never revokes, so taking a permission
+away from a role needs an explicit `revokePermissionTo` data change). Skip it and a newly gated action answers
+403 for everyone, admins included — it fails closed. `app:reset-role-permissions` also *deletes*
+permissions and roles missing from the enums, so do not use it on a fork that keeps extra ones in the database.
 
 ---
 

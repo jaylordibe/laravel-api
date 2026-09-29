@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Data\ActivityFilterData;
+use App\Models\User;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Spatie\Activitylog\Models\Activity;
 
@@ -36,9 +37,9 @@ class ActivityLogRepository
             $activityBuilder->where('log_name', $activityFilterData->type);
         }
 
-        if (!empty($activityFilterData->userId)) {
-            $activityBuilder->where('causer_id', $activityFilterData->userId);
-        }
+        // Unconditional: a list is always one user's activity, never everyone's.
+        $activityBuilder->where('causer_type', (new User())->getMorphClass())
+            ->where('causer_id', $activityFilterData->userId);
 
         if (!empty($activityFilterData->properties)) {
             foreach ($activityFilterData->properties as $key => $value) {
@@ -72,9 +73,8 @@ class ActivityLogRepository
     {
         $activities = Activity::query();
 
-        if (!empty($activityFilterData->userId)) {
-            $activities->where('causer_id', $activityFilterData->userId);
-        }
+        $activities->where('causer_type', (new User())->getMorphClass())
+            ->where('causer_id', $activityFilterData->userId);
 
         if (!empty($activityFilterData->type)) {
             $activities->where('log_name', $activityFilterData->type);

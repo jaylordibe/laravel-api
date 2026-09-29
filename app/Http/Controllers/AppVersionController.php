@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\AppPlatform;
+use App\Enums\UserPermission;
 use App\Exceptions\BadRequestException;
 use App\Http\Requests\GenericRequest;
 use App\Http\Requests\AppVersionRequest;
@@ -12,6 +13,7 @@ use App\Utils\ResponseUtil;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\Gate;
 
 class AppVersionController extends Controller
 {
@@ -32,6 +34,8 @@ class AppVersionController extends Controller
      */
     public function create(AppVersionRequest $request): JsonResponse|JsonResource
     {
+        Gate::authorize(UserPermission::CREATE_APP_VERSION);
+
         $appVersion = $this->appVersionService->create($request->toData());
 
         return ResponseUtil::resource(AppVersionResource::class, $appVersion);
@@ -79,6 +83,8 @@ class AppVersionController extends Controller
      */
     public function update(AppVersionRequest $request, int $appVersionId): JsonResponse|JsonResource
     {
+        Gate::authorize(UserPermission::UPDATE_APP_VERSION);
+
         $appVersion = $this->appVersionService->update($request->toData());
 
         return ResponseUtil::resource(AppVersionResource::class, $appVersion);
@@ -95,6 +101,8 @@ class AppVersionController extends Controller
      */
     public function delete(GenericRequest $request, int $appVersionId): JsonResponse
     {
+        Gate::authorize(UserPermission::DELETE_APP_VERSION);
+
         $this->appVersionService->delete($appVersionId);
 
         return ResponseUtil::success('App version deleted successfully.');

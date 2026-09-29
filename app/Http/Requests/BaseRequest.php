@@ -115,11 +115,14 @@ class BaseRequest extends FormRequest
     {
         $perPage = $this->integer('perPage') ?: 10;
 
+        // -1 is the documented "as many as allowed" sentinel.
         if ($perPage === -1) {
             return $maxPerPage;
         }
 
-        return $perPage > $maxPerPage ? 10 : $perPage;
+        // Anything else outside [1, max] falls back to the default. A negative page size must never
+        // reach the query: the builder silently drops a negative LIMIT, so it would return the whole table.
+        return $perPage < 1 || $perPage > $maxPerPage ? 10 : $perPage;
     }
 
     /**

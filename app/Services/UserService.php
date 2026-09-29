@@ -93,21 +93,28 @@ class UserService
     /**
      * Verify user email.
      *
+     * The hash binds the link to the address it was sent to, so a link issued for one address cannot
+     * verify another. (A self-service email change does not yet reset verification — see the
+     * auth-security skill's hardening list.) Every failure answers alike, so a valid
+     * signature for a missing user reveals nothing. Verifying twice succeeds — mail scanners open
+     * links before people do.
+     *
      * @param int $userId
+     * @param string $hash
      *
      * @return User|null
      * @throws BadRequestException
      */
-    public function verifyEmail(int $userId): ?User
+    public function verifyEmail(int $userId, string $hash): ?User
     {
         $user = $this->userRepository->findById($userId);
 
-        if (empty($user)) {
-            throw new BadRequestException('User not found.');
+        if (empty($user) || !hash_equals(sha1($user->getEmailForVerification()), $hash)) {
+            throw new BadRequestException('Invalid verification link.');
         }
 
         if ($user->hasVerifiedEmail()) {
-            throw new BadRequestException('Email already verified.');
+            return $user;
         }
 
         $user->markEmailAsVerified();

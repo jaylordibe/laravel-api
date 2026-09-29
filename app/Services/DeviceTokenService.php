@@ -53,14 +53,15 @@ class DeviceTokenService
      * Get device token by id.
      *
      * @param int $id
+     * @param int $userId
      * @param array $relations
      *
      * @return DeviceToken|null
      * @throws BadRequestException
      */
-    public function getById(int $id, array $relations = []): ?DeviceToken
+    public function getById(int $id, int $userId, array $relations = []): ?DeviceToken
     {
-        $deviceToken = $this->deviceTokenRepository->findById($id, $relations);
+        $deviceToken = $this->deviceTokenRepository->findById($id, $userId, $relations);
 
         if (empty($deviceToken)) {
             throw new BadRequestException('Device token not found.');
@@ -79,7 +80,7 @@ class DeviceTokenService
      */
     public function update(DeviceTokenData $deviceTokenData): ?DeviceToken
     {
-        $deviceToken = $this->deviceTokenRepository->findById($deviceTokenData->id);
+        $deviceToken = $this->deviceTokenRepository->findById($deviceTokenData->id, $deviceTokenData->userId);
 
         if (empty($deviceToken)) {
             throw new BadRequestException('Failed to update device token.');
@@ -98,19 +99,14 @@ class DeviceTokenService
      * Delete device token.
      *
      * @param int $id
+     * @param int $userId
      *
      * @return bool
      * @throws BadRequestException
      */
-    public function delete(int $id): bool
+    public function delete(int $id, int $userId): bool
     {
-        $deviceToken = $this->deviceTokenRepository->findById($id);
-
-        if (empty($deviceToken)) {
-            throw new BadRequestException('Failed to delete device token.');
-        }
-
-        $isDeleted = $this->deviceTokenRepository->delete($id);
+        $isDeleted = $this->deviceTokenRepository->delete($id, $userId);
 
         if (!$isDeleted) {
             throw new BadRequestException('Failed to delete device token.');

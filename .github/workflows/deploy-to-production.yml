@@ -131,7 +131,8 @@ jobs:
       # Migrations run BEFORE the new build starts serving, which means the OLD
       # build runs against the NEW schema for the length of the swap. The
       # `migration-safety` job in test.yml proves that window is survivable;
-      # keep the ordering it assumes.
+      # keep the ordering it assumes. Sync permissions right after migrating
+      # (DEPLOYMENT.md §13), or newly gated actions deny admins.
       - name: Deploy to production
         run: |
           echo 'No deployment target is configured for this template.'

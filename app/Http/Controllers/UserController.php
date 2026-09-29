@@ -13,7 +13,6 @@ use App\Http\Requests\UserRequest;
 use App\Http\Resources\UserResource;
 use App\Services\UserService;
 use App\Utils\ResponseUtil;
-use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Routing\Controller;
@@ -46,19 +45,24 @@ class UserController extends Controller
     /**
      * Verify user email.
      *
-     * @param EmailVerificationRequest $request
+     * Reached from an emailed link, so there is no signed-in user: the signed URL is the only
+     * credential. Laravel's EmailVerificationRequest is not usable here — it authorizes against the
+     * authenticated user. The signature is checked before anything is looked up, so ids cannot be
+     * probed; the email hash is checked in the service.
+     *
+     * @param GenericRequest $request
      * @param int $userId
      *
      * @return JsonResponse|JsonResource
      * @throws BadRequestException
      */
-    public function verifyEmail(EmailVerificationRequest $request, int $userId): JsonResponse|JsonResource
+    public function verifyEmail(GenericRequest $request, int $userId): JsonResponse|JsonResource
     {
         if (!$request->hasValidSignature()) {
             return ResponseUtil::error('Invalid verification link.');
         }
 
-        $this->userService->verifyEmail($userId);
+        $this->userService->verifyEmail($userId, $request->string('hash')->toString());
 
         return ResponseUtil::success('Email verified successfully.');
     }

@@ -24,14 +24,14 @@ This template ships a deliberately small, uniform auth surface. The rules below 
 
 - **Sign-up** `POST users/sign-up` (public, `throttle:sensitive`): creates the user with `email_verified_at = null`, auto-generates a unique username from the email, `Hash::make`es the password (model `password` cast is `hashed`), then `sendEmailVerificationNotification()`. Returns a generic success message — no "email already taken" oracle in the response.
   - `SignUpUserRequest` enforces `password min:8` + `passwordConfirmation same:password`, but does **not** validate `unique:users,email`; a duplicate email currently hits the DB unique constraint → generic 500. Add `Rule::unique(...)` (or a service `isEmailExists` check throwing `BadRequestException`) if you want a clean 400 without leaking existence — decide per fork.
-- **Verify** `GET email/verify/{id}` (named `verification.verify`): `EmailVerificationRequest` + `hasValidSignature()` (Laravel signed URL). Re-verifying throws `Email already verified.`
+- **Verify** `GET email/verify/{id}` (named `verification.verify`, `throttle:sensitive`, **no auth** — it is opened from an email): the signed URL is the only credential. `UserController::verifyEmail` takes a `GenericRequest` — **not** `EmailVerificationRequest`, which authorizes against a signed-in user and 500s here. Order: `hasValidSignature()` first (400 `Invalid verification link.` before any lookup), then `UserService::verifyEmail` checks `hash_equals(sha1(current email), ?hash)` so a link issued for an old address cannot verify a new one; a missing user answers identically. Opening a link again returns 200 (mail scanners prefetch links).
 - **Login gate**: an unverified user who supplies the *correct* password gets `Email not yet verified...`; a wrong password stays generic. Acceptable post-auth signal for this template.
 
 ## RBAC / permissions (spatie/laravel-permission)
 
-- `User` uses `HasRoles`. Roles → `UserRole` enum (`SYSTEM_ADMIN`, `APP_ADMIN`). Permissions → `UserPermission` enum (`CREATE/READ/UPDATE/DELETE_USER`).
-- Every `UserPermission` case is registered as a **Gate** in `AppServiceProvider::boot()`, checked against the **`api` guard** (`hasPermissionTo($permission, UserPermission::getApiGuardName())`). The loop auto-picks-up new cases.
-- **Enforce in the controller** with `Gate::authorize(UserPermission::X)` — it throws `AuthorizationException` → 403 via the `bootstrap/app.php` handler (no controller branching). Admin user endpoints (`create`/`getPaginated`/`getById`/`update`/`delete`) already do this; the `users/auth/*` self-service endpoints are any-authenticated-user by design.
+- `User` uses `HasRoles`. Roles → `UserRole` enum (`SYSTEM_ADMIN`, `APP_ADMIN`). Permissions → `UserPermission` enum (users CRUD, `CREATE/UPDATE/DELETE_APP_VERSION`, `READ_ACTIVITY_LOG`). The Gate loop uses `checkPermissionTo`, so a permission an environment has not seeded yet **denies (403)** instead of throwing `PermissionDoesNotExist` (500) — after adding a case, sync permissions as the deploy order in `DEPLOYMENT.md` §14 describes (the non-deleting seeder, **not** `app:reset-role-permissions`, which deletes roles/permissions missing from the enums).
+- Every `UserPermission` case is registered as a **Gate** in `AppServiceProvider::boot()`, checked against the **`api` guard** (`checkPermissionTo(...)` — see the bullet above for why). The loop auto-picks-up new cases.
+- **Enforce in the controller** with `Gate::authorize(UserPermission::X)` — it throws `AuthorizationException` → 403 via the `bootstrap/app.php` handler (no controller branching). Admin user endpoints (`create`/`getPaginated`/`getById`/`update`/`delete`) already do this; the `users/auth/*` self-service endpoints are any-authenticated-user by design. A check that depends on the data — your own record needs nothing, someone else's needs a permission — is a branch, so it goes in the **service** (`ActivityLogService::getPaginated`), never the controller.
 - **Add a permission**: add the case to `UserPermission`, grant it to roles via `UserPermission::fromUserRole()` + the permission seeder, then `Gate::authorize(...)` at the call site. No provider change needed — the Gate wiring loop covers it.
 
 ## Uniform response & error shapes (no leakage)
@@ -60,12 +60,12 @@ The base template keeps these minimal on purpose; a fork handling sensitive data
 
 ## Security review checklist (run on every new endpoint / Request / Resource)
 
-- **AuthZ**: under `auth:api`? Mutating/admin action calls `Gate::authorize(...)`? Ownership check for "my own record" endpoints (mirror `updatePassword`'s self-vs-admin guard)?
+- **AuthZ**: under `auth:api`? Mutating/admin action calls `Gate::authorize(...)`? Ownership check for "my own record" endpoints (mirror `updatePassword`'s self-vs-admin guard)? Owned records (device tokens, activity logs) are scoped **in every repository query, unconditionally** — never behind `if (!empty($userId))`, and never with an owner id taken from input; another user's record answers exactly like a missing one (same 400).
 - **Enumeration**: auth-path errors stay generic — never distinguish "no such user" from "wrong password".
 - **Mass assignment**: `$fillable` stays empty; assign columns explicitly in the repository. Never `Model::create($request->all())`.
 - **FK / role escalation**: a body-supplied id (`role`, owner, FK) must not let a caller grant themselves access — validate/authorize server-side, don't trust client ids.
 - **Resource exposure**: the `Resource` must not leak secrets/PII/internal columns; gate sensitive fields (as `UserResource` gates `includeAccessControl`).
-- **Unbounded reads**: lists go through `getPaginated` (`meta->perPage`) — never return a full table.
+- **Unbounded reads**: lists go through `getPaginated` (`meta->perPage`) — never return a full table. `BaseRequest::getPerPage` is the single bound: `-1` means the max, anything else outside `[1, max]` is the default — a negative size must never reach the builder, which drops a negative LIMIT.
 - **Rate limit**: public/auth-input endpoints under `sensitive` or stricter.
 - **Route ids**: numeric ids constrained with `->where('<x>Id', config('custom.numeric_regex'))`.
 - **Error leakage**: a service `catch (Throwable)` must not surface a raw internal message (DB/SQL, file paths) to the client. Re-throw `BadRequestException`/`ProcessingException` first to preserve the specific user-facing message, then log the real cause server-side and throw a safe generic one (see `UserService::create` and `SpreadsheetService::readRawFileAsWorkSheet`).

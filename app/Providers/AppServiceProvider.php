@@ -99,10 +99,11 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(config('custom.rate_limits.api_docs'))->by('ip:' . $request->ip());
         });
 
-        // Define the gate permissions
+        // Define the gate permissions. checkPermissionTo, not hasPermissionTo: a permission an environment
+        // has not seeded yet then DENIES (403) instead of throwing PermissionDoesNotExist (500).
         foreach (UserPermission::cases() as $permission) {
             Gate::define($permission, function (User $user) use ($permission) {
-                return $user->hasPermissionTo($permission, UserPermission::getApiGuardName());
+                return $user->checkPermissionTo($permission, UserPermission::getApiGuardName());
             });
         }
     }
