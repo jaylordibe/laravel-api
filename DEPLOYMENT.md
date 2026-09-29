@@ -103,9 +103,7 @@ replica, concurrently, during a scale-up.
 
 Run them **before** the new build starts serving. The old build then runs against
 the new schema for the length of the swap, so every migration must be
-backwards-compatible — expand → migrate → contract, across two releases. The
-`migration-safety` job in `.github/workflows/test.yml` proves that window is
-survivable, on a seeded database.
+backwards-compatible — expand → migrate → contract, across two releases.
 
 ---
 
@@ -583,8 +581,7 @@ permissions and roles missing from the enums, so do not use it on a fork that ke
 - **`docker/healthcheck.sh`** — mode-aware container healthcheck.
 - **`docker-compose.yml`** — **local development only**; not a deployment artifact.
 - **`app/Console/Commands/CheckConfigCommand.php`** — startup validation.
-- **`.github/workflows/test.yml`** — format check, test suite, migration safety,
-  and the image job that proves runtime env is honoured and that `api` mode does
+- **`.github/workflows/test.yml`** — format check, test suite, and the image job that proves runtime env is honoured and that `api` mode does
   not start Horizon.
 - **`.github/workflows/security.yml`**, **`security-dast.yml`** — dependency
   advisories, Trivy, OWASP ZAP.

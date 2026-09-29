@@ -129,9 +129,8 @@ jobs:
       # test that actually fails the run when the app does not come up.
       #
       # Migrations run BEFORE the new build starts serving, which means the OLD
-      # build runs against the NEW schema for the length of the swap. The
-      # `migration-safety` job in test.yml proves that window is survivable;
-      # keep the ordering it assumes. Sync permissions right after migrating
+      # build runs against the NEW schema for the length of the swap, so keep
+      # migrations backwards-compatible. Sync permissions right after migrating
       # (DEPLOYMENT.md §13), or newly gated actions deny admins.
       - name: Deploy to production
         run: |
