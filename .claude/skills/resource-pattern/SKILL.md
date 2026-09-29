@@ -38,17 +38,17 @@ docker exec laravel-api bash -c "php artisan app:generate-resource <ModelName>"
 - delete / action endpoints → `$this->xService->delete($id); return ResponseUtil::success('X deleted successfully.');`
 - list/get with no typed request → accept `GenericRequest`, re-hydrate via `XRequest::createFrom($request)->toFilterData()`.
 
-**Request** (`extends BaseRequest`) — `rules()`, `messages()`, `toData()`, `toFilterData()`. Use `BaseRequest` helpers, never raw input: `bigDecimal()`, `integer()`, `string()`, `enum($key, Enum::class, $default)`, `boolean($key, $default)`, `arrayIds()`. Always set `id: $this->route('<x>Id')`, `authUser: $this->getAuthUserData()`, `meta: $this->getMetaData()`. Validate enums with `Rule::enum(...)`.
+**Request** (`extends BaseRequest`) — `rules()`, `messages()`, `toData()`, `toFilterData()`. Use `BaseRequest` helpers, never raw input: `bigDecimal()`, `integer()`, `string()`, `enum($key, Enum::class, $default)`, `boolean($key, $default)`, `arrayIds()`. Always set `id: $this->route('<x>Id')`, `authUser: $this->getAuthUserData()`, `meta: $this->getMetaData()`. Override `ALLOWED_RELATIONS` / `SORTABLE_FIELDS` only for what the Resource renders and non-hidden columns (rule: `docs/engineering-conventions.md`, "query envelope is server-owned"). Validate enums with `Rule::enum(...)`.
 
 **Data** (`extends BaseData`) — `XData` (full record) and `XFilterData` (list params). `BaseData` already carries `id`, audit fields, `authUser`, `meta` — don't redeclare. **`MetaData`** is the universal query envelope (relations/columns/search/sortField/sortDirection/page/perPage/offset/groupBy/filters); repositories read list behavior off `$filterData->meta`.
 
 **Service** — the only place for business rules. **Throw `App\Exceptions\BadRequestException('message')` on any failure** (400, rendered as `{"success":false,"message":...}`). Use `ProcessingException` (422) for a downstream/processing failure when you want to distinguish it. Return payloads directly: `create`/`update`/`getById` → `?X`; `getPaginated` → `LengthAwarePaginator`; `getAll` → `Collection`; `delete` → `bool`; action endpoints → `void`. For `getById`, fetch then `if (empty($x)) { throw new BadRequestException('X not found.'); }`. Never reintroduce a `ServiceResponseData`/`failed()` pattern. In a `try/catch`, re-throw `BadRequestException` before the generic `catch (Throwable)` so its message isn't swallowed.
 
-**Repository** — plain class, no shared base. `save(XData $data, ?Model $model = null): ?X` (instantiate when null, assign each column explicitly — `$fillable` is empty — `save()`, `return $model->refresh()`). `findById()`, `exists()`, `getPaginated()` (apply `meta->relations`/`columns`/explicit filters/`search`/`sortField` + `meta->sortDirection ?? AppConstant::DEFAULT_SORT_DIRECTION`, then `->paginate($data->meta->perPage)`), `getAll()`, `delete()`. Domain finders live here too.
+**Repository** — plain class, no shared base. `save(XData $data, ?Model $model = null): ?X` (instantiate when null, assign each column explicitly — `$fillable` is empty — `save()`, `return $model->refresh()`). `findById()`, `exists()`, `getPaginated()` (apply `meta->relations`/explicit filters/`search`/`orderBy(meta->sortField, meta->sortDirection)`, then `->paginate($data->meta->perPage)`), `getAll()`, `delete()`. Domain finders live here too.
 
 **Model** (`extends BaseModel`) — `protected $table = DatabaseTableConstant::<X>;`, `protected $fillable = [];`, a `casts()` method (enums → enum class, money → `BigDecimalCast::class`), relation methods, and a class-level `@property` PHPDoc block. `BaseModel` provides `SoftDeletes`, `HasFactory`, and auto-stamps `created_by`/`updated_by`/`deleted_by` from `Auth::id()` — don't re-implement.
 
-**Resource** — shape the JSON; expose relations with `$this->whenLoaded('rel')`.
+**Resource** — shape the JSON; expose a relation only through its own Resource, `new XResource($this->whenLoaded('rel'))` — `BaseResource` never serializes relations.
 
 ## Money / decimals
 

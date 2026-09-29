@@ -114,10 +114,6 @@ class UserRepository
             $userBuilder->with($userFilterData->meta->relations);
         }
 
-        if (!empty($userFilterData->meta->columns)) {
-            $userBuilder->select($userFilterData->meta->columns);
-        }
-
         if (!empty($userFilterData->roles)) {
             $userBuilder->whereHas('roles', function (Builder $roles) use ($userFilterData) {
                 $roles->whereIn('name', $userFilterData->roles);
@@ -137,10 +133,6 @@ class UserRepository
                     ->orWhere('username', $operator, $pattern)
                     ->orWhere('email', $operator, $pattern);
             });
-        }
-
-        if (empty($userFilterData->meta->sortField)) {
-            $userFilterData->meta->sortField = 'last_name';
         }
 
         if (!empty($userFilterData->meta->sortField)) {

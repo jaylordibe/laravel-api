@@ -41,8 +41,8 @@ approval fields must be server-derived.
 
 - `XData` fields:
 - `XFilterData` fields:
-- `MetaData` usage: relations · columns · search · sortField/sortDirection ·
-  page/perPage/offset · groupBy · filters
+- `MetaData` usage: relations (`ALLOWED_RELATIONS`) · search · sortField
+  (`SORTABLE_FIELDS`)/sortDirection · page/perPage/offset · groupBy · filters
 
 ## Response
 

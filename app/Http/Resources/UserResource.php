@@ -32,9 +32,6 @@ class UserResource extends BaseResource
         if ($request->boolean('includeAccessControl')) {
             $data['roles'] = $this->getRoleNames()->toArray();
             $data['permissions'] = $this->getAllPermissions()->pluck('name')->toArray();
-        } else {
-            unset($data['roles']);
-            unset($data['permissions']);
         }
 
         $data['profileImage'] = $this->resolveProfileImageUrl();

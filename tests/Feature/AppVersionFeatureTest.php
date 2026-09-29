@@ -6,6 +6,7 @@ use App\Enums\AppPlatform;
 use App\Models\AppVersion;
 use App\Models\User;
 use App\Utils\AppUtil;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -86,6 +87,145 @@ class AppVersionFeatureTest extends TestCase
         $meta = $response->json('meta');
         $this->assertIsArray($meta);
         $this->assertNotEmpty($meta);
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function unsupportedRelations(): array
+    {
+        return [
+            'audit relation' => ['createdByUser'],
+            'aliased relation columns' => [urlencode('createdByUser:id,password as address')],
+            'model method as a relation' => ['save'],
+        ];
+    }
+
+    /**
+     * An unsupported relation is a 400 in the standard envelope — never a 500 — on the list and on a
+     * single record, and nothing it names is loaded, changed or echoed back.
+     */
+    #[Test]
+    #[DataProvider('unsupportedRelations')]
+    public function anUnsupportedRelationIsRejected(string $relations): void
+    {
+        $token = $this->loginSystemAdminUser();
+        /** @var AppVersion $appVersion */
+        $appVersion = AppVersion::factory()->create();
+
+        foreach ([$this->resource, "{$this->resource}/{$appVersion->id}"] as $path) {
+            $this->forgetAuthenticatedUsers();
+            $this->withToken($token)
+                ->get("{$path}?relations={$relations}")
+                ->assertBadRequest()
+                ->assertExactJson(['success' => false, 'message' => 'The requested relation is not supported.']);
+        }
+
+        self::assertNull($appVersion->refresh()->deleted_at);
+    }
+
+    /**
+     * @return array<string, array{string, string}>
+     */
+    public static function unsupportedListQueries(): array
+    {
+        return [
+            'column selection' => ['columns=' . urlencode('id|created_by as version'), 'Column selection is not supported.'],
+            'unknown sort field' => ['sortField=download_url', 'The requested sort field is not supported.'],
+            'bad sort direction' => ['sortDirection=sideways', 'The sort direction must be asc or desc.'],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('unsupportedListQueries')]
+    public function anUnsupportedListQueryIsRejected(string $query, string $message): void
+    {
+        $token = $this->loginSystemAdminUser();
+
+        $this->withToken($token)
+            ->get("{$this->resource}?{$query}")
+            ->assertBadRequest()
+            ->assertExactJson(['success' => false, 'message' => $message]);
+    }
+
+    /**
+     * Three app versions with distinct creation and release times, oldest first.
+     *
+     * @return array<int>
+     */
+    private function createDatedAppVersions(): array
+    {
+        return collect([3, 2, 1])
+            ->map(fn (int $daysAgo): int => AppVersion::factory()->create([
+                'created_at' => now()->subDays($daysAgo),
+                'release_date' => now()->subDays($daysAgo)
+            ])->id)
+            ->all();
+    }
+
+    /**
+     * The given ids in the order a list request returns them.
+     *
+     * @param string $token
+     * @param string $query
+     * @param array<int> $ids
+     *
+     * @return array<int>
+     */
+    private function listedOrderOf(string $token, string $query, array $ids): array
+    {
+        $this->forgetAuthenticatedUsers();
+
+        return collect($this->withToken($token)->get("{$this->resource}?perPage=-1{$query}")->assertOk()->json('data'))
+            ->pluck('id')
+            ->intersect($ids)
+            ->values()
+            ->all();
+    }
+
+    #[Test]
+    public function aListCanBeSortedByAnAllowedFieldInEitherDirection(): void
+    {
+        $token = $this->loginSystemAdminUser();
+        $oldestFirst = $this->createDatedAppVersions();
+
+        self::assertSame($oldestFirst, $this->listedOrderOf($token, '&sortField=release_date&sortDirection=asc', $oldestFirst));
+        self::assertSame(array_reverse($oldestFirst), $this->listedOrderOf($token, '&sortField=release_date&sortDirection=DESC', $oldestFirst));
+    }
+
+    #[Test]
+    public function aListIsNewestFirstByDefault(): void
+    {
+        $token = $this->loginSystemAdminUser();
+        $oldestFirst = $this->createDatedAppVersions();
+
+        self::assertSame(array_reverse($oldestFirst), $this->listedOrderOf($token, '', $oldestFirst));
+    }
+
+    #[Test]
+    public function aWriteCarryingAnUnsupportedQueryValueIsRejectedAndChangesNothing(): void
+    {
+        $token = $this->loginSystemAdminUser();
+        /** @var AppVersion $appVersion */
+        $appVersion = AppVersion::factory()->create();
+        $before = $appVersion->only(['version', 'description', 'download_url']);
+        $payload = [
+            'version' => $appVersion->version,
+            'description' => 'Changed by a rejected request',
+            'platform' => $appVersion->platform->value,
+            'releaseDate' => now()->millisecond(0)->toISOString(),
+            'forceUpdate' => false
+        ];
+
+        $this->withToken($token)->put("{$this->resource}/{$appVersion->id}?relations=createdByUser", $payload)
+            ->assertBadRequest()
+            ->assertExactJson(['success' => false, 'message' => 'The requested relation is not supported.']);
+        $this->forgetAuthenticatedUsers();
+        $this->withToken($token)->put("{$this->resource}/{$appVersion->id}", $payload + ['columns' => 'id'])
+            ->assertBadRequest()
+            ->assertExactJson(['success' => false, 'message' => 'Column selection is not supported.']);
+
+        self::assertSame($before, $appVersion->refresh()->only(['version', 'description', 'download_url']));
     }
 
     #[Test]

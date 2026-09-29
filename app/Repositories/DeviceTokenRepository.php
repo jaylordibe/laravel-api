@@ -83,10 +83,6 @@ class DeviceTokenRepository
             $deviceTokenBuilder->with($deviceTokenFilterData->meta->relations);
         }
 
-        if (!empty($deviceTokenFilterData->meta->columns)) {
-            $deviceTokenBuilder->select($deviceTokenFilterData->meta->columns);
-        }
-
         if (!empty($deviceTokenFilterData->appPlatform)) {
             $deviceTokenBuilder->where('app_platform', $deviceTokenFilterData->appPlatform);
         }

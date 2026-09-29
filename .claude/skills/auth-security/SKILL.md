@@ -65,6 +65,7 @@ The base template keeps these minimal on purpose; a fork handling sensitive data
 - **Mass assignment**: `$fillable` stays empty; assign columns explicitly in the repository. Never `Model::create($request->all())`.
 - **FK / role escalation**: a body-supplied id (`role`, owner, FK) must not let a caller grant themselves access — validate/authorize server-side, don't trust client ids.
 - **Resource exposure**: the `Resource` must not leak secrets/PII/internal columns; gate sensitive fields (as `UserResource` gates `includeAccessControl`).
+- **Query envelope**: a new relation or sort field is opted in on the Request's `ALLOWED_RELATIONS` / `SORTABLE_FIELDS` — never a hidden column, never a relation its Resource does not render (see `docs/engineering-conventions.md`).
 - **Unbounded reads**: lists go through `getPaginated` (`meta->perPage`) — never return a full table. `BaseRequest::getPerPage` is the single bound: `-1` means the max, anything else outside `[1, max]` is the default — a negative size must never reach the builder, which drops a negative LIMIT.
 - **Rate limit**: public/auth-input endpoints under `sensitive` or stricter.
 - **Route ids**: numeric ids constrained with `->where('<x>Id', config('custom.numeric_regex'))`.

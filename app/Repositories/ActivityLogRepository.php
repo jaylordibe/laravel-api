@@ -25,10 +25,6 @@ class ActivityLogRepository
             $activityBuilder->with($activityFilterData->meta->relations);
         }
 
-        if (!empty($activityFilterData->meta->columns)) {
-            $activityBuilder->select($activityFilterData->meta->columns);
-        }
-
         if (!empty($activityFilterData->id)) {
             $activityBuilder->where('id', $activityFilterData->id);
         }

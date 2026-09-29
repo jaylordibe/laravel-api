@@ -148,4 +148,37 @@ class ActivityLogFeatureTest extends TestCase
         self::assertEqualsCanonicalizing($otherIds, $this->listedIds($token, "&userId={$otherUser->id}"));
     }
 
+    #[Test]
+    public function theCauserCanBeLoadedAndIsRenderedAsAUser(): void
+    {
+        /** @var User $user */
+        $user = User::factory()->create();
+        $this->logActivitiesFor($user, 1);
+        $token = $this->login($user->email);
+
+        $this->forgetAuthenticatedUsers();
+        $response = $this->withToken($token)->get("{$this->resource}?relations=causer")->assertOk();
+
+        $item = $response->json('data.0');
+        self::assertSame($user->id, $item['user']['id']);
+        self::assertSame($user->email, $item['user']['email']);
+        self::assertArrayNotHasKey('causer', $item);
+        self::assertArrayNotHasKey('password', $item['user']);
+    }
+
+    #[Test]
+    public function onlyTheCauserRelationCanBeLoaded(): void
+    {
+        /** @var User $user */
+        $user = User::factory()->create();
+        $token = $this->login($user->email);
+
+        foreach (['subject', 'causer.roles', 'causer:id,email'] as $relations) {
+            $this->forgetAuthenticatedUsers();
+            $this->withToken($token)->get("{$this->resource}?relations=" . urlencode($relations))
+                ->assertBadRequest()
+                ->assertExactJson(['success' => false, 'message' => 'The requested relation is not supported.']);
+        }
+    }
+
 }

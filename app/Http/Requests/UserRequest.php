@@ -10,6 +10,11 @@ class UserRequest extends BaseRequest
 {
 
     /**
+     * {@inheritDoc}
+     */
+    protected const array SORTABLE_FIELDS = ['id', 'created_at', 'updated_at', 'first_name', 'last_name', 'username', 'email'];
+
+    /**
      * Get the validation rules that apply to the request.
      *
      * @return array

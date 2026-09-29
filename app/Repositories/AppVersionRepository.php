@@ -87,10 +87,6 @@ class AppVersionRepository
             $appVersionBuilder->with($appVersionFilterData->meta->relations);
         }
 
-        if (!empty($appVersionFilterData->meta->columns)) {
-            $appVersionBuilder->select($appVersionFilterData->meta->columns);
-        }
-
         if (!empty($appVersionFilterData->platform)) {
             $appVersionBuilder->where('platform', $appVersionFilterData->platform);
         }

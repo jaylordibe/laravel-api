@@ -393,4 +393,70 @@ class UserFeatureTest extends TestCase
         $this->withToken($userToken)->get("{$this->resource}/auth")->assertUnauthorized();
     }
 
+    #[Test]
+    public function theAuthUserStillIncludesAccessControlWhenAskedFor(): void
+    {
+        $token = $this->loginSystemAdminUser();
+
+        $withAccess = $this->withToken($token)->get("{$this->resource}/auth?includeAccessControl=true")->assertOk();
+        self::assertContains(UserRole::SYSTEM_ADMIN->value, $withAccess->json('roles'));
+        self::assertNotEmpty($withAccess->json('permissions'));
+
+        $this->forgetAuthenticatedUsers();
+        $withoutAccess = $this->withToken($token)->get("{$this->resource}/auth")->assertOk();
+        self::assertArrayNotHasKey('roles', $withoutAccess->json());
+        self::assertArrayNotHasKey('permissions', $withoutAccess->json());
+    }
+
+    #[Test]
+    public function usersCanBeSortedByNameButNeverByAHiddenColumn(): void
+    {
+        $token = $this->loginSystemAdminUser();
+        // Scoped by a unique marker so rows other parallel tests create never enter the list.
+        $marker = Str::lower(AppUtil::generateUniqueToken());
+        $expected = ["{$marker}a", "{$marker}b", "{$marker}c"];
+        User::factory()->create(['last_name' => $expected[1]]);
+        User::factory()->create(['last_name' => $expected[2]]);
+        User::factory()->create(['last_name' => $expected[0]]);
+
+        foreach (['asc' => $expected, 'desc' => array_reverse($expected)] as $direction => $expectedOrder) {
+            $this->forgetAuthenticatedUsers();
+            $lastNames = collect($this->withToken($token)
+                ->get("{$this->resource}?search={$marker}&sortField=last_name&sortDirection={$direction}")
+                ->assertOk()
+                ->json('data'))
+                ->pluck('lastName')
+                ->all();
+
+            self::assertSame($expectedOrder, $lastNames);
+        }
+
+        foreach (['password', 'remember_token'] as $hiddenColumn) {
+            $this->forgetAuthenticatedUsers();
+            $this->withToken($token)->get("{$this->resource}?sortField={$hiddenColumn}")
+                ->assertBadRequest()
+                ->assertExactJson(['success' => false, 'message' => 'The requested sort field is not supported.']);
+        }
+    }
+
+    #[Test]
+    public function aUserRecordNeverCarriesRelationsOrSelectedColumns(): void
+    {
+        $token = $this->loginSystemAdminUser();
+        /** @var User $user */
+        $user = User::factory()->create();
+
+        foreach (["{$this->resource}/{$user->id}?relations=roles", "{$this->resource}/{$user->id}?relations=tokens"] as $path) {
+            $this->forgetAuthenticatedUsers();
+            $this->withToken($token)->get($path)
+                ->assertBadRequest()
+                ->assertExactJson(['success' => false, 'message' => 'The requested relation is not supported.']);
+        }
+
+        $this->forgetAuthenticatedUsers();
+        $response = $this->withToken($token)->get("{$this->resource}?columns=" . urlencode('id|password as email'));
+        $response->assertBadRequest()->assertExactJson(['success' => false, 'message' => 'Column selection is not supported.']);
+        self::assertStringNotContainsString('$2y$', $response->getContent());
+    }
+
 }

@@ -14,11 +14,15 @@ class BaseResource extends JsonResource
      * Transforms the resource's attributes into a camelCased array,
      * respecting hidden attributes and custom exclusions.
      *
+     * Attributes only: a loaded relation is never serialized implicitly. A Resource renders a relation
+     * explicitly through that relation's own Resource (`whenLoaded`), so hidden fields and owner scoping
+     * of the related model stay under that Resource's control.
+     *
      * @return array
      */
     public function transformAttributes(): array
     {
-        $allAttributes = $this->resource->toArray();
+        $allAttributes = $this->resource->attributesToArray();
         $customHiddenAttributes = ['deleted_at', 'created_by', 'updated_by', 'deleted_by'];
         $transformedData = [];
 

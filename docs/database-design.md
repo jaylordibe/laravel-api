@@ -45,8 +45,7 @@ the ownership predicate, not only the primary lookup.
 - repository method(s):
 - ownership predicate:
 - soft-delete behaviour (default scope, `withTrashed` uses):
-- eager loading via `meta->relations`:
-- selected columns via `meta->columns`:
+- eager loading via `meta->relations` (`ALLOWED_RELATIONS`):
 - pagination/order:
 - N+1 risk:
 - index support:

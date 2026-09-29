@@ -12,6 +12,16 @@ class ActivityLogRequest extends BaseRequest
 {
 
     /**
+     * {@inheritDoc}
+     */
+    protected const array ALLOWED_RELATIONS = ['causer'];
+
+    /**
+     * {@inheritDoc}
+     */
+    protected const array SORTABLE_FIELDS = ['id', 'created_at', 'updated_at', 'log_name'];
+
+    /**
      * Get the validation rules that apply to the request.
      *
      * @return array

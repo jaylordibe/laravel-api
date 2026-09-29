@@ -13,6 +13,11 @@ class DeviceTokenRequest extends BaseRequest
 {
 
     /**
+     * {@inheritDoc}
+     */
+    protected const array SORTABLE_FIELDS = ['id', 'created_at', 'updated_at', 'app_platform', 'device_type', 'device_os', 'device_os_version'];
+
+    /**
      * Get the validation rules that apply to the request.
      *
      * @return array

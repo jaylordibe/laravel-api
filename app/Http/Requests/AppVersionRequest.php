@@ -12,6 +12,11 @@ class AppVersionRequest extends BaseRequest
 {
 
     /**
+     * {@inheritDoc}
+     */
+    protected const array SORTABLE_FIELDS = ['id', 'created_at', 'updated_at', 'version', 'platform', 'release_date', 'force_update'];
+
+    /**
      * Get the validation rules that apply to the request.
      *
      * @return array

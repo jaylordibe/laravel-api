@@ -200,4 +200,19 @@ class DeviceTokenFeatureTest extends TestCase
             ->assertJson(['message' => 'Device token not found.']);
     }
 
+    #[Test]
+    public function relationsCannotBeLoadedOnDeviceTokens(): void
+    {
+        // A device token's owner is the caller; nothing about the owner is loaded through this resource.
+        [$user, $token] = $this->signedInUser();
+        $deviceToken = DeviceToken::factory()->create(['user_id' => $user->id]);
+
+        foreach ([$this->resource, "{$this->resource}/{$deviceToken->id}"] as $path) {
+            $this->forgetAuthenticatedUsers();
+            $this->withToken($token)->get("{$path}?relations=user")
+                ->assertBadRequest()
+                ->assertExactJson(['success' => false, 'message' => 'The requested relation is not supported.']);
+        }
+    }
+
 }
