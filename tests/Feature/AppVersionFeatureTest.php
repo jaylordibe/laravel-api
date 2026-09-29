@@ -6,6 +6,7 @@ use App\Enums\AppPlatform;
 use App\Models\AppVersion;
 use App\Models\User;
 use App\Utils\AppUtil;
+use Illuminate\Support\Str;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -45,12 +46,11 @@ class AppVersionFeatureTest extends TestCase
         /** @var AppVersion $appVersion */
         $appVersion = AppVersion::factory()->create();
         $before = $appVersion->only(['version', 'force_update', 'download_url', 'deleted_at']);
-        // Unique per run, so a row left behind by a broken run can never satisfy this test's check.
         $attackerUrl = 'https://attacker.example/' . AppUtil::generateUniqueToken();
         $payload = [
             'version' => '99.99.99',
             'platform' => $appVersion->platform->value,
-            // In the past: should a regression ever let this through, the leaked row can never become `latest`.
+            // In the past, so even a regression that let it through could never become `latest`.
             'releaseDate' => now()->subYears(10)->millisecond(0)->toISOString(),
             'downloadUrl' => $attackerUrl,
             'forceUpdate' => true
@@ -279,6 +279,74 @@ class AppVersionFeatureTest extends TestCase
         $response = $this->withToken($token)->delete("{$this->resource}/{$appVersion->id}");
 
         $response->assertOk()->assertJsonStructure(['success']);
+    }
+
+    #[Test]
+    public function paginationReportsExactTotalsAndPages(): void
+    {
+        // Each test runs in its own rolled-back transaction, so these are the only app versions.
+        $token = $this->loginSystemAdminUser();
+        $oldestFirst = collect(range(25, 1))
+            ->map(fn (int $daysAgo): int => AppVersion::factory()->create(['created_at' => now()->subDays($daysAgo)])->id)
+            ->all();
+
+        $response = $this->withToken($token)->getJson("{$this->resource}?perPage=10&page=3")->assertOk();
+
+        self::assertSame(25, $response->json('meta.total'));
+        self::assertSame(10, $response->json('meta.per_page'));
+        self::assertSame(3, $response->json('meta.current_page'));
+        self::assertSame(3, $response->json('meta.last_page'));
+        // Newest first, so the last page holds the five oldest.
+        self::assertSame(array_reverse(array_slice($oldestFirst, 0, 5)), collect($response->json('data'))->pluck('id')->all());
+    }
+
+    /**
+     * @return array<string, array{string, mixed}>
+     */
+    public static function invalidAppVersionFields(): array
+    {
+        return [
+            'unknown platform' => ['platform', 'windows-phone'],
+            'release date not a date' => ['releaseDate', 'soon'],
+            'release date not UTC ISO' => ['releaseDate', '2026-01-01 10:00:00'],
+            'force update not a boolean' => ['forceUpdate', 'sometimes'],
+            'download URL not a URL' => ['downloadUrl', 'not a url'],
+            'version missing' => ['version', null],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('invalidAppVersionFields')]
+    public function anInvalidFieldIsAValidationErrorAndCreatesNothing(string $field, mixed $value): void
+    {
+        $token = $this->loginSystemAdminUser();
+        $payload = [
+            'version' => '1.2.3',
+            'platform' => fake()->randomElement(AppPlatform::cases())->value,
+            'releaseDate' => now()->millisecond(0)->toISOString(),
+            'forceUpdate' => false
+        ];
+        $payload[$field] = $value;
+
+        $this->withToken($token)->postJson($this->resource, $payload)
+            ->assertBadRequest()
+            ->assertJson(['success' => false])
+            ->assertJsonPath('message', fn (string $message): bool => str_contains(strtolower($message), strtolower(Str::snake($field, ' '))));
+
+        self::assertSame(0, AppVersion::withTrashed()->count());
+    }
+
+    #[Test]
+    public function anUnparseableReleaseDateFilterIsABadRequest(): void
+    {
+        $token = $this->loginSystemAdminUser();
+
+        foreach (['releaseDateStart' => 'releaseDateStart=soon', 'releaseDateEnd' => 'releaseDateEnd[]=2024-01-01'] as $filter => $query) {
+            $this->forgetAuthenticatedUsers();
+            $this->withToken($token)->getJson("{$this->resource}?{$query}")
+                ->assertBadRequest()
+                ->assertExactJson(['success' => false, 'message' => "The {$filter} must be a valid date."]);
+        }
     }
 
 }

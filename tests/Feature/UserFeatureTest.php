@@ -6,6 +6,8 @@ use App\Enums\UserRole;
 use App\Models\User;
 use App\Utils\AppUtil;
 use App\Utils\DateUtil;
+use Illuminate\Auth\Notifications\VerifyEmail;
+use Illuminate\Routing\Middleware\ThrottleRequests;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Route;
@@ -171,9 +173,7 @@ class UserFeatureTest extends TestCase
     }
 
     /**
-     * A factory admin, never the seeded one: these tests change passwords, and the shared test
-     * database is not refreshed between runs, so a regression here must not break every other test
-     * that signs in as the seeded system admin.
+     * A factory admin, so the actor is explicit in the test rather than borrowed from the seed data.
      *
      * @return User
      */
@@ -412,7 +412,7 @@ class UserFeatureTest extends TestCase
     public function usersCanBeSortedByNameButNeverByAHiddenColumn(): void
     {
         $token = $this->loginSystemAdminUser();
-        // Scoped by a unique marker so rows other parallel tests create never enter the list.
+        // Scoped by a unique marker so the seeded users never enter the list.
         $marker = Str::lower(AppUtil::generateUniqueToken());
         $expected = ["{$marker}a", "{$marker}b", "{$marker}c"];
         User::factory()->create(['last_name' => $expected[1]]);
@@ -457,6 +457,154 @@ class UserFeatureTest extends TestCase
         $response = $this->withToken($token)->get("{$this->resource}?columns=" . urlencode('id|password as email'));
         $response->assertBadRequest()->assertExactJson(['success' => false, 'message' => 'Column selection is not supported.']);
         self::assertStringNotContainsString('$2y$', $response->getContent());
+    }
+
+    #[Test]
+    public function signingUpWithARegisteredEmailLooksLikeANewSignUpAndChangesNothing(): void
+    {
+        Notification::fake();
+        /** @var User $existingUser */
+        $existingUser = User::factory()->create();
+        $before = $existingUser->refresh()->getRawOriginal();
+        $payload = [
+            'firstName' => fake()->firstName(),
+            'lastName' => fake()->lastName(),
+            'phoneNumber' => fake()->phoneNumber(),
+            'email' => $existingUser->email,
+            'password' => 'password',
+            'passwordConfirmation' => 'password'
+        ];
+
+        // Identical to a first sign-up, so the endpoint cannot tell anyone which emails are registered.
+        $this->post("{$this->resource}/sign-up", $payload)
+            ->assertOk()
+            ->assertExactJson(['success' => true, 'message' => 'Sign up successful. Please check your email for verification link.']);
+
+        self::assertSame(1, User::withTrashed()->where('email', $existingUser->email)->count());
+        self::assertSame($before, $existingUser->refresh()->getRawOriginal());
+        Notification::assertNothingSent();
+    }
+
+    #[Test]
+    public function signingUpWithAnEmailInADifferentCaseIsTheSameAccount(): void
+    {
+        Notification::fake();
+        /** @var User $existingUser */
+        $existingUser = User::factory()->create();
+
+        $this->post("{$this->resource}/sign-up", [
+            'firstName' => fake()->firstName(),
+            'lastName' => fake()->lastName(),
+            'phoneNumber' => fake()->phoneNumber(),
+            'email' => Str::upper($existingUser->email),
+            'password' => 'password',
+            'passwordConfirmation' => 'password'
+        ])->assertOk();
+
+        self::assertSame(1, User::withTrashed()->where('email', $existingUser->email)->count());
+        Notification::assertNothingSent();
+    }
+
+    /**
+     * @return array<string, array{mixed}>
+     */
+    public static function invalidBirthdates(): array
+    {
+        return [
+            'not a date' => ['not-a-date'],
+            'impossible date' => ['2024-02-30'],
+            'number' => [12345],
+            'relative offset into the far future' => ['1990-01-01 +5000000 years'],
+            'relative offset before year zero' => ['2024-01-01 -3000 years'],
+            'in the future' => ['2999-01-01'],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('invalidBirthdates')]
+    public function anInvalidBirthdateIsAValidationErrorNotAServerError(mixed $birthdate): void
+    {
+        $token = $this->loginSystemAdminUser();
+        /** @var User $user */
+        $user = User::factory()->create();
+
+        $before = $user->refresh()->getRawOriginal();
+
+        $this->withToken($token)->put("{$this->resource}/{$user->id}", [
+            'firstName' => fake()->firstName(),
+            'lastName' => fake()->lastName(),
+            'phoneNumber' => fake()->phoneNumber(),
+            'birthdate' => $birthdate
+        ])->assertBadRequest()->assertJson(['success' => false])->assertJsonPath('message', fn (string $message): bool => str_contains($message, 'birthdate'));
+
+        self::assertSame($before, $user->refresh()->getRawOriginal());
+    }
+
+    #[Test]
+    public function signUpIsRateLimitedPerClient(): void
+    {
+        Notification::fake();
+        $this->withMiddleware(ThrottleRequests::class);
+        $limit = (int) config('custom.rate_limits.sensitive');
+
+        foreach (range(1, $limit + 1) as $attempt) {
+            $response = $this->postJson("{$this->resource}/sign-up", [
+                'firstName' => fake()->firstName(),
+                'lastName' => fake()->lastName(),
+                'phoneNumber' => fake()->phoneNumber(),
+                'email' => "throttle{$attempt}@example.com",
+                'password' => 'password',
+                'passwordConfirmation' => 'password'
+            ]);
+
+            $response->assertStatus($attempt <= $limit ? 200 : 429);
+        }
+    }
+
+    #[Test]
+    public function signingUpWithTheEmailOfAUserDeletedOutsideARequestIsStillTheGenericAnswer(): void
+    {
+        // Deleted with no signed-in user (a console command or job), the row keeps its email, and the
+        // unique index still covers it.
+        Notification::fake();
+        /** @var User $deletedUser */
+        $deletedUser = User::factory()->create();
+        $deletedUser->delete();
+        self::assertSame($deletedUser->email, User::withTrashed()->find($deletedUser->id)->email);
+
+        $this->postJson("{$this->resource}/sign-up", [
+            'firstName' => fake()->firstName(),
+            'lastName' => fake()->lastName(),
+            'phoneNumber' => fake()->phoneNumber(),
+            'email' => $deletedUser->email,
+            'password' => 'password',
+            'passwordConfirmation' => 'password'
+        ])->assertOk()->assertJson(['success' => true]);
+
+        Notification::assertNothingSent();
+    }
+
+    #[Test]
+    public function aUsernameHeldByADeletedUserIsNotReusedAndTheSignUpSucceeds(): void
+    {
+        Notification::fake();
+        /** @var User $deletedUser */
+        $deletedUser = User::factory()->create(['username' => 'jay', 'email' => 'jay@old.test']);
+        $deletedUser->delete();
+
+        $this->postJson("{$this->resource}/sign-up", [
+            'firstName' => fake()->firstName(),
+            'lastName' => fake()->lastName(),
+            'phoneNumber' => fake()->phoneNumber(),
+            'email' => 'jay@new.test',
+            'password' => 'password',
+            'passwordConfirmation' => 'password'
+        ])->assertOk();
+
+        /** @var User $newUser */
+        $newUser = User::query()->where('email', 'jay@new.test')->firstOrFail();
+        self::assertNotSame('jay', $newUser->username);
+        Notification::assertSentTo($newUser, VerifyEmail::class);
     }
 
 }

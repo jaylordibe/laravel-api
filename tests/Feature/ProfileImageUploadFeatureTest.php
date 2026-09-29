@@ -25,8 +25,6 @@ class ProfileImageUploadFeatureTest extends TestCase
 
     private string $disk;
 
-    private ?string $originalProfileImage = null;
-
     protected function setUp(): void
     {
         parent::setUp();
@@ -35,22 +33,6 @@ class ProfileImageUploadFeatureTest extends TestCase
         Storage::fake($this->disk);
 
         $this->token = $this->loginSystemAdminUser();
-
-        // The suite runs against a live shared database with no RefreshDatabase
-        // trait, so these tests permanently mutated the seeded system-admin row.
-        // Snapshot and restore it rather than leaving state for the next run.
-        $this->originalProfileImage = User::query()
-            ->where('email', config('custom.sysad_email'))
-            ->value('profile_image');
-    }
-
-    protected function tearDown(): void
-    {
-        User::query()
-            ->where('email', config('custom.sysad_email'))
-            ->update(['profile_image' => $this->originalProfileImage]);
-
-        parent::tearDown();
     }
 
     #[Test]

@@ -35,8 +35,9 @@ jobs:
   #
   # `./test-pipeline.sh` is the single source of truth for HOW tests run: it
   # brings up the same docker-compose services a developer uses, waits for the
-  # test database, installs dependencies, generates Passport keys and clients,
-  # runs `php artisan app:format --check`, then `php artisan test --parallel`.
+  # test database, installs dependencies, generates Passport keys, runs
+  # `php artisan app:format --check`, then `php artisan test --parallel` (each
+  # worker migrates and seeds its own database — see tests/TestCase.php).
   # Reimplementing those steps here would create a second definition that drifts
   # from the one people actually run locally.
   tests:
@@ -126,7 +127,7 @@ jobs:
   # Migrations meeting data that already exists — the one failure class every
   # other gate in this file is structurally blind to.
   #
-  # `./test.sh` runs `migrate:fresh --seed`, so the suite only ever proves
+  # The test suite migrates a fresh database (RefreshDatabase), so it only ever proves
   # migrations apply to an EMPTY schema. A real deployment applies them to a
   # populated one, and applies them BEFORE the new build starts serving, so the
   # OLD code runs against the NEW schema for the length of the swap. A dropped

@@ -196,7 +196,7 @@ production use different images; `DEPLOYMENT.md` owns the runtime contract.
 | Lint / format check | `php artisan app:format --check` | Evidence is `--check` |
 | Format (apply) | `php artisan app:format` | Mandatory closing step on every change |
 | Unit + feature tests | `php artisan test --parallel` | In container |
-| Full test run (host) | `./test.sh` | Fresh migrate + seed on `testing`, then `--parallel` |
+| Full test run (host) | `./test.sh` | `--parallel`; each worker migrates + seeds its own DB (`RefreshDatabase`) |
 | Single test (host) | `./test.sh <Filter> <path/to/Test.php>` | |
 | CI flavour (host) | `./test-pipeline.sh` | What `.github/workflows/test.yml` runs |
 | Migration status | `php artisan migrate:status` | Read-only; applying is human-owned |

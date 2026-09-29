@@ -82,13 +82,15 @@ class UserRepository
     }
 
     /**
+     * Whether any user holds the email, soft-deleted users included: the unique index covers every row.
+     *
      * @param string $email
      *
      * @return bool
      */
     public function isEmailExists(string $email): bool
     {
-        return User::where('email', Str::lower(trim($email)))->exists();
+        return User::withTrashed()->where('email', Str::lower(trim($email)))->exists();
     }
 
     /**
@@ -98,7 +100,8 @@ class UserRepository
      */
     public function isUsernameExists(string $username): bool
     {
-        return User::where('username', Str::lower(trim($username)))->exists();
+        // Soft-deleted users included: the unique index covers every row.
+        return User::withTrashed()->where('username', Str::lower(trim($username)))->exists();
     }
 
     /**

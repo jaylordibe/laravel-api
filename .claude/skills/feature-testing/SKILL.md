@@ -6,31 +6,32 @@ description: Use when writing or running tests (tests/Feature/*, tests/Unit/*) �
 
 # Tests
 
-Tests run **inside the `laravel-api` container against a real PostgreSQL test database** (`laravel-db-test`) — not sqlite, not in-memory. `phpunit.xml` sets `APP_ENV=testing`. Suites are `tests/Unit` and `tests/Feature`; the split is by subject, not isolation — both hit the DB via factories.
+Tests run **inside the `laravel-api` container against a real PostgreSQL test database** (`laravel-db-test`) — not sqlite, not in-memory. Suites are `tests/Unit` and `tests/Feature`; the split is by subject, not isolation. Feature tests and any unit test that touches the container or database extend `Tests\TestCase`; pure unit tests may extend `PHPUnit\Framework\TestCase`.
+
+## Isolation (`Tests\TestCase`)
+
+`Tests\TestCase` uses Laravel's `RefreshDatabase`:
+- The first test in a process migrates a fresh database and seeds it with `TestDatabaseSeeder` (the app's `DatabaseSeeder` plus the Passport personal access client sign-in needs). **Never migrate or seed the test database by hand.**
+- Every test then runs inside a transaction that is rolled back — no test sees another's rows, and a test may freely create, change or delete data, including roles and permissions.
+- Under `--parallel` each worker gets its own database (`laravel_test_test_N`).
+- `phpunit.xml` forces the standard test environment: array cache/session/mail, sync queue, `BCRYPT_ROUNDS=4`.
 
 ## Running tests
 
-Always go through the wrapper (handles the container + test DB):
-- **Full run** — `./test.sh` (migrate:fresh --seed --env=testing, recreate passport clients, clear caches, `php artisan test --parallel`).
-- **Single class/method** — `./test.sh <FilterName> <path>`, e.g. `./test.sh AppVersionFeatureTest tests/Feature/AppVersionFeatureTest.php` or `./test.sh testCreate tests/Feature/AppVersionFeatureTest.php` (uses `--filter`, runs `--parallel --functional`).
+- **Full run** — `./test.sh` (clears cached config/routes, then `php artisan test --parallel`).
+- **Single class/method** — `./test.sh <FilterName> <path>`, e.g. `./test.sh AppVersionFeatureTest tests/Feature/AppVersionFeatureTest.php` (uses `--filter`, runs `--parallel --functional`).
 - **CI** — `./test-pipeline.sh`.
+- **One run at a time per stack.** Every run rebuilds its test database(s) on start, so two overlapping runs (two agents, or an agent and a developer) drop each other's tables mid-run and fail at random.
+- No TTY (an agent): `docker exec laravel-api bash -c "php artisan test --compact --filter=XFeatureTest"`.
 
-The full run rebuilds + reseeds the DB (slow) — while iterating on one module run only the affected test via the single-test form. Run the full suite when a module is complete, before a deploy, or when asked.
+## Harness helpers
 
-If you can't use `./test.sh` because the harness has no TTY (it uses `docker exec -it`), replicate it without `-t`:
-```
-docker exec laravel-api bash -c "php artisan test --filter=XFeatureTest --env=testing"
-```
-(ensure the test DB is migrated first: `docker exec laravel-api bash -c "php artisan migrate:fresh --seed --env=testing"`).
-
-## Harness (`Tests\TestCase`)
-
-Extend `Tests\TestCase`:
-- `login(string $identifier, string $password = 'password'): string` — POSTs `/api/auth/sign-in`, returns the bearer token.
-- `loginSystemAdminUser(): string` — logs in the seeded sysad (`config('custom.sysad_email')` / `sysad_password`); the default actor for most tests.
+- `login(string $identifier, string $password = 'password'): string` — POSTs `/api/auth/sign-in`, asserts 200, returns the bearer token.
+- `loginSystemAdminUser(): string` — logs in the seeded sysad (`config('custom.sysad_email')` / `sysad_password`).
 - `getAuthUser(string $token): UserData` — fetches `/api/users/auth`.
+- `forgetAuthenticatedUsers()` — call between requests that must each authenticate afresh (a second sign-in, a revoked token, switching users): the app instance, session and default headers persist across requests within one test.
 
-Authenticate with `$this->withToken($token)->post(...)` / `->get(...)` / `->put(...)` / `->delete(...)`.
+Authenticate with `$this->withToken($token)->post(...)` / `->get(...)` / `->put(...)` / `->delete(...)`. Prefer factory users with the role under test (`User::factory()->withRole(UserRole::X)->create()`) over the seeded admin when the actor matters.
 
 ## Writing a feature test
 

@@ -181,4 +181,21 @@ class ActivityLogFeatureTest extends TestCase
         }
     }
 
+    #[Test]
+    public function anUnparseableDateFilterIsABadRequest(): void
+    {
+        /** @var User $user */
+        $user = User::factory()->create();
+        $token = $this->login($user->email);
+
+        foreach (['startDate', 'endDate'] as $filter) {
+            foreach (["{$filter}=not-a-date", "{$filter}[]=2024-01-01"] as $query) {
+                $this->forgetAuthenticatedUsers();
+                $this->withToken($token)->getJson("{$this->resource}?{$query}")
+                    ->assertBadRequest()
+                    ->assertExactJson(['success' => false, 'message' => "The {$filter} must be a valid date."]);
+            }
+        }
+    }
+
 }

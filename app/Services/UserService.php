@@ -16,6 +16,7 @@ use App\Utils\AppUtil;
 use App\Utils\FileUtil;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -58,6 +59,12 @@ class UserService
     }
 
     /**
+     * Sign up a new user.
+     *
+     * An email that is already registered creates nothing, sends nothing and returns null. The caller
+     * answers with the same status and body as for a new sign-up. Response time still differs (a new
+     * sign-up hashes, inserts and sends mail), so this removes the status/body oracle, not a timing one.
+     *
      * @param SignUpUserData $signUpUserData
      *
      * @return User|null
@@ -65,6 +72,10 @@ class UserService
      */
     public function signUp(SignUpUserData $signUpUserData): ?User
     {
+        if ($this->isEmailExists($signUpUserData->email)) {
+            return null;
+        }
+
         $userData = new UserData(
             firstName: $signUpUserData->firstName,
             middleName: null,
@@ -79,7 +90,18 @@ class UserService
             profileImage: null,
             address: null
         );
-        $user = $this->userRepository->create($userData, $signUpUserData->password);
+        try {
+            // In a transaction, so a violation rolls back to a savepoint when a caller already holds one.
+            $user = DB::transaction(fn (): ?User => $this->userRepository->create($userData, $signUpUserData->password));
+        } catch (UniqueConstraintViolationException $exception) {
+            // The email was taken between the check above and the insert (a concurrent sign-up): answer
+            // as for any registered email. Any other collision is a real failure and must surface.
+            if ($this->isEmailExists($signUpUserData->email)) {
+                return null;
+            }
+
+            throw $exception;
+        }
 
         if (empty($user)) {
             throw new BadRequestException('Sign up failed.');

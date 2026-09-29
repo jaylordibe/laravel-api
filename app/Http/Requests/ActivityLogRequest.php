@@ -79,8 +79,8 @@ class ActivityLogRequest extends BaseRequest
         return new ActivityFilterData(
             userId: $requestedUserId > 0 ? $requestedUserId : $this->getAuthUserData()->id,
             type: $this->string('type'),
-            startDate: $this->date('startDate'),
-            endDate: $this->date('endDate'),
+            startDate: $this->validDate('startDate'),
+            endDate: $this->validDate('endDate'),
             id: $this->has('id') ? $this->integer('id') : null,
             authUser: $this->getAuthUserData(),
             meta: $this->getMetaData()

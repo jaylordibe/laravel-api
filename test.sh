@@ -14,9 +14,6 @@ if [[ -n "$class_name_or_method_name" && -n "$file_path" ]]; then
     commands="php artisan test --parallel --functional --filter=$class_name_or_method_name $file_path"
 else
     commands="
-    php artisan migrate:fresh --seed --env=testing
-    php artisan passport:client --personal --name='API Personal Access Client' --provider=users --no-interaction --env=testing
-    php artisan passport:client --password --name='API Password Grant Client' --provider=users --no-interaction --env=testing
     php artisan config:clear --env=testing
     php artisan cache:clear --env=testing
     php artisan route:clear --env=testing

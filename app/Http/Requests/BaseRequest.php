@@ -11,9 +11,11 @@ use Brick\Math\BigDecimal;
 use Brick\Math\Exception\DivisionByZeroException;
 use Brick\Math\Exception\NumberFormatException;
 use Brick\Math\Exception\RoundingNecessaryException;
+use Carbon\Exceptions\InvalidFormatException;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
@@ -95,6 +97,34 @@ class BaseRequest extends FormRequest
             Log::error('Failed to parse input as BigDecimal: ' . $exception->getMessage());
 
             return null;
+        }
+    }
+
+    /**
+     * Parse an optional date input, rejecting anything unparseable with a 400.
+     *
+     * For inputs no rules() validate — list filters arrive through a GenericRequest — Laravel's date()
+     * would throw on garbage or an array and surface as a 500.
+     *
+     * @param string $key
+     *
+     * @return Carbon|null
+     * @throws BadRequestException
+     */
+    public function validDate(string $key): ?Carbon
+    {
+        if (!$this->filled($key)) {
+            return null;
+        }
+
+        try {
+            if (!is_string($this->input($key))) {
+                throw new InvalidFormatException('Not a string.');
+            }
+
+            return $this->date($key);
+        } catch (InvalidFormatException) {
+            throw new BadRequestException("The {$key} must be a valid date.");
         }
     }
 

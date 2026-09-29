@@ -9,6 +9,8 @@ use App\Enums\DeviceType;
 use App\Models\DeviceToken;
 use App\Models\User;
 use App\Repositories\DeviceTokenRepository;
+use Illuminate\Support\Str;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -213,6 +215,37 @@ class DeviceTokenFeatureTest extends TestCase
                 ->assertBadRequest()
                 ->assertExactJson(['success' => false, 'message' => 'The requested relation is not supported.']);
         }
+    }
+
+    /**
+     * @return array<string, array{string, mixed}>
+     */
+    public static function invalidDeviceTokenFields(): array
+    {
+        return [
+            'unknown platform' => ['appPlatform', 'windows-phone'],
+            'unknown device type' => ['deviceType', 'toaster'],
+            'unknown OS' => ['deviceOs', 'beos'],
+            'token not a string' => ['token', ['nested']],
+            'token missing' => ['token', null],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('invalidDeviceTokenFields')]
+    public function anInvalidFieldIsAValidationErrorAndCreatesNothing(string $field, mixed $value): void
+    {
+        [, $token] = $this->signedInUser();
+        $payload = $this->payload();
+        $payload[$field] = $value;
+
+        $this->forgetAuthenticatedUsers();
+        $this->withToken($token)->postJson($this->resource, $payload)
+            ->assertBadRequest()
+            ->assertJson(['success' => false])
+            ->assertJsonPath('message', fn (string $message): bool => str_contains(strtolower($message), strtolower(Str::snake($field, ' '))));
+
+        self::assertSame(0, DeviceToken::withTrashed()->count());
     }
 
 }

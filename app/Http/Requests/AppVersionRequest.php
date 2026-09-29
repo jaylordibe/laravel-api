@@ -73,8 +73,8 @@ class AppVersionRequest extends BaseRequest
         return new AppVersionFilterData(
             version: $this->string('version'),
             platform: $this->enum('platform', AppPlatform::class),
-            releaseDateStart: $this->date('releaseDateStart'),
-            releaseDateEnd: $this->date('releaseDateEnd'),
+            releaseDateStart: $this->validDate('releaseDateStart'),
+            releaseDateEnd: $this->validDate('releaseDateEnd'),
             forceUpdate: $this->boolean('forceUpdate', null),
             id: $this->has('id') ? $this->integer('id') : null,
             authUser: $this->getAuthUserData(),

@@ -28,6 +28,7 @@ class CheckConfigCommandFeatureTest extends TestCase
         app()['env'] = 'production';
         config()->set('app.debug', false);
         config()->set('cache.default', 'redis');
+        config()->set('queue.default', 'redis');
         config()->set('logging.default', 'stderr');
         config()->set('trustedproxy.proxies', '*');
         config()->set('passport.private_key', '-----BEGIN RSA PRIVATE KEY-----x-----END RSA PRIVATE KEY-----');

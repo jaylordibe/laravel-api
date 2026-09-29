@@ -25,7 +25,7 @@ class UserRequest extends BaseRequest
             'firstName' => ['required', 'string'],
             'lastName' => ['required', 'string'],
             'phoneNumber' => ['required', 'string'],
-            'birthdate' => ['required', 'string']
+            'birthdate' => ['required', 'date', 'after:1900-01-01', 'before_or_equal:today']
         ];
     }
 
@@ -52,7 +52,7 @@ class UserRequest extends BaseRequest
             lastName: $this->string('lastName'),
             username: $this->string('username', ''),
             email: $this->string('email', ''),
-            emailVerifiedAt: $this->date('emailVerifiedAt'),
+            emailVerifiedAt: $this->validDate('emailVerifiedAt'),
             phoneNumber: $this->string('phoneNumber'),
             gender: $this->enum('gender', Gender::class),
             birthdate: $this->date('birthdate'),
