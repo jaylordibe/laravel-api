@@ -10,6 +10,7 @@ use App\Data\UserData;
 use App\Data\UserFilterData;
 use App\Enums\UserRole;
 use App\Exceptions\BadRequestException;
+use App\Exceptions\InvalidVerificationLinkException;
 use App\Models\User;
 use App\Repositories\UserRepository;
 use App\Repositories\UserRoleRepository;
@@ -167,14 +168,14 @@ class UserService
      * @param string $hash
      *
      * @return User|null
-     * @throws BadRequestException
+     * @throws InvalidVerificationLinkException
      */
     public function verifyEmail(int $userId, string $hash): ?User
     {
         $user = $this->userRepository->findById($userId);
 
         if (empty($user) || !hash_equals(sha1($user->getEmailForVerification()), $hash)) {
-            throw new BadRequestException('Invalid verification link.');
+            throw new InvalidVerificationLinkException();
         }
 
         if ($user->hasVerifiedEmail()) {

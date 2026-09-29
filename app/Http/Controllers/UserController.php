@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\UserPermission;
 use App\Exceptions\BadRequestException;
+use App\Exceptions\InvalidVerificationLinkException;
 use App\Http\Requests\CreateUserRequest;
 use App\Http\Requests\ForgotPasswordRequest;
 use App\Http\Requests\GenericRequest;
@@ -54,13 +55,13 @@ class UserController extends Controller
      * @param GenericRequest $request
      * @param int $userId
      *
-     * @return JsonResponse|RedirectResponse
-     * @throws BadRequestException
+     * @return RedirectResponse
+     * @throws InvalidVerificationLinkException
      */
-    public function verifyEmail(GenericRequest $request, int $userId): JsonResponse|RedirectResponse
+    public function verifyEmail(GenericRequest $request, int $userId): RedirectResponse
     {
         if (!$request->hasValidSignature()) {
-            return ResponseUtil::error('Invalid verification link.');
+            throw new InvalidVerificationLinkException();
         }
 
         $this->userService->verifyEmail($userId, $request->string('hash')->toString());

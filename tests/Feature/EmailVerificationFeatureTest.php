@@ -106,8 +106,7 @@ class EmailVerificationFeatureTest extends TestCase
         [$user, $link] = $this->signUpAndCaptureLink();
 
         $this->get(preg_replace('/signature=[0-9a-f]+/', 'signature=' . str_repeat('0', 64), $link))
-            ->assertBadRequest()
-            ->assertJson(['success' => false, 'message' => 'Invalid verification link.']);
+            ->assertRedirect(config('custom.app_frontend_url') . '/?verified=0');
 
         self::assertNull($user->refresh()->email_verified_at);
     }
@@ -118,7 +117,7 @@ class EmailVerificationFeatureTest extends TestCase
         [$user, $link] = $this->signUpAndCaptureLink();
 
         $this->travel(config('auth.verification.expire', 60) + 1)->minutes();
-        $this->get($link)->assertBadRequest()->assertJson(['message' => 'Invalid verification link.']);
+        $this->get($link)->assertRedirect(config('custom.app_frontend_url') . '/?verified=0');
 
         self::assertNull($user->refresh()->email_verified_at);
     }
@@ -131,8 +130,7 @@ class EmailVerificationFeatureTest extends TestCase
         [$user] = $this->signUpAndCaptureLink();
 
         $this->get($this->signedLink($user->id, sha1('previous@example.test')))
-            ->assertBadRequest()
-            ->assertJson(['message' => 'Invalid verification link.']);
+            ->assertRedirect(config('custom.app_frontend_url') . '/?verified=0');
 
         self::assertNull($user->refresh()->email_verified_at);
     }
@@ -142,7 +140,7 @@ class EmailVerificationFeatureTest extends TestCase
     {
         // Control first: the same path with a numeric id resolves (and fails on its signature), so
         // the 404 below can only come from the numeric constraint, not from a renamed route.
-        $this->get('/api/email/verify/123?hash=x')->assertBadRequest()->assertJson(['message' => 'Invalid verification link.']);
+        $this->get('/api/email/verify/123?hash=x')->assertRedirect(config('custom.app_frontend_url') . '/?verified=0');
         $this->get('/api/email/verify/abc?hash=x')->assertNotFound();
     }
 
@@ -152,8 +150,7 @@ class EmailVerificationFeatureTest extends TestCase
         $missingId = (int) User::withTrashed()->max('id') + 1000;
 
         $this->get($this->signedLink($missingId, sha1('nobody@example.test')))
-            ->assertBadRequest()
-            ->assertJson(['message' => 'Invalid verification link.']);
+            ->assertRedirect(config('custom.app_frontend_url') . '/?verified=0');
     }
 
     #[Test]
