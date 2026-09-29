@@ -1,5 +1,6 @@
 <?php
 
+use App\Constants\DatabaseTableConstant;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -12,8 +13,10 @@ class CreateJobStatusesTable extends Migration
      */
     public function up(): void
     {
-        Schema::create('job_statuses', function (Blueprint $table) {
+        Schema::create(DatabaseTableConstant::JOB_STATUSES, function (Blueprint $table) {
             $table->increments('id');
+            // Nullable: system jobs have no owner.
+            $table->foreignId('user_id')->nullable()->index()->constrained(DatabaseTableConstant::USERS)->nullOnDelete();
             $table->string('job_id')->index()->nullable();
             $table->string('type')->index();
             $table->string('queue')->index()->nullable();
@@ -34,7 +37,7 @@ class CreateJobStatusesTable extends Migration
      */
     public function down(): void
     {
-        Schema::drop('job_statuses');
+        Schema::drop(DatabaseTableConstant::JOB_STATUSES);
     }
 
 }
