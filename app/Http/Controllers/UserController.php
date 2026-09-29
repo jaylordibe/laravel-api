@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Enums\UserPermission;
 use App\Exceptions\BadRequestException;
 use App\Http\Requests\CreateUserRequest;
+use App\Http\Requests\ForgotPasswordRequest;
 use App\Http\Requests\GenericRequest;
 use App\Http\Requests\ResendEmailVerificationRequest;
+use App\Http\Requests\ResetPasswordRequest;
 use App\Http\Requests\SignUpUserRequest;
 use App\Http\Requests\UpdatePasswordRequest;
 use App\Http\Requests\UpdateProfileImageRequest;
@@ -63,6 +65,35 @@ class UserController extends Controller
         $this->userService->verifyEmail($userId, $request->string('hash')->toString());
 
         return ResponseUtil::success('Email verified successfully.');
+    }
+
+    /**
+     * Send a password reset link. The answer is the same whether or not the email has an account.
+     *
+     * @param ForgotPasswordRequest $request
+     *
+     * @return JsonResponse
+     */
+    public function forgotPassword(ForgotPasswordRequest $request): JsonResponse
+    {
+        $this->userService->sendPasswordResetLink($request->string('email')->toString());
+
+        return ResponseUtil::success('If that email has an account, a reset link has been sent.');
+    }
+
+    /**
+     * Reset the password with the token from the emailed link.
+     *
+     * @param ResetPasswordRequest $request
+     *
+     * @return JsonResponse
+     * @throws BadRequestException
+     */
+    public function resetPassword(ResetPasswordRequest $request): JsonResponse
+    {
+        $this->userService->resetPassword($request->toData());
+
+        return ResponseUtil::success('Password reset successfully.');
     }
 
     /**

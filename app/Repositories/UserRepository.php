@@ -219,6 +219,7 @@ class UserRepository
         }
 
         $user->email = $email;
+        $user->email_verified_at = null;
         $user->save();
 
         return $user;

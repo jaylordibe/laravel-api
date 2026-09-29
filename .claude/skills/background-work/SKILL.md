@@ -13,7 +13,7 @@ Queues run on **Redis** and are processed by **Laravel Horizon** (`QUEUE_CONNECT
 Pattern:
 - `implements ShouldQueue`, `use Queueable, Trackable;` (`Imtigger\LaravelJobStatus\Trackable`).
 - Set retries with `public int $tries = 2;`.
-- In the constructor: store inputs, then `$this->prepareStatus();` and `$this->setInput($payload);`.
+- In the constructor: store inputs, then `$this->prepareStatus(['user_id' => $userId]);` and `$this->setInput($payload);`. `GET job-statuses/{id}` only returns the caller's own rows, so a job a user polls must set `user_id`; system jobs leave it null.
 - In `handle()`: report progress with `$this->setProgressMax(100)` / `$this->setProgressNow(n)` and finish with `$this->setOutput([...])`.
 - **Keep domain logic in services/repositories** — the job orchestrates and reports progress; resolve collaborators inside `handle()` from the container. On failure, throw — the failed-job machinery records it.
 - Dispatch with `JobClass::dispatch($payload)`.

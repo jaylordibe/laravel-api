@@ -8,16 +8,17 @@ class JobStatusRepository
 {
 
     /**
-     * Find job status by id.
+     * Find one of the given user's job statuses by id.
      *
      * @param int $id
+     * @param int $userId
      * @param array $columns
      *
      * @return JobStatus|null
      */
-    public function findById(int $id, array $columns = ['*']): ?JobStatus
+    public function findById(int $id, int $userId, array $columns = ['*']): ?JobStatus
     {
-        return JobStatus::where('id', $id)->first($columns);
+        return JobStatus::where('id', $id)->where('user_id', $userId)->first($columns);
     }
 
 }

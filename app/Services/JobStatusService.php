@@ -19,13 +19,14 @@ class JobStatusService
      * Get job status by id.
      *
      * @param int $id
+     * @param int $userId
      *
      * @return JobStatus|null
      * @throws BadRequestException
      */
-    public function getById(int $id): ?JobStatus
+    public function getById(int $id, int $userId): ?JobStatus
     {
-        $jobStatus = $this->jobStatusRepository->findById($id);
+        $jobStatus = $this->jobStatusRepository->findById($id, $userId);
 
         if (empty($jobStatus)) {
             throw new BadRequestException('Job status not found.');

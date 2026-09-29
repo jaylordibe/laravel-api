@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Data\CreateUserData;
+use App\Data\ResetPasswordData;
 use App\Data\SignUpUserData;
 use App\Data\UpdatePasswordData;
 use App\Data\UserData;
@@ -14,12 +15,14 @@ use App\Repositories\UserRepository;
 use App\Repositories\UserRoleRepository;
 use App\Utils\AppUtil;
 use App\Utils\FileUtil;
+use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Laravel\Passport\RefreshToken;
 use Throwable;
@@ -92,6 +95,51 @@ class UserService
         $user->sendEmailVerificationNotification();
 
         return $user;
+    }
+
+    /**
+     * Send a password reset link if the email belongs to an account.
+     *
+     * @param string $email
+     *
+     * @return void
+     */
+    public function sendPasswordResetLink(string $email): void
+    {
+        Password::sendResetLink(['email' => Str::lower(trim($email))]);
+    }
+
+    /**
+     * Reset a password with a token from the reset link, then sign out every session.
+     *
+     * @param ResetPasswordData $resetPasswordData
+     *
+     * @return void
+     * @throws BadRequestException
+     */
+    public function resetPassword(ResetPasswordData $resetPasswordData): void
+    {
+        $status = Password::reset(
+            [
+                'email' => Str::lower(trim($resetPasswordData->email)),
+                'token' => $resetPasswordData->token,
+                'password' => $resetPasswordData->password
+            ],
+            function (User $user, string $password): void {
+                $this->userRepository->updatePassword(new UpdatePasswordData(
+                    userId: $user->id,
+                    password: $password,
+                    passwordConfirmation: $password,
+                    currentPassword: ''
+                ));
+                $this->revokeAllUserTokens($user);
+                event(new PasswordReset($user));
+            }
+        );
+
+        if ($status !== Password::PASSWORD_RESET) {
+            throw new BadRequestException(__($status));
+        }
     }
 
     /**
@@ -371,6 +419,11 @@ class UserService
 
         if (empty($user)) {
             throw new BadRequestException('Failed to update email');
+        }
+
+        // A new address must be verified, like Fortify's profile update.
+        if ($user->wasChanged('email')) {
+            $user->sendEmailVerificationNotification();
         }
 
         return $user;

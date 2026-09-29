@@ -190,6 +190,7 @@ correct.
 | Variable | Purpose |
 |---|---|
 | `APP_NAME`, `APP_ENV=production`, `APP_URL` | Identity; `APP_URL` backs generated links |
+| `APP_FRONTEND_URL` | The client app; password reset emails link to its `/reset-password` page |
 | `APP_DEBUG=false` | **Must** be false — startup fails otherwise |
 | `AUTH_TOKEN_TTL_MINUTES` | Sign-in session lifetime in minutes. Optional — default 30 days (`config/custom.php`). Applies to newly issued tokens only |
 | `APP_RUNTIME_MODE` | `api` \| `worker` \| `scheduler` \| `migrate` \| `artisan` \| `all` |

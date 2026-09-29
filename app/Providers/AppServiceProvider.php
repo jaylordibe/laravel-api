@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Enums\UserPermission;
 use App\Models\User;
+use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -37,6 +38,10 @@ class AppServiceProvider extends ServiceProvider
         // OAuth grant tokens (unused while /oauth/* routes are off).
         Passport::tokensExpireIn(now()->addHours(8));
         Passport::refreshTokensExpireIn(now()->addDays(30));
+        // The reset link opens the client app, which posts the token back to /api/reset-password.
+        ResetPassword::createUrlUsing(fn (User $user, string $token): string => config('custom.app_frontend_url')
+            . '/reset-password?' . http_build_query(['token' => $token, 'email' => $user->getEmailForPasswordReset()]));
+
         // Personal access tokens: what sign-in issues through createToken(), so this is the session lifetime.
         Passport::personalAccessTokensExpireIn(now()->addMinutes(config('custom.auth.token_ttl_minutes')));
 

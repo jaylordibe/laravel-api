@@ -31,7 +31,7 @@ class JobStatusController extends Controller
      */
     public function getById(GenericRequest $request, int $jobStatusId): JsonResponse|JsonResource
     {
-        $jobStatus = $this->jobStatusService->getById($jobStatusId);
+        $jobStatus = $this->jobStatusService->getById($jobStatusId, $request->getAuthUserData()->id);
 
         return ResponseUtil::resource(JobStatusResource::class, $jobStatus);
     }

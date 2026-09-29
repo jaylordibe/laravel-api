@@ -42,6 +42,8 @@ Route::middleware(['throttle:sensitive'])->group(function () {
     Route::post('users/sign-up', [UserController::class, 'signUp']);
     Route::get('email/verify/{id}', [UserController::class, 'verifyEmail'])->where('id', config('custom.numeric_regex'))->name('verification.verify');
     Route::post('email/verification-notification', [UserController::class, 'resendEmailVerification'])->name('verification.send');
+    Route::post('forgot-password', [UserController::class, 'forgotPassword'])->name('password.email');
+    Route::post('reset-password', [UserController::class, 'resetPassword'])->name('password.update');
 });
 
 // Authenticated Routes

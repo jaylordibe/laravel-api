@@ -63,6 +63,8 @@ class AccessControlFeatureTest extends TestCase
             'POST api/users/sign-up',
             'GET api/email/verify/{id}',
             'POST api/email/verification-notification',
+            'POST api/forgot-password',
+            'POST api/reset-password',
         ];
 
         $unauthenticated = collect(app('router')->getRoutes()->getRoutes())

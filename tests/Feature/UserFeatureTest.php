@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\UserRole;
 use App\Models\User;
+use App\Notifications\VerifyEmailNotification;
 use App\Utils\AppUtil;
 use App\Utils\DateUtil;
 use Illuminate\Routing\Middleware\ThrottleRequests;
@@ -84,6 +85,7 @@ class UserFeatureTest extends TestCase
     #[Test]
     public function testUpdateAuthUserEmail(): void
     {
+        Notification::fake();
         /** @var User $user */
         $user = User::factory()->create();
         Passport::actingAs($user);
@@ -102,6 +104,24 @@ class UserFeatureTest extends TestCase
             'birthdate' => $user->birthdate->toISOString()
         ];
         $response->assertOk()->assertJson($expected);
+
+        // The new address must be verified; a link goes to it.
+        self::assertNull($user->refresh()->email_verified_at);
+        Notification::assertSentTo($user, VerifyEmailNotification::class);
+    }
+
+    #[Test]
+    public function keepingTheSameEmailKeepsItVerified(): void
+    {
+        Notification::fake();
+        /** @var User $user */
+        $user = User::factory()->create();
+        Passport::actingAs($user);
+
+        $this->put("{$this->resource}/auth/email", ['email' => Str::upper($user->email)])->assertOk();
+
+        self::assertNotNull($user->refresh()->email_verified_at);
+        Notification::assertNothingSent();
     }
 
     #[Test]
