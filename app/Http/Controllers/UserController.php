@@ -17,6 +17,7 @@ use App\Http\Resources\UserResource;
 use App\Services\UserService;
 use App\Utils\ResponseUtil;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Gate;
@@ -53,10 +54,10 @@ class UserController extends Controller
      * @param GenericRequest $request
      * @param int $userId
      *
-     * @return JsonResponse|JsonResource
+     * @return JsonResponse|RedirectResponse
      * @throws BadRequestException
      */
-    public function verifyEmail(GenericRequest $request, int $userId): JsonResponse|JsonResource
+    public function verifyEmail(GenericRequest $request, int $userId): JsonResponse|RedirectResponse
     {
         if (!$request->hasValidSignature()) {
             return ResponseUtil::error('Invalid verification link.');
@@ -64,7 +65,8 @@ class UserController extends Controller
 
         $this->userService->verifyEmail($userId, $request->string('hash')->toString());
 
-        return ResponseUtil::success('Email verified successfully.');
+        // Opened in a browser, so land on the client app, like Breeze's API kit.
+        return redirect()->away(config('custom.app_frontend_url') . '/?verified=1');
     }
 
     /**

@@ -1,13 +1,18 @@
 name: Test
 
-# Reusable + PR-triggered. The deploy workflows call this via `uses:` to gate
-# their deploys; PR events trigger it directly against the target branch.
+# Runs on pull requests, on pushes to the long-lived branches (so a direct push is
+# still checked), and as a reusable workflow the deploy workflows call via `uses:`.
 #
 # `workflow_call` is what lets one definition serve both. Without it each deploy
 # workflow needs its own copy of the test job, and the copies drift — a check
 # ends up enforced on a pull request but not on the deploy that follows it.
 on:
   pull_request:
+    branches:
+      - main
+      - staging
+      - develop
+  push:
     branches:
       - main
       - staging

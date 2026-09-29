@@ -85,7 +85,7 @@ class EmailVerificationFeatureTest extends TestCase
     {
         [$user, $link] = $this->signUpAndCaptureLink();
 
-        $this->get($link)->assertOk()->assertJson(['success' => true, 'message' => 'Email verified successfully.']);
+        $this->get($link)->assertRedirect(config('custom.app_frontend_url') . '/?verified=1');
 
         self::assertNotNull($user->refresh()->email_verified_at);
         $this->login($user->email);
@@ -96,8 +96,8 @@ class EmailVerificationFeatureTest extends TestCase
     {
         [$user, $link] = $this->signUpAndCaptureLink();
 
-        $this->get($link)->assertOk();
-        $this->get($link)->assertOk()->assertJson(['success' => true]);
+        $this->get($link)->assertRedirect();
+        $this->get($link)->assertRedirect(config('custom.app_frontend_url') . '/?verified=1');
     }
 
     #[Test]
@@ -187,7 +187,7 @@ class EmailVerificationFeatureTest extends TestCase
             return true;
         });
 
-        $this->get($this->pathAndQuery($link))->assertOk();
+        $this->get($this->pathAndQuery($link))->assertRedirect();
         $this->forgetAuthenticatedUsers();
         $this->login('invited@example.test', 'invited-password');
     }
