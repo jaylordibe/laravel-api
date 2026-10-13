@@ -28,8 +28,13 @@ updates:
 
   # Every action in .github/workflows is pinned to a full commit SHA, with its
   # release as a trailing comment: a tag can be moved to other code, a SHA cannot.
-  # Dependabot proposes each new release as a pull request that bumps both.
+  # Dependabot proposes each round of new releases as ONE pull request that bumps
+  # both, so CI runs and you review once rather than once per action.
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
+    groups:
+      github-actions:
+        patterns:
+          - "*"
