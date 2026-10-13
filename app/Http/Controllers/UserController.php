@@ -5,14 +5,17 @@ namespace App\Http\Controllers;
 use App\Enums\UserPermission;
 use App\Exceptions\BadRequestException;
 use App\Exceptions\InvalidVerificationLinkException;
+use App\Http\Requests\ConfirmEmailChangeRequest;
 use App\Http\Requests\CreateUserRequest;
 use App\Http\Requests\ForgotPasswordRequest;
 use App\Http\Requests\GenericRequest;
 use App\Http\Requests\ResendEmailVerificationRequest;
 use App\Http\Requests\ResetPasswordRequest;
 use App\Http\Requests\SignUpUserRequest;
+use App\Http\Requests\UpdateEmailRequest;
 use App\Http\Requests\UpdatePasswordRequest;
 use App\Http\Requests\UpdateProfileImageRequest;
+use App\Http\Requests\UpdateUsernameRequest;
 use App\Http\Requests\UserRequest;
 use App\Http\Resources\UserResource;
 use App\Services\UserService;
@@ -162,43 +165,81 @@ class UserController extends Controller
     /**
      * Update auth user's username.
      *
-     * @param GenericRequest $request
+     * @param UpdateUsernameRequest $request
      *
      * @return JsonResponse|JsonResource
      * @throws BadRequestException
      */
-    public function updateAuthUsername(GenericRequest $request): JsonResponse|JsonResource
+    public function updateAuthUsername(UpdateUsernameRequest $request): JsonResponse|JsonResource
     {
-        $username = $request->string('username');
-
-        if ($username->isEmpty()) {
-            return ResponseUtil::error('Username is required.');
-        }
-
-        $user = $this->userService->updateUsername($request->getAuthUserData()->id, $username);
+        $user = $this->userService->updateUsername($request->getAuthUserData()->id, $request->string('username'));
 
         return ResponseUtil::resource(UserResource::class, $user);
     }
 
     /**
-     * Update auth user's email.
+     * Request a change of the auth user's email.
+     *
+     * Needs the current password. The email does not change yet: a confirmation link to
+     * `APP_FRONTEND_URL/confirm-email-change?userId=…&token=…` goes to the new address, a notice goes to
+     * the current one, and the user is returned with `pendingEmail` (string) and `pendingEmailExpiresAt`
+     * (ISO date-time) set. Both are null on any record but your own, and once the change expires
+     * (`auth.verification.expire`).
+     * To resend, submit the same address again: that issues a new link and the old one stops working.
+     * Submitting the current email cancels any pending change and sends nothing.
+     *
+     * 400 messages: `Current password is incorrect.`, `The email has already been taken.`, or a validation
+     * message. 429 once the same user exceeds the `step-up` limit, which the password routes share.
+     *
+     * @param UpdateEmailRequest $request
+     *
+     * @return JsonResponse|JsonResource
+     * @throws BadRequestException
+     */
+    public function updateAuthUserEmail(UpdateEmailRequest $request): JsonResponse|JsonResource
+    {
+        $user = $this->userService->requestEmailChange($request->toData());
+
+        return ResponseUtil::resource(UserResource::class, $user);
+    }
+
+    /**
+     * Cancel the auth user's pending email change. Its link stops working.
      *
      * @param GenericRequest $request
      *
      * @return JsonResponse|JsonResource
      * @throws BadRequestException
      */
-    public function updateAuthUserEmail(GenericRequest $request): JsonResponse|JsonResource
+    public function cancelAuthUserEmailChange(GenericRequest $request): JsonResponse|JsonResource
     {
-        $email = $request->string('email');
-
-        if ($email->isEmpty()) {
-            return ResponseUtil::error('Email is required.');
-        }
-
-        $user = $this->userService->updateEmail($request->getAuthUserData()->id, $email);
+        $user = $this->userService->cancelEmailChange($request->getAuthUserData()->id);
 
         return ResponseUtil::resource(UserResource::class, $user);
+    }
+
+    /**
+     * Confirm an email change with the token from the link sent to the new address, then sign out every
+     * session.
+     *
+     * Public: the client app's `/confirm-email-change` page posts the `userId` and `token` from its query
+     * string, after an explicit click (never on page load, or a mail scanner rendering the page confirms it).
+     *
+     * Success revokes every session, so a signed-in client gets 401 on its next call: send the user to sign
+     * in with the new address. Any 400 means the link cannot be used — wrong, expired, replaced, cancelled,
+     * already used, or the address was taken since — and the client should offer to request a new change. A
+     * retried confirmation whose first response was lost also answers 400, though the change was applied.
+     *
+     * @param ConfirmEmailChangeRequest $request
+     *
+     * @return JsonResponse
+     * @throws BadRequestException
+     */
+    public function confirmEmailChange(ConfirmEmailChangeRequest $request): JsonResponse
+    {
+        $this->userService->confirmEmailChange($request->integer('userId'), $request->string('token')->toString());
+
+        return ResponseUtil::success('Email changed. Please sign in with your new email address.');
     }
 
     /**

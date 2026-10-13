@@ -3,7 +3,9 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
+use Laravel\Passport\Passport;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -101,14 +103,16 @@ class IdentityCaseFeatureTest extends TestCase
         // stored value, so submitting your own address in different case failed
         // the equality check, then matched your own row in the existence check,
         // and returned "Failed to update email" for an address you already own.
+        Notification::fake();
         $email = 'Self' . Str::random(6) . '@Example.com';
         $user = User::factory()->create(['email' => $email, 'email_verified_at' => now()]);
+        Passport::actingAs($user);
 
-        $repository = app(\App\Repositories\UserRepository::class);
-        $result = $repository->updateEmail($user->id, Str::upper($email));
+        $this->putJson('/api/users/auth/email', ['email' => Str::upper($email), 'currentPassword' => 'password'])
+            ->assertOk()
+            ->assertJson(['email' => Str::lower($email), 'pendingEmail' => null]);
 
-        self::assertNotNull($result, 'Re-submitting your own email in another case must not be rejected.');
-        self::assertSame(Str::lower($email), $result->email);
+        Notification::assertNothingSent();
     }
 
     #[Test]

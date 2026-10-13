@@ -41,6 +41,7 @@ Route::post('auth/sign-in', [AuthController::class, 'signIn'])->middleware('thro
 Route::middleware(['throttle:sensitive'])->group(function () {
     Route::post('users/sign-up', [UserController::class, 'signUp']);
     Route::get('email/verify/{id}', [UserController::class, 'verifyEmail'])->where('id', config('custom.numeric_regex'))->name('verification.verify');
+    Route::post('email/change/confirm', [UserController::class, 'confirmEmailChange'])->name('email-change.confirm');
     Route::post('email/verification-notification', [UserController::class, 'resendEmailVerification'])->name('verification.send');
     Route::post('forgot-password', [UserController::class, 'forgotPassword'])->name('password.email');
     Route::post('reset-password', [UserController::class, 'resetPassword'])->name('password.update');
@@ -79,10 +80,12 @@ Route::middleware(['auth:api', 'throttle:api'])->group(function () {
         Route::put('/auth', [UserController::class, 'updateAuthUserInfo']);
         Route::delete('/auth', [UserController::class, 'deleteAuthUser']);
         Route::put('/auth/username', [UserController::class, 'updateAuthUsername']);
-        Route::put('/auth/email', [UserController::class, 'updateAuthUserEmail']);
-        Route::put('/auth/password', [UserController::class, 'updateAuthUserPassword']);
+        // Routes that check or set a password are on the per-user `step-up` limiter, not only the API rate.
+        Route::put('/auth/email', [UserController::class, 'updateAuthUserEmail'])->middleware('throttle:step-up');
+        Route::delete('/auth/email/pending', [UserController::class, 'cancelAuthUserEmailChange']);
+        Route::put('/auth/password', [UserController::class, 'updateAuthUserPassword'])->middleware('throttle:step-up');
         Route::post('/auth/profile-image', [UserController::class, 'updateAuthUserProfileImage']);
-        Route::put('/{userId}/password', [UserController::class, 'updatePassword'])->where('userId', config('custom.numeric_regex'));
+        Route::put('/{userId}/password', [UserController::class, 'updatePassword'])->where('userId', config('custom.numeric_regex'))->middleware('throttle:step-up');
         Route::get('/{userId}', [UserController::class, 'getById'])->where('userId', config('custom.numeric_regex'));
         Route::put('/{userId}', [UserController::class, 'update'])->where('userId', config('custom.numeric_regex'));
         Route::delete('/{userId}', [UserController::class, 'delete'])->where('userId', config('custom.numeric_regex'));

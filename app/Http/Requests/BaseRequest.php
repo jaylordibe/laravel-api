@@ -38,6 +38,16 @@ class BaseRequest extends FormRequest
     protected const array SORTABLE_FIELDS = [self::DEFAULT_SORT_FIELD];
 
     /**
+     * The rules for any email input, after `required`/`nullable`. `email:filter` is the check sign-in uses to
+     * route an identifier to the email column (AppUtil::isValidEmail), so an address accepted anywhere can
+     * be signed in with; the `rfc` default accepts `someone@localhost`, which sign-in reads as a username.
+     * 254 is the longest address SMTP can deliver to.
+     *
+     * @var array<int, string>
+     */
+    protected const array EMAIL_RULES = ['string', 'email:filter', 'max:254'];
+
+    /**
      * The sort field when the client names none. Fixed: changing it reorders every list response.
      *
      * @var string

@@ -99,6 +99,7 @@ jobs:
             echo 'RATE_LIMIT_API_PER_TOKEN=1000000'
             echo 'RATE_LIMIT_API_PER_USER=1000000'
             echo 'RATE_LIMIT_API_PER_IP=1000000'
+            echo 'RATE_LIMIT_SIGN_IN_PER_IP=1000000'
             echo 'RATE_LIMIT_HEAVY=1000000'
           } >> .env
           set -a; . ./.env; set +a

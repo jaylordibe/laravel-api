@@ -138,8 +138,10 @@ jobs:
           echo 'Replace this step with the real deploy, then set DEPLOY_ENABLED=true.'
           exit 1
 
-      # Smoke test from the runner. Fails the deploy if the app does not come up
-      # healthy within ~60s, so a broken build cannot sit silently in production.
+      # Smoke test from the runner. Fails the deploy unless the readiness probe
+      # answers 200 "ready", so a broken build cannot sit silently in production.
+      # .github/scripts/smoke-check.sh owns what counts as healthy, the retries
+      # and the timeouts.
       # PRODUCTION_URL is read through `env:` rather than interpolated: `${{ }}`
       # is substituted before bash parses the line, so a value containing shell
       # metacharacters would be executed rather than quoted.
@@ -151,26 +153,4 @@ jobs:
             echo '::error::PRODUCTION_URL is not set, so the deploy cannot be verified. Set it in Settings → Environments → production.'
             exit 1
           fi
-          last_code=""
-          for attempt in $(seq 1 30); do
-            # `|| code=000` must stay a separate assignment: curl writes its
-            # `-w` output before exiting, so the inline `$(curl ... || echo X)`
-            # form concatenates curl's own "000" with the fallback, matches
-            # neither retry pattern, and reports an unreachable deploy healthy.
-            code=$(curl -s -o /dev/null -w "%{http_code}" \
-              "${PRODUCTION_URL}/api/app-versions/latest") || code=000
-            case "$code" in
-              000|5*) ;;
-              *)
-                echo "Healthy after ${attempt} attempt(s) (HTTP ${code})"
-                exit 0
-                ;;
-            esac
-            if [ "$code" != "$last_code" ]; then
-              echo "attempt ${attempt}: HTTP ${code}"
-              last_code=$code
-            fi
-            sleep 2
-          done
-          echo "::error::Health check failed after 60s — last status: HTTP ${last_code}"
-          exit 1
+          .github/scripts/smoke-check.sh "${PRODUCTION_URL}"

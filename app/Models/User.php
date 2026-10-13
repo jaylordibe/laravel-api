@@ -7,6 +7,7 @@ use App\Notifications\ResetPasswordNotification;
 use App\Notifications\VerifyEmailNotification;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Constants\DatabaseTableConstant;
+use App\Constants\UserConstant;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
@@ -45,6 +46,9 @@ use Spatie\Permission\Traits\HasRoles;
  * @property string|null $timezone
  * @property string|null $profile_image
  * @property string|null $address
+ * @property string|null $pending_email
+ * @property string|null $pending_email_token
+ * @property Carbon|null $pending_email_expires_at
  *
  * Appended properties
  * @property string $full_name
@@ -82,6 +86,7 @@ class User extends Authenticatable implements MustVerifyEmail
     protected $hidden = [
         'password',
         'remember_token',
+        'pending_email_token',
     ];
 
     /**
@@ -95,7 +100,8 @@ class User extends Authenticatable implements MustVerifyEmail
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'gender' => Gender::class,
-            'birthdate' => 'datetime'
+            'birthdate' => 'datetime',
+            'pending_email_expires_at' => 'datetime'
         ];
     }
 
@@ -130,18 +136,37 @@ class User extends Authenticatable implements MustVerifyEmail
             }
         });
 
+        // A pending email change dies with the account. A delete by a signed-in user (self or admin) also
+        // frees the username and email for reuse; deleted_by needs that user.
         static::deleted(function (self $model) {
+            $columns = UserConstant::CLEARED_PENDING_EMAIL;
+
             if (Auth::check()) {
-                $model->newQuery()
-                    ->withTrashed()
-                    ->where($model->getKeyName(), $model->getKey())
-                    ->update([
-                        'username' => $model->username . '_deleted_' . now()->format('YmdHis'),
-                        'email' => $model->email . '_deleted_' . now()->format('YmdHis'),
-                        'deleted_by' => Auth::id()
-                    ]);
+                $suffix = '_deleted_' . $model->getKey() . '_' . now()->format('YmdHis');
+                $columns['username'] = self::withDeletedSuffix($model->username, $suffix);
+                $columns['email'] = self::withDeletedSuffix($model->email, $suffix);
+                $columns['deleted_by'] = Auth::id();
             }
+
+            $model->newQuery()
+                ->withTrashed()
+                ->where($model->getKeyName(), $model->getKey())
+                ->update($columns);
         });
+    }
+
+    /**
+     * Append the soft-delete suffix, shortening the value so the result fits the varchar(255) column. The id
+     * in the suffix keeps the result unique however much is cut.
+     *
+     * @param string $value
+     * @param string $suffix
+     *
+     * @return string
+     */
+    private static function withDeletedSuffix(string $value, string $suffix): string
+    {
+        return Str::substr($value, 0, 255 - Str::length($suffix)) . $suffix;
     }
 
     /**
@@ -177,6 +202,18 @@ class User extends Authenticatable implements MustVerifyEmail
      * @return Attribute
      */
     protected function username(): Attribute
+    {
+        return Attribute::make(
+            set: fn (?string $value): ?string => $value === null ? null : Str::lower(trim($value))
+        );
+    }
+
+    /**
+     * Normalise the pending email to lower case on write, for the same reason as email.
+     *
+     * @return Attribute
+     */
+    protected function pendingEmail(): Attribute
     {
         return Attribute::make(
             set: fn (?string $value): ?string => $value === null ? null : Str::lower(trim($value))

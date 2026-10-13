@@ -55,11 +55,27 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(config('custom.rate_limits.sensitive'))->by('ip:' . $request->ip());
         });
 
-        // Sign-in, keyed by account and IP like Laravel's starter kits.
-        RateLimiter::for('sign-in', function (Request $request) {
-            $identifier = Str::lower(trim((string) $request->input('identifier')));
+        // Authenticated routes that check or set a password (step-up): per USER, so a stolen token cannot
+        // guess the password at the api rate, and one shared IP (office or carrier NAT) cannot use up the
+        // budget of everyone behind it the way the IP-keyed `sensitive` limiter would.
+        RateLimiter::for('step-up', function (Request $request) {
+            // The IP fallback only matters if this ever ran before authentication: callers must not share one key.
+            $key = $request->user()?->id ? 'user:' . $request->user()->id : 'ip:' . $request->ip();
 
-            return Limit::perMinute(config('custom.rate_limits.sensitive'))->by("sign-in:{$identifier}|{$request->ip()}");
+            return Limit::perMinute(config('custom.rate_limits.sensitive'))->by('step-up:' . $key);
+        });
+
+        // Sign-in: per account and IP like Laravel's starter kits, plus an aggregate budget per IP so
+        // switching identifiers cannot turn one address into an unlimited password spray.
+        RateLimiter::for('sign-in', function (Request $request) {
+            $identifier = $request->input('identifier');
+            // A non-string identifier is a validation error, not a 500 from casting an array.
+            $identifier = is_string($identifier) ? Str::lower(trim($identifier)) : '';
+
+            return [
+                Limit::perMinute(config('custom.rate_limits.sensitive'))->by("sign-in:{$identifier}|{$request->ip()}"),
+                Limit::perMinute(config('custom.rate_limits.sign_in_per_ip'))->by("sign-in-ip:{$request->ip()}"),
+            ];
         });
 
         // Primary limiter for authenticated endpoints, with multiple layers to mitigate different abuse scenarios

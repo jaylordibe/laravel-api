@@ -2,12 +2,16 @@
 
 namespace App\Repositories;
 
+use App\Constants\UserConstant;
 use App\Data\UpdatePasswordData;
 use App\Data\UserData;
 use App\Data\UserFilterData;
 use App\Models\User;
 use App\Utils\DatabaseUtil;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -151,7 +155,8 @@ class UserRepository
      */
     public function delete(int $id): bool
     {
-        return User::destroy($id) > 0;
+        // One transaction with User's `deleted` hook, so a soft-deleted row never keeps its live identifiers.
+        return DB::transaction(fn () => User::destroy($id) > 0);
     }
 
     /**
@@ -192,41 +197,86 @@ class UserRepository
     }
 
     /**
-     * Update email.
+     * Find user by id and lock the row until the surrounding transaction ends.
      *
      * @param int $id
-     * @param string $email
      *
      * @return User|null
      */
-    public function updateEmail(int $id, string $email): ?User
+    public function findByIdForUpdate(int $id): ?User
     {
-        $user = $this->findById($id);
-
-        if (empty($user)) {
-            return null;
-        }
-
-        // Canonicalise before comparing — see updateUsername() for why.
-        $email = Str::lower(trim($email));
-
-        if ($email === $user->email) {
-            return $user;
-        }
-
-        if ($this->isEmailExists($email)) {
-            return null;
-        }
-
-        $user->email = $email;
-        $user->email_verified_at = null;
-        $user->save();
-
-        return $user;
+        return User::where('id', $id)->lockForUpdate()->first();
     }
 
     /**
-     * Update user password.
+     * Record a requested email change. The current email stays active until the change is confirmed.
+     *
+     * Overwriting the token is what invalidates every link sent for an earlier request.
+     *
+     * @param User $user
+     * @param string $pendingEmail
+     * @param string $tokenHash
+     * @param Carbon $expiresAt
+     *
+     * @return User
+     */
+    public function savePendingEmail(User $user, string $pendingEmail, string $tokenHash, Carbon $expiresAt): User
+    {
+        $user->pending_email = $pendingEmail;
+        $user->pending_email_token = $tokenHash;
+        $user->pending_email_expires_at = $expiresAt;
+        $user->save();
+
+        return $user->refresh();
+    }
+
+    /**
+     * Discard a requested email change, which invalidates its link.
+     *
+     * Written to the row unconditionally, not from the model's dirty state: the caller's model may have
+     * been loaded before a concurrent request recorded a pending change, and that change must still go.
+     *
+     * @param User $user
+     *
+     * @return User
+     */
+    public function clearPendingEmail(User $user): User
+    {
+        $columns = UserConstant::CLEARED_PENDING_EMAIL;
+
+        // A query update bypasses the model's audit hook, hence the explicit updated_by.
+        if (Auth::check()) {
+            $columns['updated_by'] = Auth::id();
+        }
+
+        User::whereKey($user->id)->update($columns);
+
+        return $user->refresh();
+    }
+
+    /**
+     * Make the pending email the account's email. Opening the link proved the address, so it is verified.
+     *
+     * @param User $user
+     *
+     * @return User
+     */
+    public function applyPendingEmail(User $user): User
+    {
+        $user->email = $user->pending_email;
+        $user->email_verified_at = now();
+        $user->forceFill(UserConstant::CLEARED_PENDING_EMAIL);
+        $user->save();
+
+        return $user->refresh();
+    }
+
+    /**
+     * Update user password, and discard any pending email change in the same statement.
+     *
+     * One UPDATE, so no email change request or confirmation can slip in between the new password and the
+     * cancellation: both of those lock the row first (findByIdForUpdate) and so run wholly before or wholly
+     * after it. A query update bypasses the model's audit hook, hence the explicit updated_by.
      *
      * @param UpdatePasswordData $changePasswordData
      *
@@ -234,16 +284,15 @@ class UserRepository
      */
     public function updatePassword(UpdatePasswordData $changePasswordData): ?User
     {
-        $user = $this->findById($changePasswordData->userId);
+        $columns = ['password' => Hash::make($changePasswordData->password)] + UserConstant::CLEARED_PENDING_EMAIL;
 
-        if (empty($user)) {
-            return null;
+        if (Auth::check()) {
+            $columns['updated_by'] = Auth::id();
         }
 
-        $user->password = Hash::make($changePasswordData->password);
-        $user->save();
+        $isUpdated = User::whereKey($changePasswordData->userId)->update($columns) > 0;
 
-        return $user;
+        return $isUpdated ? $this->findById($changePasswordData->userId) : null;
     }
 
     /**

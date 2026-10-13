@@ -62,6 +62,7 @@ class AccessControlFeatureTest extends TestCase
             'POST api/auth/sign-in',
             'POST api/users/sign-up',
             'GET api/email/verify/{id}',
+            'POST api/email/change/confirm',
             'POST api/email/verification-notification',
             'POST api/forgot-password',
             'POST api/reset-password',

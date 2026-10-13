@@ -109,6 +109,14 @@ Run them **before** the new build starts serving. The old build then runs agains
 the new schema for the length of the swap, so every migration must be
 backwards-compatible — expand → migrate → contract, across two releases.
 
+**The migrations up to and including the `oauth_*` set dated 2026-02-20 are a
+fresh-project baseline**, not an upgrade path. They describe a new database
+only: a database created from an earlier copy of this template has a different
+migration history, and running these against it is unsupported — it can skip changes or try to re-create tables. A
+fork with a live database keeps its own migration history and ports later
+changes as new migrations. Every migration added after the baseline is additive
+and runs forward from it, and baseline migrations are never edited again.
+
 ---
 
 ## 2. Container contract
@@ -565,7 +573,7 @@ repository variable `DEPLOY_ENABLED=true`.
 | `concurrency` with `cancel-in-progress: false` | Two pushes in quick succession queue instead of racing; an in-flight deploy is never killed half-done. |
 | `environment:` | Scopes secrets to the environment and lets you require reviewer approval — the human gate on production. |
 | `timeout-minutes` | A runaway-job guard. If it trips, find out what got stuck rather than raising the number. |
-| Smoke test | Fails the run when the app does not answer, so a broken build cannot sit silently in production. |
+| Smoke test | `.github/scripts/smoke-check.sh` — one definition for both environments, and its header owns what passes, what retries and every timeout. Passes only on HTTP 200 from `/api/health/ready` with the ready body. An unset `*_URL` fails the run. |
 
 A deploy should run, in order: **migrate → sync permissions → start/replace workers →
 start/replace API → verify**. Syncing permissions is the `permission command` one-shot in the §13 contract (idempotent;

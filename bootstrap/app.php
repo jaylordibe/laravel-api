@@ -23,6 +23,13 @@ return Application::configure(basePath: dirname(__DIR__))
         });
 
         /*
+         * Never trim a password. Laravel exempts only the snake_case names, and this API
+         * takes camelCase input, so `currentPassword` was trimmed before Hash::check and
+         * a password with leading or trailing whitespace could never be confirmed.
+         */
+        $middleware->trimStrings(except: ['currentPassword', 'passwordConfirmation']);
+
+        /*
          * WHICH proxy headers to trust. WHICH PROXIES to trust is set in
          * config/trustedproxy.php, because this closure runs via
          * `afterResolving(HttpKernel::class)` — before the bootstrappers load

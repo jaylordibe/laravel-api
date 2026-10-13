@@ -73,13 +73,13 @@ class AuthController extends Controller
     }
 
     /**
-     * Sign the user out of every session, including this one.
+     * Sign the user out of every session, including this one, and cancel any pending email change.
      *
      * @throws Throwable
      */
     public function signOutAll(GenericRequest $request): JsonResponse
     {
-        $this->userService->revokeAllUserTokens(Auth::user());
+        $this->userService->signOutEverywhere(Auth::user());
 
         return ResponseUtil::success('Signed out of all sessions.');
     }

@@ -98,6 +98,24 @@ class ConfigurationContractFeatureTest extends TestCase
     }
 
     #[Test]
+    public function emailLinksExpireAfterAnHour(): void
+    {
+        // Sign-up verification and email change confirmation share this one setting.
+        self::assertSame(60, (require config_path('auth.php'))['verification']['expire']);
+    }
+
+    #[Test]
+    public function theSignInBudgetPerAddressDefaultsToThirtyPerMinute(): void
+    {
+        // The committed default, read with the variable unset, so loosening it cannot pass unnoticed.
+        $this->withEnv('RATE_LIMIT_SIGN_IN_PER_IP', null, function (): void {
+            $config = require config_path('custom.php');
+
+            self::assertSame(30, $config['rate_limits']['sign_in_per_ip']);
+        });
+    }
+
+    #[Test]
     public function expiredAndRevokedTokensArePurgedDailyOnOneServer(): void
     {
         // Every sign-in adds a token row and nothing else removes one.

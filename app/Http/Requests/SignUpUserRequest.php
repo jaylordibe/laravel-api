@@ -32,7 +32,7 @@ class SignUpUserRequest extends BaseRequest
         return [
             'firstName' => ['required', 'string'],
             'lastName' => ['required', 'string'],
-            'email' => ['required', 'email', Rule::unique(User::class, 'email')],
+            'email' => ['required', ...self::EMAIL_RULES, Rule::unique(User::class, 'email')],
             'phoneNumber' => ['required', 'string'],
             'password' => ['required', 'string', 'min:8'],
             'passwordConfirmation' => ['required', 'same:password', 'min:8']

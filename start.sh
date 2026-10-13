@@ -61,7 +61,7 @@ done
 
 if [[ "$type" = "fresh" || "$type" = "reset" ]]; then
     commands="
-    composer update
+    composer install
     php artisan migrate:fresh --seed
     php artisan key:generate
     php artisan passport:keys
@@ -76,7 +76,7 @@ if [[ "$type" = "fresh" || "$type" = "reset" ]]; then
     "
 else
     commands="
-    composer update
+    composer install
     php artisan migrate
     "
 fi

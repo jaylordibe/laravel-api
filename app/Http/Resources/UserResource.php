@@ -36,9 +36,30 @@ class UserResource extends BaseResource
 
         $data['profileImage'] = $this->resolveProfileImageUrl();
 
+        if (!$this->isPendingEmailVisibleTo($request)) {
+            $data['pendingEmail'] = null;
+            $data['pendingEmailExpiresAt'] = null;
+        }
+
         // Load the relations
 
         return $data;
+    }
+
+    /**
+     * Whether the pending email change is shown: only to its own user, and only while it can still be
+     * confirmed. The address is unconfirmed and user-typed, possibly someone else's, so an admin reading the
+     * record does not see it; and an expired change is not pending, though its columns stay until replaced.
+     *
+     * @param Request $request
+     *
+     * @return bool
+     */
+    private function isPendingEmailVisibleTo(Request $request): bool
+    {
+        return $request->user()?->id === $this->id
+            && !empty($this->pending_email_expires_at)
+            && $this->pending_email_expires_at->isFuture();
     }
 
     /**

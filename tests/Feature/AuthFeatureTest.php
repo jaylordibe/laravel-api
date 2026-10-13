@@ -173,4 +173,92 @@ class AuthFeatureTest extends TestCase
             ->assertBadRequest();
     }
 
+
+    /**
+     * Fail sign-in with a fresh identifier each time, from the given client address.
+     *
+     * @param int $count
+     * @param string $ip
+     * @param array<string, string> $headers
+     *
+     * @return void
+     */
+    private function failSignInWithDistinctIdentifiers(int $count, string $ip = '127.0.0.1', array $headers = []): void
+    {
+        foreach (range(1, $count) as $attempt) {
+            $this->withServerVariables(['REMOTE_ADDR' => $ip])
+                ->postJson("{$this->resource}/sign-in", ['identifier' => "sprayed-{$attempt}-" . Str::random(6) . '@example.test', 'password' => 'Password1'], $headers)
+                ->assertBadRequest()
+                ->assertJson(['message' => 'Invalid username or password']);
+        }
+    }
+
+    #[Test]
+    public function switchingIdentifiersCannotBypassThePerIpSignInBudget(): void
+    {
+        $this->withMiddleware(ThrottleRequests::class);
+        config(['custom.rate_limits.sensitive' => 5, 'custom.rate_limits.sign_in_per_ip' => 3]);
+
+        $this->failSignInWithDistinctIdentifiers(3);
+
+        // A new identifier, which the per-account limit has never seen, is still refused.
+        $this->postJson("{$this->resource}/sign-in", ['identifier' => 'one-more@example.test', 'password' => 'Password1'])
+            ->assertStatus(429);
+
+        // Another address has its own budget.
+        $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.9'])
+            ->postJson("{$this->resource}/sign-in", ['identifier' => 'one-more@example.test', 'password' => 'Password1'])
+            ->assertBadRequest();
+    }
+
+    #[Test]
+    public function anUntrustedForwardedForHeaderCannotResetThePerIpBudget(): void
+    {
+        $this->withMiddleware(ThrottleRequests::class);
+        config(['custom.rate_limits.sensitive' => 5, 'custom.rate_limits.sign_in_per_ip' => 3, 'trustedproxy.proxies' => null]);
+
+        $this->failSignInWithDistinctIdentifiers(3);
+
+        $this->postJson("{$this->resource}/sign-in", ['identifier' => 'spoofer@example.test', 'password' => 'Password1'], ['X-Forwarded-For' => '198.51.100.' . random_int(1, 254)])
+            ->assertStatus(429);
+    }
+
+    #[Test]
+    public function behindATrustedProxyThePerIpBudgetIsKeyedByTheForwardedClient(): void
+    {
+        $this->withMiddleware(ThrottleRequests::class);
+        config(['custom.rate_limits.sensitive' => 5, 'custom.rate_limits.sign_in_per_ip' => 3, 'trustedproxy.proxies' => '127.0.0.1']);
+
+        $this->failSignInWithDistinctIdentifiers(3, '127.0.0.1', ['X-Forwarded-For' => '198.51.100.7']);
+
+        $this->postJson("{$this->resource}/sign-in", ['identifier' => 'next@example.test', 'password' => 'Password1'], ['X-Forwarded-For' => '198.51.100.7'])
+            ->assertStatus(429);
+        // A different client behind the same proxy is not locked out.
+        $this->postJson("{$this->resource}/sign-in", ['identifier' => 'next@example.test', 'password' => 'Password1'], ['X-Forwarded-For' => '198.51.100.8'])
+            ->assertBadRequest();
+    }
+
+    #[Test]
+    public function theRateLimitHeadersDescribeThePerAccountBudget(): void
+    {
+        // With two limits the headers must show the one closest to refusing, which for one person is per account.
+        $this->withMiddleware(ThrottleRequests::class);
+
+        $response = $this->postJson("{$this->resource}/sign-in", ['identifier' => 'headers@example.test', 'password' => 'Password1'])->assertBadRequest();
+
+        self::assertSame((string) config('custom.rate_limits.sensitive'), $response->headers->get('X-RateLimit-Limit'));
+        self::assertSame((string) (config('custom.rate_limits.sensitive') - 1), $response->headers->get('X-RateLimit-Remaining'));
+    }
+
+    #[Test]
+    public function aNonStringIdentifierIsAValidationErrorEvenWhenThrottled(): void
+    {
+        // The limiter reads the identifier before validation runs; casting an array used to 500 here.
+        $this->withMiddleware(ThrottleRequests::class);
+
+        $this->postJson("{$this->resource}/sign-in", ['identifier' => ['someone@example.test'], 'password' => 'Password1'])
+            ->assertBadRequest()
+            ->assertJson(['success' => false]);
+    }
+
 }

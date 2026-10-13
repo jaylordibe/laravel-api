@@ -16,7 +16,7 @@ class ResetPasswordRequest extends BaseRequest
     {
         return [
             'token' => ['required', 'string'],
-            'email' => ['required', 'email'],
+            'email' => ['required', ...self::EMAIL_RULES],
             'password' => ['required', 'string', 'min:8'],
             'passwordConfirmation' => ['required', 'same:password']
         ];

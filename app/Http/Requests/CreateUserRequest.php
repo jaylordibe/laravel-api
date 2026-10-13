@@ -19,7 +19,7 @@ class CreateUserRequest extends BaseRequest
         return [
             'firstName' => ['required', 'string'],
             'lastName' => ['required', 'string'],
-            'email' => ['required', 'email'],
+            'email' => ['required', ...self::EMAIL_RULES],
             'phoneNumber' => ['required', 'string'],
             'password' => ['required', 'string', 'min:8'],
             'passwordConfirmation' => ['required', 'same:password', 'min:8'],

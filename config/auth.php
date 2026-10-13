@@ -105,6 +105,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Email Link Expiry
+    |--------------------------------------------------------------------------
+    |
+    | Minutes a sign-up verification link (Laravel's VerifyEmail) and an email
+    | change confirmation link (UserService::requestEmailChange) stay valid.
+    |
+    */
+
+    'verification' => [
+        'expire' => 60,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Password Confirmation Timeout
     |--------------------------------------------------------------------------
     |

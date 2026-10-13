@@ -64,6 +64,17 @@ return [
         'api_per_token' => (int) env('RATE_LIMIT_API_PER_TOKEN', 60),
         'api_per_user' => (int) env('RATE_LIMIT_API_PER_USER', 120),
         'api_per_ip' => (int) env('RATE_LIMIT_API_PER_IP', 300),
+
+        /*
+         * Sign-in attempts per minute from one address, across every
+         * identifier. The per-account limit (`sensitive`) stops guessing one
+         * password; this stops one address spraying a common password across
+         * many accounts. 30 leaves room for an office or carrier NAT where many
+         * people sign in at once, while capping a sprayer at 30 accounts a
+         * minute per address. Keyed on the client IP, which is only correct
+         * behind a proxy listed in config/trustedproxy.php.
+         */
+        'sign_in_per_ip' => (int) env('RATE_LIMIT_SIGN_IN_PER_IP', 30),
         'heavy' => (int) env('RATE_LIMIT_HEAVY', 10),
 
         /*

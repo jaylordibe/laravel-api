@@ -2,9 +2,11 @@
 
 namespace App\Services;
 
+use App\Constants\UserConstant;
 use App\Data\CreateUserData;
 use App\Data\ResetPasswordData;
 use App\Data\SignUpUserData;
+use App\Data\UpdateEmailData;
 use App\Data\UpdatePasswordData;
 use App\Data\UserData;
 use App\Data\UserFilterData;
@@ -12,17 +14,21 @@ use App\Enums\UserRole;
 use App\Exceptions\BadRequestException;
 use App\Exceptions\InvalidVerificationLinkException;
 use App\Models\User;
+use App\Notifications\EmailChangeRequestedNotification;
+use App\Notifications\VerifyEmailChangeNotification;
 use App\Repositories\UserRepository;
 use App\Repositories\UserRoleRepository;
 use App\Utils\AppUtil;
 use App\Utils\FileUtil;
 use Illuminate\Auth\Events\PasswordReset;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Laravel\Passport\RefreshToken;
@@ -64,7 +70,33 @@ class UserService
     }
 
     /**
+     * Sign the user out of every session and cancel any pending email change.
+     *
+     * Signing out everywhere is what an owner does on suspecting someone else is in the account, and an email
+     * change that someone else started would otherwise outlive it.
+     *
+     * @param User $user
+     *
+     * @return void
+     * @throws Throwable
+     */
+    public function signOutEverywhere(User $user): void
+    {
+        // Revoke and clear under the row lock an email change request takes, so a request in progress is
+        // cleared rather than half-applied. One that authenticated before the revoke but locks the row after
+        // it can still save a new change; that needs the current password, and a password reset (one atomic
+        // UPDATE) is the remedy the warning email gives.
+        DB::transaction(function () use ($user) {
+            $lockedUser = $this->userRepository->findByIdForUpdate($user->id) ?? $user;
+            $this->revokeAllUserTokens($lockedUser);
+            $this->userRepository->clearPendingEmail($lockedUser);
+        });
+    }
+
+    /**
      * Sign up a new user and send the email verification link.
+     *
+     * A uniqueness race answers 400 like the validation it slipped past, never a raw database error.
      *
      * @param SignUpUserData $signUpUserData
      *
@@ -87,7 +119,17 @@ class UserService
             profileImage: null,
             address: null
         );
-        $user = $this->userRepository->create($userData, $signUpUserData->password);
+
+        try {
+            // In a transaction so a constraint violation rolls back to a savepoint when nested in one.
+            $user = DB::transaction(fn () => $this->userRepository->create($userData, $signUpUserData->password));
+        } catch (UniqueConstraintViolationException) {
+            // Lost a race the request's unique rule could not see: the same email signing up twice at once,
+            // or two sign-ups generating the same username.
+            throw new BadRequestException($this->isEmailExists($signUpUserData->email)
+                ? 'The email has already been taken.'
+                : 'Sign up failed. Please try again.');
+        }
 
         if (empty($user)) {
             throw new BadRequestException('Sign up failed.');
@@ -133,6 +175,7 @@ class UserService
                     passwordConfirmation: $password,
                     currentPassword: ''
                 ));
+                // updatePassword also discards a pending email change, which recovery must stop.
                 $this->revokeAllUserTokens($user);
                 event(new PasswordReset($user));
             }
@@ -355,6 +398,12 @@ class UserService
     }
 
     /**
+     * Generate an unused username from a name or an email's local part.
+     *
+     * The result always satisfies UpdateUsernameRequest's format: lower-case letters and digits, at least
+     * three characters (an all-symbol local part such as `...@example.com` used to give an EMPTY username)
+     * and at most UserConstant::MAX_USERNAME_LENGTH including the numeric suffix added on a collision.
+     *
      * @param string $text
      * @param int $count
      *
@@ -362,24 +411,23 @@ class UserService
      */
     public function generateUsername(string $text, int $count = 0): string
     {
-        // Remove spaces
-        $username = strtolower(str_replace(' ', '', $text));
+        $base = Str::lower(str_replace(' ', '', $text));
 
-        if (AppUtil::isValidEmail($username)) {
-            $username = Str::before($text, '@');
+        if (AppUtil::isValidEmail($base)) {
+            $base = Str::before($base, '@');
         }
 
-        // Remove special characters. Only letters and numbers are allowed
-        $username = preg_replace('/[^a-zA-Z0-9]/', '', $username);
+        $base = preg_replace('/[^a-z0-9]/', '', $base);
 
-        if (!empty($count)) {
-            $username .= $count;
+        if (strlen($base) < 3) {
+            $base = 'user' . $base;
         }
 
-        $isUsernameExists = $this->isUsernameExists($username);
+        $suffix = empty($count) ? '' : (string) $count;
+        $username = substr($base, 0, UserConstant::MAX_USERNAME_LENGTH - strlen($suffix)) . $suffix;
 
-        if ($isUsernameExists) {
-            $username = $this->generateUsername($text, ++$count);
+        if ($this->isUsernameExists($username)) {
+            return $this->generateUsername($text, ++$count);
         }
 
         return $username;
@@ -387,6 +435,9 @@ class UserService
 
     /**
      * Update username.
+     *
+     * Uniqueness is validated in UpdateUsernameRequest; the unique index settles a race between two
+     * requests for the same name, and the loser gets the same answer as a validation failure.
      *
      * @param int $id
      * @param string $username
@@ -396,38 +447,160 @@ class UserService
      */
     public function updateUsername(int $id, string $username): ?User
     {
-        $user = $this->userRepository->updateUsername($id, $username);
+        $this->getById($id);
+
+        try {
+            // In a transaction so a constraint violation rolls back to a savepoint when nested in one.
+            $user = DB::transaction(fn () => $this->userRepository->updateUsername($id, $username));
+        } catch (UniqueConstraintViolationException) {
+            $user = null;
+        }
 
         if (empty($user)) {
-            throw new BadRequestException('Failed to update username');
+            throw new BadRequestException('The username has already been taken.');
         }
 
         return $user;
     }
 
     /**
-     * Update email.
+     * Request an email change: confirm the current password, then send a confirmation link to the new
+     * address and a notice to the current one. The current email stays the account's email, for sign-in
+     * and recovery, until the change is confirmed.
      *
-     * @param int $id
-     * @param string $email
+     * Each request replaces the pending one and its token, so every older link stops working. Submitting
+     * the current email cancels any pending change. Uniqueness is checked only after the password, so a
+     * bearer token alone cannot probe which addresses have accounts.
      *
-     * @return User|null
+     * @param UpdateEmailData $updateEmailData
+     *
+     * @return User
      * @throws BadRequestException
      */
-    public function updateEmail(int $id, string $email): ?User
+    public function requestEmailChange(UpdateEmailData $updateEmailData): User
     {
-        $user = $this->userRepository->updateEmail($id, $email);
+        $email = Str::lower(trim($updateEmailData->email));
 
-        if (empty($user)) {
-            throw new BadRequestException('Failed to update email');
+        // The row stays locked from the password check to the save, so a password change or reset that
+        // commits first is seen here (the check fails), and one that commits after clears what was saved.
+        [$user, $token] = DB::transaction(function () use ($updateEmailData, $email) {
+            $user = $this->userRepository->findByIdForUpdate($updateEmailData->userId);
+
+            if (empty($user)) {
+                throw new BadRequestException('User not found.');
+            }
+
+            // Step-up: a bearer token alone must not be able to move the account to another inbox.
+            if (!Hash::check($updateEmailData->currentPassword, $user->password)) {
+                throw new BadRequestException('Current password is incorrect.');
+            }
+
+            if ($email === $user->email) {
+                return [$this->userRepository->clearPendingEmail($user), null];
+            }
+
+            if ($this->userRepository->isEmailExists($email)) {
+                throw new BadRequestException('The email has already been taken.');
+            }
+
+            $token = Str::random(64);
+            $expiresAt = now()->addMinutes((int) config('auth.verification.expire'));
+
+            return [$this->userRepository->savePendingEmail($user, $email, hash('sha256', $token), $expiresAt), $token];
+        });
+
+        if ($token === null) {
+            return $user;
         }
 
-        // A new address must be verified, like Fortify's profile update.
-        if ($user->wasChanged('email')) {
-            $user->sendEmailVerificationNotification();
-        }
+        // The link opens the client app, which posts the token back to /api/email/change/confirm — like the
+        // password reset link. A GET that changed the email would be confirmed by any mail scanner that
+        // prefetches links.
+        $url = config('custom.app_frontend_url') . '/confirm-email-change?' . http_build_query(['userId' => $user->id, 'token' => $token]);
+        Notification::route('mail', $email)->notify(new VerifyEmailChangeNotification($url));
+        // An early warning to the address that still controls recovery: a password reset cancels the change.
+        // Routed to the address captured NOW: a queued notification on the User would be sent to whatever the
+        // email is at delivery time, which after a quick confirmation is the new inbox.
+        Notification::route('mail', $user->email)->notify(new EmailChangeRequestedNotification($email));
 
         return $user;
+    }
+
+    /**
+     * Cancel a pending email change, which invalidates its link.
+     *
+     * @param int $id
+     *
+     * @return User
+     * @throws BadRequestException
+     */
+    public function cancelEmailChange(int $id): User
+    {
+        return $this->userRepository->clearPendingEmail($this->getById($id));
+    }
+
+    /**
+     * Confirm a pending email change with the token from the emailed link, then sign out every session.
+     *
+     * The token binds the change to one user and one request: it is random, only its hash is stored, a new
+     * request, a cancellation or a password change overwrites it, and it expires. A wrong user id, token or
+     * expired request all answer the same. The row is locked so two confirmations cannot both apply it. The
+     * address is re-checked because another account may have taken it since the request; the unique index
+     * settles any race that check cannot see.
+     *
+     * Every session is revoked because whoever holds the account's tokens is not proven to be whoever
+     * controls the new inbox — the user signs in again with the new address.
+     *
+     * @param int $userId
+     * @param string $token
+     *
+     * @return User
+     * @throws BadRequestException
+     */
+    public function confirmEmailChange(int $userId, string $token): User
+    {
+        $invalidLinkMessage = 'This email change link is invalid or has expired.';
+
+        // Checked once without a lock, so a wrong or guessed token from this public route never holds the
+        // user's row; then again under the lock, since a new request or a cancellation may have replaced it.
+        if (!$this->isValidEmailChangeToken($this->userRepository->findById($userId), $token)) {
+            throw new BadRequestException($invalidLinkMessage);
+        }
+
+        try {
+            return DB::transaction(function () use ($userId, $token, $invalidLinkMessage) {
+                $user = $this->userRepository->findByIdForUpdate($userId);
+
+                if (!$this->isValidEmailChangeToken($user, $token) || $this->userRepository->isEmailExists($user->pending_email)) {
+                    throw new BadRequestException($invalidLinkMessage);
+                }
+
+                $user = $this->userRepository->applyPendingEmail($user);
+                $this->revokeAllUserTokens($user);
+
+                return $user;
+            });
+        } catch (UniqueConstraintViolationException) {
+            throw new BadRequestException($invalidLinkMessage);
+        }
+    }
+
+    /**
+     * Whether the token matches the user's pending email change and that change has not expired.
+     *
+     * @param User|null $user
+     * @param string $token
+     *
+     * @return bool
+     */
+    private function isValidEmailChangeToken(?User $user, string $token): bool
+    {
+        return !empty($user)
+            && !empty($user->pending_email)
+            && !empty($user->pending_email_token)
+            && hash_equals($user->pending_email_token, hash('sha256', $token))
+            && !empty($user->pending_email_expires_at)
+            && $user->pending_email_expires_at->isFuture();
     }
 
     /**
@@ -463,6 +636,7 @@ class UserService
         }
 
         // Like logoutOtherDevices(): keep the caller's own session; an admin reset signs out everywhere.
+        // The repository's password write also discards any pending email change, in the same statement.
         $this->revokeAllUserTokens($user, $isSelfChange ? $authUser->token()?->id : null);
 
         return $user;

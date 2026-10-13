@@ -4,7 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\UserRole;
 use App\Models\User;
-use App\Notifications\VerifyEmailNotification;
+use App\Notifications\VerifyEmailChangeNotification;
 use App\Utils\AppUtil;
 use App\Utils\DateUtil;
 use Illuminate\Routing\Middleware\ThrottleRequests;
@@ -85,29 +85,28 @@ class UserFeatureTest extends TestCase
     #[Test]
     public function testUpdateAuthUserEmail(): void
     {
+        // Requesting a change leaves the current address in place until the new one is confirmed.
         Notification::fake();
         /** @var User $user */
         $user = User::factory()->create();
         Passport::actingAs($user);
-        $payload = ['email' => AppUtil::generateUniqueToken() . fake()->unique()->safeEmail()];
+        $payload = ['email' => AppUtil::generateUniqueToken() . fake()->unique()->safeEmail(), 'currentPassword' => 'password'];
         $response = $this->put("{$this->resource}/auth/email", $payload);
 
         $expected = [
             'id' => $user->id,
-            'firstName' => $user->first_name,
-            'middleName' => $user->middle_name,
-            'lastName' => $user->last_name,
             'username' => $user->username,
-            'email' => Str::lower($payload['email']),
-            'timezone' => $user->timezone,
-            'phoneNumber' => $user->phone_number,
-            'birthdate' => $user->birthdate->toISOString()
+            'email' => $user->email,
+            'pendingEmail' => Str::lower($payload['email'])
         ];
         $response->assertOk()->assertJson($expected);
+        self::assertNotNull($response->json('pendingEmailExpiresAt'));
+        self::assertArrayNotHasKey('pendingEmailToken', $response->json());
 
-        // The new address must be verified; a link goes to it.
-        self::assertNull($user->refresh()->email_verified_at);
-        Notification::assertSentTo($user, VerifyEmailNotification::class);
+        self::assertNotNull($user->refresh()->email_verified_at);
+        Notification::assertSentOnDemand(VerifyEmailChangeNotification::class, function (VerifyEmailChangeNotification $notification, array $channels, object $notifiable) use ($payload): bool {
+            return $notifiable->routes['mail'] === Str::lower($payload['email']);
+        });
     }
 
     #[Test]
@@ -118,7 +117,7 @@ class UserFeatureTest extends TestCase
         $user = User::factory()->create();
         Passport::actingAs($user);
 
-        $this->put("{$this->resource}/auth/email", ['email' => Str::upper($user->email)])->assertOk();
+        $this->put("{$this->resource}/auth/email", ['email' => Str::upper($user->email), 'currentPassword' => 'password'])->assertOk();
 
         self::assertNotNull($user->refresh()->email_verified_at);
         Notification::assertNothingSent();
