@@ -2,10 +2,24 @@ FROM jaylordibe/laravel-php:8.5
 
 WORKDIR /var/www/html
 
+# Dependencies first, in their own layer, keyed on the lock file alone. A change to
+# application code then reuses this layer instead of reinstalling every package.
+# --no-scripts and --no-autoloader because neither the application nor artisan is
+# here yet; both run below, once the code is.
+COPY composer.json composer.lock ./
+RUN composer install --no-dev --no-interaction --no-scripts --no-autoloader --prefer-dist
+
 # Copy application code
 COPY . .
 
-# Install dependencies (production only)
+# Production opcache settings, for the FPM SAPI only. See the file for why.
+# PHP_VERSION comes from the base image's ENV, so this path follows its version.
+# Named `zz-` because PHP loads conf.d in byte order and the base image installs an
+# unprefixed `custom-php.ini`: a `99-` file sorts BEFORE it and would lose to any
+# opcache setting the base adds there later.
+COPY docker/php/opcache-production.ini /etc/php/${PHP_VERSION}/fpm/conf.d/zz-opcache-production.ini
+
+# Finish the install (production only)
 #
 # The runtime-writable directories are recreated first. .dockerignore excludes
 # storage/logs and storage/framework on purpose —
@@ -48,13 +62,15 @@ RUN mkdir -p \
         storage/framework/views \
         storage/logs \
         bootstrap/cache && \
-    composer install --no-dev --optimize-autoloader --no-interaction && \
+    composer dump-autoload --no-dev --optimize --no-interaction && \
     php artisan view:cache && \
     chown -R www-data:www-data storage bootstrap/cache
 
-# The runtime selector. Without it the base image's single entrypoint starts
-# nginx, php-fpm AND `php artisan horizon` in every container, so each API
-# replica would also add a Horizon master. See docker/entrypoint.sh.
+# The runtime selector. It prepares the application (runtime config cache, ports,
+# startup checks) and hands the base entrypoint the command for the selected
+# runtime — the web stack with Horizon switched off, or Horizon alone. Without it
+# the base image's default command runs Horizon inside every web container, so
+# each API replica would also add a Horizon master. See docker/entrypoint.sh.
 COPY docker/entrypoint.sh /usr/local/bin/app-entrypoint.sh
 COPY docker/healthcheck.sh /usr/local/bin/app-healthcheck.sh
 RUN chmod 0755 /usr/local/bin/app-entrypoint.sh /usr/local/bin/app-healthcheck.sh
@@ -64,9 +80,12 @@ RUN chmod 0755 /usr/local/bin/app-entrypoint.sh /usr/local/bin/app-healthcheck.s
 # this variable or a command override.
 ENV APP_RUNTIME_MODE=api
 
-# Overrides the base image's healthcheck, which curls php-fpm unconditionally and
-# would therefore mark a healthy worker container unhealthy.
+# Overrides the base image's healthcheck, which knows neither the php-fpm ping port
+# this entrypoint may move (PORT=8080) nor what a healthy worker means for this
+# application.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
     CMD /usr/local/bin/app-healthcheck.sh
 
+# No CMD: the runtime is chosen by APP_RUNTIME_MODE, and setting ENTRYPOINT here
+# resets the base image's CMD anyway. Arguments are read only by `artisan` mode.
 ENTRYPOINT ["/usr/local/bin/app-entrypoint.sh"]

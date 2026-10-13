@@ -54,7 +54,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       # `app:format --check`, never the fixing form. `app:format` exits 0 after
       # rewriting whatever it repaired, so a fixing formatter in CI silently
@@ -93,13 +93,22 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      # The base image is consumed by DIGEST. `jaylordibe/laravel-php:8.5` moves on
+      # every weekly rebuild, so a tag reference makes the same commit build a
+      # different image tomorrow — including one whose entrypoint contract this
+      # template no longer matches. Dependabot proposes each digest bump as a pull
+      # request, and this job scans and boots it before it can merge. First step,
+      # so an unpinned reference fails in seconds, not after the image build.
+      - name: Require the base image to be pinned by digest
+        run: .github/scripts/check-base-pin.sh
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v4
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 
       - name: Build the production image
-        uses: docker/build-push-action@v7
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
           push: false
@@ -114,7 +123,7 @@ jobs:
       # Fails on HIGH/CRITICAL; `ignore-unfixed` skips CVEs with no published
       # patch so the build doesn't red-light on findings nobody can act on.
       - name: Scan the image with Trivy
-        uses: aquasecurity/trivy-action@v0.36.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: laravel-api:ci
           format: table
@@ -133,6 +142,19 @@ jobs:
       - name: Verify the built image boots what it will serve
         run: |
           set -euo pipefail
+
+          # The image's HEALTHCHECK must be this template's, not the base image's:
+          # the base one knows neither a relocated php-fpm ping port (PORT=8080) nor
+          # what a healthy worker is, so losing this line would leave every worker
+          # "healthy" with no master and probe the wrong port on PORT=8080 platforms.
+          echo '::group::the image HEALTHCHECK is the application healthcheck'
+          healthcheck=$(docker image inspect --format '{{json .Config.Healthcheck.Test}}' laravel-api:ci)
+          echo "$healthcheck"
+          if ! grep -q 'app-healthcheck.sh' <<<"$healthcheck"; then
+            echo '::error::the image HEALTHCHECK is not docker/healthcheck.sh — the base image healthcheck would apply'
+            exit 1
+          fi
+          echo '::endgroup::'
 
           echo '::group::runtime directories and the ABSENCE of a baked config cache'
           docker run --rm --entrypoint sh laravel-api:ci -c '
@@ -198,7 +220,14 @@ jobs:
               echo "storage/logs is owned by $owner, not www-data" >&2
               exit 1
             fi
-            echo "no baked config/route cache; no secrets in any layer; compiled views present; storage writable by www-data"
+            # Production opcache: the code in an image never changes, so php-fpm
+            # must not stat every script per request. FPM only — the base image
+            # keeps it on for bind-mounted development containers.
+            if ! php-fpm${PHP_VERSION} -i 2>/dev/null | grep -q "^opcache.validate_timestamps => Off"; then
+              echo "php-fpm still revalidates opcache timestamps; docker/php/opcache-production.ini was not applied" >&2
+              exit 1
+            fi
+            echo "no baked config/route cache; no secrets in any layer; compiled views present; storage writable by www-data; production opcache applied"
           '
           echo '::endgroup::'
 
@@ -286,16 +315,16 @@ jobs:
 
       # THE RUNTIME SPLIT.
       #
-      # The base image starts nginx, php-fpm AND `php artisan horizon` from one
-      # supervisord config. If that leaks into the api runtime, every API replica
-      # carries a Horizon master, queue concurrency becomes a function of web
-      # traffic, and a deploy's `horizon:terminate` races across replicas. None of
-      # that shows up in a test suite, an image build or a Trivy scan, so it is
-      # asserted here.
+      # The base image's default command runs nginx, php-fpm AND Horizon under one
+      # supervisord. If that leaks into the api runtime, every API replica carries
+      # a Horizon master and queue concurrency becomes a function of web traffic.
+      # None of that shows up in a test suite, an image build or a Trivy scan, so
+      # it is asserted here — by BOOTING the web runtimes for real and asking
+      # supervisord what it started, since that is the only state that matters.
       #
       # APP_ENTRYPOINT_DRY_RUN makes the entrypoint do all its preparation and
-      # then return instead of handing over to a long-running process, so the
-      # resulting container state can be inspected without booting supervisord.
+      # then report the hand-off instead of making it, so the one-shot modes and
+      # the port rewrite can be inspected without a long-running process.
       - name: Verify each runtime mode configures the right processes
         run: |
           set -euo pipefail
@@ -309,25 +338,47 @@ jobs:
             -e APP_CONFIG_CHECK=false
           )
 
-          echo '::group::api mode: Horizon disabled, listening on :80'
-          api_state=$(docker run "${common_env[@]}" -e APP_RUNTIME_MODE=api laravel-api:ci -c '
-            /usr/local/bin/app-entrypoint.sh >/dev/null 2>&1
-            echo "--- horizon autostart ---"
-            awk "/^\[/ { inside = (\$0 == \"[program:horizon]\") } inside && /^autostart/ { print; exit }" \
-              /etc/supervisor/conf.d/supervisord.conf
-            echo "--- listen directives ---"
-            grep -E "^[[:space:]]*listen" /etc/nginx/conf.d/default.conf
-          ')
+          # Boots a web runtime detached, waits until php-fpm answers, and prints
+          # supervisord's view of the horizon program and nginx's listeners.
+          # Arguments after the mode are extra `docker run` options.
+          boot_web_runtime() {
+            local name="$1" mode="$2" status=''
+            shift 2
+            docker run -d --name "$name" \
+              -e APP_RUNTIME_MODE="$mode" \
+              -e APP_RUNTIME_CONFIG_CACHE=false \
+              -e APP_CONFIG_CHECK=false \
+              -e APP_KEY=base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA= \
+              "$@" \
+              laravel-api:ci >/dev/null
+            for _ in $(seq 1 30); do
+              docker exec "$name" curl -fsS -o /dev/null http://127.0.0.1:8080/fpm-ping 2>/dev/null && break
+              sleep 1
+            done
+            docker exec "$name" curl -fsS -o /dev/null http://127.0.0.1:8080/fpm-ping \
+              || { docker logs "$name" >&2; echo "::error::${mode} mode did not start serving" >&2; return 1; }
+            # `supervisorctl status <name>` exits 3 for any non-RUNNING state.
+            status="$(docker exec "$name" supervisorctl status horizon || true)"
+            echo "horizon: ${status}"
+            docker exec "$name" grep -E '^[[:space:]]*listen' /etc/nginx/conf.d/default.conf
+          }
+          trap 'docker rm -f api-probe all-probe port-probe >/dev/null 2>&1 || true' EXIT
+
+          # HORIZON_ENABLED=true is injected on purpose: a shared env file can carry
+          # it to every service, and api mode must override it rather than defer.
+          echo '::group::api mode: Horizon never started, even with HORIZON_ENABLED=true; listening on :80'
+          api_state=$(boot_web_runtime api-probe api -e HORIZON_ENABLED=true)
           printf '%s\n' "$api_state"
 
-          if ! grep -q 'autostart=false' <<<"$api_state"; then
-            echo '::error::api mode did NOT disable the Horizon supervisor program — every API replica would run a queue worker'
+          if ! grep -q 'horizon: .*STOPPED.*Not started' <<<"$api_state"; then
+            echo '::error::api mode started the Horizon supervisor program — every API replica would run a queue worker'
             exit 1
           fi
           if ! grep -qE 'listen 80;' <<<"$api_state"; then
             echo '::error::api mode is not listening on the documented default port 80'
             exit 1
           fi
+          docker rm -f api-probe >/dev/null
           echo '::endgroup::'
 
           # PORT is honoured, and the php-fpm ping listener moves out of the way
@@ -350,19 +401,88 @@ jobs:
           fi
           echo '::endgroup::'
 
-          # `all` is the single-container escape hatch and must NOT disable Horizon.
-          echo '::group::all mode: Horizon left enabled'
-          all_state=$(docker run "${common_env[@]}" -e APP_RUNTIME_MODE=all laravel-api:ci -c '
+          # The fallback itself must not collide: with PORT=8081 the ping listener
+          # cannot fall back to 8081.
+          echo '::group::api mode: PORT=8081 and APP_FPM_PING_PORT=8081 never share a port'
+          collide_state=$(docker run "${common_env[@]}" -e APP_RUNTIME_MODE=api -e PORT=8081 -e APP_FPM_PING_PORT=8081 laravel-api:ci -c '
             /usr/local/bin/app-entrypoint.sh >/dev/null 2>&1
-            awk "/^\[/ { inside = (\$0 == \"[program:horizon]\") } inside && /^autostart/ { print; exit }" \
-              /etc/supervisor/conf.d/supervisord.conf
+            grep -E "^[[:space:]]*listen" /etc/nginx/conf.d/default.conf
           ')
-          printf '%s\n' "$all_state"
-
-          if grep -q 'autostart=false' <<<"$all_state"; then
-            echo '::error::all mode disabled Horizon, but it is the one mode that must run it alongside the API'
+          printf '%s\n' "$collide_state"
+          if ! grep -qE 'listen 8081;' <<<"$collide_state" || grep -qE 'listen 127\.0\.0\.1:8081;' <<<"$collide_state"; then
+            echo '::error::with PORT=8081 the php-fpm ping listener still collides with the application port'
             exit 1
           fi
+          echo '::endgroup::'
+
+          # The ping port configures nginx, so anything but a valid port number must
+          # stop the start with a message naming the variable.
+          echo '::group::an invalid APP_FPM_PING_PORT stops the container'
+          for bad in 'abc' '1;id' '70000'; do
+            if out=$(docker run "${common_env[@]}" -e APP_RUNTIME_MODE=api -e APP_FPM_PING_PORT="$bad" laravel-api:ci \
+                -c '/usr/local/bin/app-entrypoint.sh' 2>&1); then
+              echo "::error::APP_FPM_PING_PORT='${bad}' was accepted"
+              exit 1
+            fi
+            if ! grep -q 'APP_FPM_PING_PORT' <<<"$out"; then
+              echo "::error::APP_FPM_PING_PORT='${bad}' failed without naming the variable: ${out}"
+              exit 1
+            fi
+            echo "rejected: APP_FPM_PING_PORT='${bad}'"
+          done
+          echo '::endgroup::'
+
+          # The same PORT=8080 case, booted for real: the healthcheck must follow the
+          # relocated ping listener through /run/app-runtime.env. Falling back to
+          # 8080 would probe the APPLICATION port, get a Laravel 404, and mark every
+          # replica on a PORT=8080 platform unhealthy.
+          echo '::group::api mode: PORT=8080 booted, healthcheck follows the moved ping port'
+          docker run -d --name port-probe \
+            -e APP_RUNTIME_MODE=api \
+            -e PORT=8080 \
+            -e APP_RUNTIME_CONFIG_CACHE=false \
+            -e APP_CONFIG_CHECK=false \
+            -e APP_KEY=base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA= \
+            laravel-api:ci >/dev/null
+          healthy=false
+          for _ in $(seq 1 30); do
+            if docker exec port-probe /usr/local/bin/app-healthcheck.sh >/dev/null 2>&1; then
+              healthy=true
+              break
+            fi
+            sleep 1
+          done
+          if [ "$healthy" != true ]; then
+            docker logs port-probe >&2 || true
+            docker rm -f port-probe >/dev/null
+            echo '::error::with PORT=8080 the healthcheck never passed — it is not probing the relocated php-fpm ping port'
+            exit 1
+          fi
+          docker exec port-probe supervisorctl stop php-fpm >/dev/null
+          if docker exec port-probe /usr/local/bin/app-healthcheck.sh >/dev/null 2>&1; then
+            docker rm -f port-probe >/dev/null
+            echo '::error::with PORT=8080 the healthcheck passed with php-fpm stopped — it is probing something else'
+            exit 1
+          fi
+          docker rm -f port-probe >/dev/null
+          echo 'PORT=8080: healthcheck passes when serving and fails when php-fpm is down'
+          echo '::endgroup::'
+
+          # `all` is the single-container escape hatch and must NOT disable Horizon.
+          # With no Redis here Horizon itself cannot stay up, but the base image's
+          # wrapper keeps retrying it, so supervisord reports the program RUNNING.
+          # STOPPED would mean it was never started.
+          echo '::group::all mode: Horizon started alongside the API'
+          # HORIZON_ENABLED=false injected for the same shared-env reason as api above,
+          # in reverse: all mode must start Horizon regardless.
+          all_state=$(boot_web_runtime all-probe all -e HORIZON_ENABLED=false)
+          printf '%s\n' "$all_state"
+
+          if ! grep -q 'horizon: .*RUNNING' <<<"$all_state"; then
+            echo '::error::all mode did not start Horizon, but it is the one mode that must run it alongside the API'
+            exit 1
+          fi
+          docker rm -f all-probe >/dev/null
           echo '::endgroup::'
 
           # Each remaining mode reports the command it would run. This catches a
@@ -416,6 +536,32 @@ jobs:
           fi
           echo '::endgroup::'
 
+          # NO APPLICATION PHP RUNS AS ROOT AT STARTUP — see the header of
+          # .github/scripts/root-artisan-sentinel.sh for why a file owner cannot show it.
+          echo '::group::startup artisan never runs as root'
+          trap 'docker rm -f api-probe all-probe uid-probe >/dev/null 2>&1 || true' EXIT
+          for mode in api scheduler; do
+            docker create --name uid-probe \
+              -e APP_RUNTIME_MODE="$mode" \
+              -e APP_RUNTIME_CONFIG_CACHE=true \
+              -e APP_CONFIG_CHECK=true \
+              -e APP_KEY=base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA= \
+              laravel-api:ci >/dev/null
+            .github/scripts/root-artisan-sentinel.sh install uid-probe
+            docker start uid-probe >/dev/null
+            # Wait for the startup artisan steps to finish: scheduler exits on its
+            # own; api stops at app:check-config (no database here) or, if that
+            # passes, is serving. Bounded, never a fixed sleep.
+            for _ in $(seq 1 60); do
+              [ "$(docker inspect -f '{{.State.Running}}' uid-probe)" = "true" ] || break
+              docker exec uid-probe curl -fsS -o /dev/null http://127.0.0.1:8080/fpm-ping 2>/dev/null && break
+              sleep 1
+            done
+            .github/scripts/root-artisan-sentinel.sh check uid-probe "${mode} mode"
+            docker rm -f uid-probe >/dev/null
+          done
+          echo '::endgroup::'
+
           echo '::group::an unknown mode fails loudly instead of guessing'
           if docker run "${common_env[@]}" -e APP_RUNTIME_MODE=nonsense laravel-api:ci \
               -c '/usr/local/bin/app-entrypoint.sh' 2>/dev/null; then
@@ -458,7 +604,12 @@ jobs:
 
           # No database is reachable here, so the fail-fast config check is off;
           # Horizon itself needs only Redis.
-          docker run -d --name shutdown-worker --network shutdown-net \
+          # Under the capability set a hardened deployment leaves — nothing beyond
+          # what the entrypoint's ownership fix and privilege drop need — so the
+          # worker, its drain and its healthcheck are proven there, not only under
+          # Docker's defaults.
+          docker create --name shutdown-worker --network shutdown-net \
+            --cap-drop ALL --cap-add CHOWN --cap-add SETUID --cap-add SETGID \
             -e APP_RUNTIME_MODE=worker \
             -e APP_CONFIG_CHECK=false \
             -e APP_ENV=production \
@@ -469,10 +620,17 @@ jobs:
             -e REDIS_HOST=shutdown-redis \
             -e LOG_CHANNEL=stderr \
             laravel-api:ci >/dev/null
+          # The uid sentinel (see .github/scripts/root-artisan-sentinel.sh): it records
+          # every artisan boot in this container — Horizon itself, and each run of the
+          # worker HEALTHCHECK, which Docker executes as root.
+          .github/scripts/root-artisan-sentinel.sh install shutdown-worker
+          docker start shutdown-worker >/dev/null
 
           echo '::group::Horizon is PID 1, unwrapped, and can trap signals'
           for attempt in $(seq 1 30); do
-            if docker exec shutdown-worker php artisan horizon:status --no-interaction 2>/dev/null | grep -q 'running'; then
+            # As www-data, like any artisan run in this image: a root `docker exec`
+            # would itself trip the uid sentinel checked below.
+            if docker exec -u www-data shutdown-worker php artisan horizon:status --no-interaction 2>/dev/null | grep -q 'running'; then
               break
             fi
             sleep 2
@@ -499,6 +657,48 @@ jobs:
           echo 'PID 1 is Horizon; pcntl is available'
           echo '::endgroup::'
 
+          # The image HEALTHCHECK as Docker runs it (as root, dropping to www-data
+          # itself) against this container's real hostname and a real Redis — the
+          # path CheckWorkerCommandFeatureTest mocks out.
+          echo '::group::the worker healthcheck passes for a live worker, and fails without one'
+          boots_before=$(docker exec shutdown-worker sh -c 'wc -l < /tmp/boot-uids' 2>/dev/null || echo 0)
+          if ! docker exec shutdown-worker /usr/local/bin/app-healthcheck.sh; then
+            echo '::error::the worker healthcheck failed for a running Horizon — every worker replica would be restarted in a loop'
+            exit 1
+          fi
+          boots_after=$(docker exec shutdown-worker sh -c 'wc -l < /tmp/boot-uids' 2>/dev/null || echo 0)
+          # The healthcheck must actually have booted artisan (app:check-worker); a
+          # script that exited 0 without asking would pass the check above.
+          if [ "$boots_after" -le "$boots_before" ]; then
+            echo '::error::the worker healthcheck passed without booting artisan — it is not asking Horizon at all'
+            exit 1
+          fi
+          echo 'worker healthcheck passed'
+          # Negative: a container on the same Redis whose own hostname has no Horizon
+          # master must be reported unhealthy, even though another one is running.
+          # It must fail for THAT reason: a crash (bootstrap, Redis, setpriv) would
+          # exit non-zero too, and prove nothing about the per-host check.
+          if negative=$(docker run --rm --network shutdown-net \
+              -e APP_RUNTIME_MODE=worker \
+              -e APP_ENV=production \
+              -e APP_KEY=base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA= \
+              -e QUEUE_CONNECTION=redis \
+              -e CACHE_STORE=redis \
+              -e REDIS_HOST=shutdown-redis \
+              -e LOG_CHANNEL=stderr \
+              --entrypoint /usr/local/bin/app-healthcheck.sh \
+              laravel-api:ci 2>&1); then
+            echo '::error::the worker healthcheck passed in a container with no Horizon master of its own'
+            exit 1
+          fi
+          if ! grep -q 'No live Horizon master for this host' <<<"$negative"; then
+            echo "::error::the worker healthcheck failed, but not because this host has no master: ${negative}"
+            exit 1
+          fi
+          echo 'worker healthcheck fails for a host with no live master'
+          .github/scripts/root-artisan-sentinel.sh check shutdown-worker "worker (Horizon and its healthcheck)"
+          echo '::endgroup::'
+
           echo '::group::an in-flight job survives the shutdown'
           # The closure is written to a FILE rather than passed to `tinker
           # --execute`: serialization reads the closure's source, and code
@@ -507,7 +707,10 @@ jobs:
           # The wait re-checks a deadline instead of a single sleep() — Horizon's
           # autoscaler signals its workers, and a signal makes sleep() return
           # early, which would end the job before the shutdown under test.
-          docker exec shutdown-worker sh -c 'cat > /tmp/dispatch.php <<"PHP"
+          #
+          # As www-data, like every artisan run against this image: under the
+          # dropped capabilities above, root cannot write files www-data owns.
+          docker exec -u www-data shutdown-worker sh -c 'cat > /tmp/dispatch.php <<"PHP"
           <?php
           require "/var/www/html/vendor/autoload.php";
           $app = require "/var/www/html/bootstrap/app.php";

@@ -36,7 +36,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       # Backing services come from the same docker-compose.yml developers use,
       # so image, credentials and ports have exactly one definition. Only the
@@ -59,7 +59,7 @@ jobs:
           exit 1
 
       - name: Set up PHP
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
         with:
           php-version: '8.5'
           extensions: mbstring, xml, zip, curl, pdo, pdo_pgsql, bcmath, intl, redis
@@ -283,7 +283,7 @@ jobs:
       # only the report files rather than the whole directory.
       - name: Upload the ZAP report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: zap-api-scan-report
           path: |
@@ -294,7 +294,7 @@ jobs:
 
       - name: Upload API logs on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: api-logs
           path: app.log

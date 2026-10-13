@@ -1,0 +1,35 @@
+# Keeps the pinned base image current without letting it move silently.
+#
+# `Dockerfile` and `docker-compose.yml` must pin jaylordibe/laravel-php by DIGEST
+# (`8.5@sha256:…`; test.yml's `docker` job enforces it, and requires both files to
+# carry the same digest), so the same commit always builds the same image. The base
+# is rebuilt weekly for OS security updates. The multi-ecosystem group below turns
+# each rebuild into ONE pull request that bumps both files together — two separate
+# pull requests could each only ever fail the same-digest check — and the `docker`
+# job scans and boots the new base before it can merge.
+version: 2
+
+multi-ecosystem-groups:
+  base-image:
+    schedule:
+      interval: weekly
+      day: tuesday
+
+updates:
+  - package-ecosystem: docker
+    directory: /
+    patterns: ["jaylordibe/laravel-php"]
+    multi-ecosystem-group: base-image
+
+  - package-ecosystem: docker-compose
+    directory: /
+    patterns: ["jaylordibe/laravel-php"]
+    multi-ecosystem-group: base-image
+
+  # Every action in .github/workflows is pinned to a full commit SHA, with its
+  # release as a trailing comment: a tag can be moved to other code, a SHA cannot.
+  # Dependabot proposes each new release as a pull request that bumps both.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

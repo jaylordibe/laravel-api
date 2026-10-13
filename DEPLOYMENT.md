@@ -67,9 +67,11 @@ docker run -e APP_RUNTIME_MODE=artisan  <image> <any artisan command>
 
 ### Why the API and the worker are separate
 
-The base image starts nginx, php-fpm **and** Horizon from a single supervisord
-configuration. That is right for one development container and wrong for anything
-that scales, so `api` mode explicitly disables the Horizon supervisor program.
+The base image's default command starts nginx, php-fpm **and** Horizon under one
+supervisord. That is right for one development container and wrong for anything
+that scales, so `api` mode sets the base image's `HORIZON_ENABLED=false` and
+supervisord never starts Horizon. `worker` hands the base image `php artisan
+horizon` instead, which it runs alone, as `www-data`, as PID 1.
 
 Without that split, **every API replica also runs a Horizon master**: queue
 concurrency becomes a function of web traffic, database connections multiply with
@@ -405,7 +407,7 @@ where exception and failed-job payloads hide.
 |---|---|---|
 | **Liveness** | `GET /up` | Is the process wedged? Cheap; **no dependency checks**. |
 | **Readiness** | `GET /api/health/ready` | Can this replica serve? Verifies database + Redis. `200` / `503`. |
-| **Worker** | `docker/healthcheck.sh` (`horizon:status`) | Container-level only. |
+| **Worker** | `docker/healthcheck.sh` → `app:check-worker` | Is **this** container's Horizon master alive (running or paused)? Per replica — `horizon:status` would stay green while one replica is wedged beside healthy ones. |
 
 **Do not point a liveness probe at readiness.** Failing liveness *kills and
 restarts* the container, so a brief database blip would restart every replica at
@@ -594,17 +596,40 @@ The runtime is built on **`jaylordibe/laravel-php:8.5`**
 ([source](https://github.com/jaylordibe/docker-laravel-php)), which is maintained
 separately from this repository. This template depends on it for:
 
+- its **entrypoint contract**: the default `CMD` is the web stack (supervisord →
+  nginx + php-fpm, plus Horizon unless `HORIZON_ENABLED=false`); any other command
+  runs alone, as `www-data`, as PID 1; and every hand-off fixes ownership of
+  `storage/` and `bootstrap/cache` first. `docker/entrypoint.sh` relies on all three:
+  `api` mode sets `HORIZON_ENABLED=false`, the other modes and the startup artisan
+  steps hand their command to `/entrypoint.sh`. Because this image sets its own
+  `ENTRYPOINT`, Docker drops the base `CMD`, so the web-stack command is passed
+  explicitly (`WEB_STACK`); the `docker` CI job boots `api` and `all` for real, so a
+  change to it upstream fails there;
 - nginx (`user www-data`) + php-fpm 8.5 (`pm.max_children=20`) under supervisord;
-- `/entrypoint.sh` rendering nginx real-IP config from `TRUSTED_PROXIES` and
-  fixing ownership of `storage/` and `bootstrap/cache`;
+- `/entrypoint.sh` rendering nginx real-IP config from `TRUSTED_PROXIES`;
 - the `pdo_pgsql`, `redis`, `gd`, `intl`, `bcmath` and `zip` extensions;
 - **`pcntl`**, which Horizon needs to trap SIGTERM. Without it a worker container
   dies where it stands on shutdown and every in-flight job is lost — silently,
   since the container still exits and the job simply reappears after
   `retry_after`. CI asserts it is present rather than assuming it.
 
+**The base image must be pinned by digest — required, not optional.** `Dockerfile`
+and `docker-compose.yml` must reference `jaylordibe/laravel-php:8.5@sha256:…`, both on
+the same digest; the `docker` CI job fails otherwise. The digest has to be one the base
+image's own CI published with the entrypoint contract above: publish the base first,
+then pin it here (`docker buildx imagetools inspect jaylordibe/laravel-php:8.5`). `8.5` is rebuilt weekly for
+OS security updates; Dependabot proposes each new digest as a pull request, and CI
+scans and boots it before it can merge. An unpinned `FROM` would make the same
+commit build a different image tomorrow — possibly one whose entrypoint contract
+this template no longer matches.
+
+**Worker replicas need distinct hostnames.** The worker healthcheck
+(`app:check-worker`) recognises its own Horizon master by the container's hostname,
+which every mainstream orchestrator makes unique per replica. Replicas sharing a
+hostname (host networking, a fixed `hostname:`) can vouch for each other.
+
 **Stated assumptions you should verify for your own threat model:** the image is
-published `linux/amd64` only; supervisord runs as root in order to bind the port
-and to drop its children to `www-data` (accepted as Trivy `DS-0002`, see
-`.trivyignore`); and this repository cannot verify the provenance of a base image
-it does not build. Pin it by digest if that matters to you.
+published for `linux/amd64` and `linux/arm64`; supervisord runs as root in order to
+bind the port and to drop its children to `www-data` (accepted as Trivy `DS-0002`,
+see `.trivyignore`); and this repository cannot verify the provenance of a base
+image it does not build — the digest pin is what makes a given build reproducible.
