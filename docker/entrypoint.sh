@@ -26,8 +26,9 @@
 # bootstrap/cache all belong to the base entrypoint, and are not repeated here.
 #
 # The application code is identical in every mode. Nothing here is
-# provider-specific: a platform picks a mode by setting one environment variable
-# or overriding the command, which every container runtime can do.
+# provider-specific: a platform picks a mode by setting one environment variable,
+# which every container runtime can do. Command arguments are read only by
+# `artisan` mode (`APP_RUNTIME_MODE=artisan <artisan command>`).
 set -euo pipefail
 
 APP_DIR=/var/www/html

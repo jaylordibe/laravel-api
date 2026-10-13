@@ -415,20 +415,22 @@ jobs:
           fi
           echo '::endgroup::'
 
-          # The ping port configures nginx, so anything but a valid port number must
-          # stop the start with a message naming the variable.
-          echo '::group::an invalid APP_FPM_PING_PORT stops the container'
-          for bad in 'abc' '1;id' '70000'; do
-            if out=$(docker run "${common_env[@]}" -e APP_RUNTIME_MODE=api -e APP_FPM_PING_PORT="$bad" laravel-api:ci \
-                -c '/usr/local/bin/app-entrypoint.sh' 2>&1); then
-              echo "::error::APP_FPM_PING_PORT='${bad}' was accepted"
-              exit 1
-            fi
-            if ! grep -q 'APP_FPM_PING_PORT' <<<"$out"; then
-              echo "::error::APP_FPM_PING_PORT='${bad}' failed without naming the variable: ${out}"
-              exit 1
-            fi
-            echo "rejected: APP_FPM_PING_PORT='${bad}'"
+          # Both ports configure nginx, so anything but a valid port number must stop
+          # the start with a message naming the variable.
+          echo '::group::an invalid PORT or APP_FPM_PING_PORT stops the container'
+          for var in PORT APP_FPM_PING_PORT; do
+            for bad in 'abc' '1;id' '0' '70000'; do
+              if out=$(docker run "${common_env[@]}" -e APP_RUNTIME_MODE=api -e "${var}=${bad}" laravel-api:ci \
+                  -c '/usr/local/bin/app-entrypoint.sh' 2>&1); then
+                echo "::error::${var}='${bad}' was accepted"
+                exit 1
+              fi
+              if ! grep -qE "(^|[^A-Z_])${var} " <<<"$out"; then
+                echo "::error::${var}='${bad}' failed without naming the variable: ${out}"
+                exit 1
+              fi
+              echo "rejected: ${var}='${bad}'"
+            done
           done
           echo '::endgroup::'
 
@@ -563,9 +565,13 @@ jobs:
           echo '::endgroup::'
 
           echo '::group::an unknown mode fails loudly instead of guessing'
-          if docker run "${common_env[@]}" -e APP_RUNTIME_MODE=nonsense laravel-api:ci \
-              -c '/usr/local/bin/app-entrypoint.sh' 2>/dev/null; then
+          if out=$(docker run "${common_env[@]}" -e APP_RUNTIME_MODE=nonsense laravel-api:ci \
+              -c '/usr/local/bin/app-entrypoint.sh' 2>&1); then
             echo '::error::an unknown APP_RUNTIME_MODE was accepted'
+            exit 1
+          fi
+          if ! grep -q "unknown APP_RUNTIME_MODE 'nonsense'" <<<"$out"; then
+            echo "::error::an unknown APP_RUNTIME_MODE failed without saying why: ${out}"
             exit 1
           fi
           echo 'unknown mode rejected'

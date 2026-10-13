@@ -38,8 +38,10 @@ opt-in and confined.
 
 ## 1. Runtime commands
 
-The image has **one build** and selects its runtime with `APP_RUNTIME_MODE`
-(or by overriding the command). `docker/entrypoint.sh` owns the dispatch.
+The image has **one build** and selects its runtime with `APP_RUNTIME_MODE`;
+`docker/entrypoint.sh` owns the dispatch. Command arguments are read only by the
+`artisan` mode (`APP_RUNTIME_MODE=artisan <artisan command>`); every other mode
+ignores them.
 
 | Runtime | `APP_RUNTIME_MODE` | Process | Lifetime |
 |---|---|---|---|
@@ -598,10 +600,11 @@ separately from this repository. This template depends on it for:
 
 - its **entrypoint contract**: the default `CMD` is the web stack (supervisord →
   nginx + php-fpm, plus Horizon unless `HORIZON_ENABLED=false`); any other command
-  runs alone, as `www-data`, as PID 1; and every hand-off fixes ownership of
-  `storage/` and `bootstrap/cache` first. `docker/entrypoint.sh` relies on all three:
-  `api` mode sets `HORIZON_ENABLED=false`, the other modes and the startup artisan
-  steps hand their command to `/entrypoint.sh`. Because this image sets its own
+  runs alone, as `www-data`, as PID 1; the hand-off fixes ownership of `storage/`
+  and `bootstrap/cache` first; and `/usr/local/bin/as-app` runs a command as
+  `www-data`. `docker/entrypoint.sh` relies on all of them: `api` mode sets
+  `HORIZON_ENABLED=false`, every mode hands its command to `/entrypoint.sh`, and the
+  startup artisan steps (and the worker healthcheck) run through `as-app`. Because this image sets its own
   `ENTRYPOINT`, Docker drops the base `CMD`, so the web-stack command is passed
   explicitly (`WEB_STACK`); the `docker` CI job boots `api` and `all` for real, so a
   change to it upstream fails there;

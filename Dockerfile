@@ -77,7 +77,7 @@ RUN chmod 0755 /usr/local/bin/app-entrypoint.sh /usr/local/bin/app-healthcheck.s
 
 # The default is the web runtime, so a platform that overrides nothing gets an API
 # container and never an accidental queue worker. Every other mode is opt-in via
-# this variable or a command override.
+# this variable — never by the command, which only `artisan` mode reads.
 ENV APP_RUNTIME_MODE=api
 
 # Overrides the base image's healthcheck, which knows neither the php-fpm ping port

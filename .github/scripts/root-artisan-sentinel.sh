@@ -11,6 +11,11 @@
 # on a cached file cannot show this (the ownership fix chowns whatever root wrote),
 # so `install` wraps packages.php to record the effective uid of every process that
 # loads it, and `check` fails if any was root — or if none was recorded at all.
+#
+# The record file is created up front, owned by root and writable by everyone. If the
+# first writer created it, a later writer running as a different user could be
+# refused (fs.protected_regular in sticky /tmp, or root without DAC_OVERRIDE under
+# dropped capabilities), crash before recording, and a root boot would go unseen.
 set -euo pipefail
 
 action="${1:?usage: $0 install|check <container> [label]}"
@@ -28,6 +33,16 @@ PHP
         docker cp "${container}:/var/www/html/bootstrap/cache/packages.php" "${dir}/packages.orig.php"
         docker cp "${dir}/packages.orig.php" "${container}:/var/www/html/bootstrap/cache/packages.orig.php"
         docker cp "${dir}/packages.php" "${container}:/var/www/html/bootstrap/cache/packages.php"
+        # As a tar stream, so the file's owner is set in the archive: `docker cp` of a
+        # plain file keeps the host user's uid.
+        python3 -c '
+import io, sys, tarfile
+archive = tarfile.open(fileobj=sys.stdout.buffer, mode="w|")
+entry = tarfile.TarInfo("boot-uids")
+entry.uid, entry.gid, entry.mode, entry.size = 0, 0, 0o666, 0
+archive.addfile(entry, io.BytesIO(b""))
+archive.close()
+' | docker cp - "${container}:/tmp"
         ;;
     check)
         label="${3:-$container}"
