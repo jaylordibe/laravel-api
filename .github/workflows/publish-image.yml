@@ -1,9 +1,9 @@
 name: Publish Image
 
 # Builds, scans and publishes the production image to GHCR. It DEPLOYS NOTHING and
-# holds no server credential: deploying belongs to the deployer (for a single
-# server, jaylordibe/cicd), which runs only an image this workflow attested.
-# DEPLOYMENT.md §14 owns the contract a deployer follows.
+# holds no server credential: whatever platform you deploy with pulls the
+# image from the registry. DEPLOYMENT.md §14 owns the contract a deployment
+# must follow.
 #
 # Publishing is OPT-IN through the repository variable PUBLISH_ENABLED=true, so a
 # fresh fork runs the gates and skips the push instead of failing on a registry it
@@ -11,7 +11,7 @@ name: Publish Image
 #
 # Order matters: the image is pushed under its immutable `sha-<commit>` tag,
 # scanned BY DIGEST, and only then attested and given the moving branch tag. An
-# image that fails the scan has no attestation, and a deployer that verifies
+# image that fails the scan has no attestation, so a deployment that verifies
 # attestations refuses it.
 
 on:
@@ -124,7 +124,7 @@ jobs:
       - name: Attest build provenance
         # Attestations need a public repository, or a GitHub plan that supports them for
         # private ones; set ATTEST_PROVENANCE=true on such a plan. Without one, the
-        # deployer's component must say provenance=none.
+        # image is published unattested.
         if: ${{ github.event.repository.visibility == 'public' || vars.ATTEST_PROVENANCE == 'true' }}
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
@@ -143,22 +143,3 @@ jobs:
           IMAGE: ${{ steps.name.outputs.image }}
           DIGEST: ${{ steps.build.outputs.digest }}
         run: echo "Published \`$IMAGE@$DIGEST\` (\`$IMAGE:$GITHUB_REF_NAME\`)." >> "$GITHUB_STEP_SUMMARY"
-
-      # Optional: ask the deployer for a STAGING deploy of what was just published.
-      # Production is always started by a person, in the deployer. Set the variables
-      # DEPLOY_DISPATCH_REPO (owner/repo), DEPLOY_DISPATCH_PROJECT and
-      # DEPLOY_DISPATCH_COMPONENT, and the secret DEPLOY_DISPATCH_TOKEN: a fine-grained
-      # token with ONLY Actions: write on that repository. It can start the
-      # deployer's Deploy workflow; it cannot change a file there.
-      - name: Ask for a staging deploy
-        if: ${{ github.ref == 'refs/heads/staging' && vars.DEPLOY_DISPATCH_REPO != '' }}
-        env:
-          GH_TOKEN: ${{ secrets.DEPLOY_DISPATCH_TOKEN }}
-          REPO: ${{ vars.DEPLOY_DISPATCH_REPO }}
-          PROJECT: ${{ vars.DEPLOY_DISPATCH_PROJECT }}
-          COMPONENT: ${{ vars.DEPLOY_DISPATCH_COMPONENT }}
-          IMAGE: ${{ steps.name.outputs.image }}@${{ steps.build.outputs.digest }}
-        run: |
-          gh workflow run deploy.yml --repo "$REPO" --ref main \
-            -f environment=staging -f project="$PROJECT" -f component="$COMPONENT" \
-            -f image="$IMAGE"

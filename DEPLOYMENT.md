@@ -558,7 +558,7 @@ runtime secrets        APP_KEY
 
 ---
 
-## 14. Publishing an image, and what a deployer must do
+## 14. Publishing an image, and what every deployment must do
 
 This repository **publishes**; it never deploys. `.github/workflows/publish-image.yml`
 runs on every push to `main` or `staging`:
@@ -573,22 +573,18 @@ Trivy, attests its build provenance, and only then moves the `main` / `staging`
 tag. An image that fails the scan has no attestation.
 
 Enable it with the repository variable `PUBLISH_ENABLED=true`. A fresh fork runs
-the gates and skips the push. The workflow holds no server credential. Its one
-optional link to a deployer, the staging dispatch, uses a token that can only
-start the deployer's workflow, never change it.
+the gates and skips the push. The workflow holds no server credential.
 
 **Attestations need a public repository**, or a GitHub plan that supports them on
 private ones (set `ATTEST_PROVENANCE=true` there). A private repository without
-them publishes unattested images, and its deployer must be told so explicitly
-(jaylordibe/cicd: `provenance=none` on the component).
+them publishes unattested images.
 
-**Deploying is the deployer's job.** For one server that is
-[jaylordibe/cicd](https://github.com/jaylordibe/cicd), whose `laravel-api` template
-implements everything below. Any deployer must:
+**Deploying is left to your platform**: a single server, a container service or
+an autoscaled cluster. Whichever it is, the deployment must:
 
 | Obligation | Why |
 |---|---|
-| Deploy **by digest**, and only a digest attested by this repository's `publish-image.yml` (from `main` for production) | A tag moves; an unattested image skipped the gates above |
+| Deploy **by digest**, ideally only a digest attested by this repository's `publish-image.yml` (from `main` for production) | A tag moves; an unattested image skipped the gates above |
 | Run, in order: **migrate → sync permissions → start/replace workers → start/replace API → verify** | Syncing permissions is the `permission command` one-shot in the §13 contract (see below) |
 | Verify with `GET /api/health/ready`: HTTP 200 and `"status":"ready"`, never following a redirect, every attempt time-bounded | A probe that lands on a login page or another host has proved nothing |
 | Generate `APP_KEY` and the Passport keys **once** per environment (§4b) | Regenerating them signs everyone out and makes encrypted data unreadable |
