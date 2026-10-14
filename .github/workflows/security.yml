@@ -10,12 +10,12 @@ name: Security
 #                     dependencies nobody is currently touching; a PR-only audit
 #                     would not surface one until somebody happened to open a
 #                     pull request, which is not a security cadence.
-#   - workflow_call — the deploy path. A deploy workflow gates only on the
-#                     workflows it explicitly calls, so scanning that lives
-#                     outside test.yml sits outside the deploy gate unless it is
-#                     called too, and a push straight to a deploy branch would
-#                     ship with no dependency scan at all. Do not remove this
-#                     trigger without removing the callers in deploy-to-*.yml.
+#   - workflow_call — the publish path. The publish workflow gates only on
+#                     the workflows it explicitly calls, so scanning that lives
+#                     outside test.yml sits outside the publish gate unless it is
+#                     called too, and a push straight to a release branch would
+#                     publish with no dependency scan at all. Do not remove this
+#                     trigger without removing the caller in publish-image.yml.
 #   - workflow_dispatch — the on-demand button in the Actions tab.
 #
 # The IMAGE scan lives in test.yml's `docker` job, which needs the image that

@@ -321,5 +321,5 @@ updated or recorded as unaffected, with the deploy order stated.
 | Horizon / Passport / general Laravel | `configuring-horizon`, `passport-development`, `laravel-best-practices` skills |
 | API contract worksheet | `docs/api-contract.md` |
 | Database design worksheet | `docs/database-design.md` |
-| CI and security workflows | `.github/workflows/test.yml`, `security.yml`, `security-dast.yml` |
+| CI, security and image publishing | `.github/workflows/test.yml`, `security.yml`, `security-dast.yml`, `publish-image.yml` |
 | Deployment and runtime modes | `DEPLOYMENT.md` |

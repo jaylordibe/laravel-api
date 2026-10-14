@@ -1,0 +1,164 @@
+name: Publish Image
+
+# Builds, scans and publishes the production image to GHCR. It DEPLOYS NOTHING and
+# holds no server credential: deploying belongs to the deployer (for a single
+# server, jaylordibe/cicd), which runs only an image this workflow attested.
+# DEPLOYMENT.md §14 owns the contract a deployer follows.
+#
+# Publishing is OPT-IN through the repository variable PUBLISH_ENABLED=true, so a
+# fresh fork runs the gates and skips the push instead of failing on a registry it
+# has not set up.
+#
+# Order matters: the image is pushed under its immutable `sha-<commit>` tag,
+# scanned BY DIGEST, and only then attested and given the moving branch tag. An
+# image that fails the scan has no attestation, and a deployer that verifies
+# attestations refuses it.
+
+on:
+  push:
+    branches:
+      - main
+      - staging
+  workflow_dispatch:
+
+# A publish in flight finishes; a newer push queues behind it.
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  # `workflow_dispatch` accepts any ref; only `main` and `staging` publish.
+  guard:
+    name: Guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Refuse refs other than main and staging
+        env:
+          REF: ${{ github.ref }}
+        run: |
+          set -euo pipefail
+          case "$REF" in
+            refs/heads/main|refs/heads/staging) echo "publishing from $REF" ;;
+            *) echo "::error::refusing to publish from '${REF}'; only main and staging publish."; exit 1 ;;
+          esac
+
+  # The full suite gates what `main` publishes. `staging` deliberately skips it, so
+  # a push there is published as fast as possible (pull requests into staging are
+  # still tested by test.yml); security and the base-image pin still gate it.
+  test:
+    name: Test
+    needs: guard
+    if: github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/test.yml
+
+  # Dependency advisories and the Trivy filesystem scan. Called here so they gate
+  # the publish: otherwise they run on pull requests and the weekly cron only.
+  security:
+    name: Security
+    needs: guard
+    uses: ./.github/workflows/security.yml
+
+  publish:
+    name: Build, scan and publish
+    needs: [guard, test, security]
+    if: >-
+      ${{ !cancelled() && vars.PUBLISH_ENABLED == 'true'
+        && needs.guard.result == 'success' && needs.security.result == 'success'
+        && (needs.test.result == 'success' || (needs.test.result == 'skipped' && github.ref == 'refs/heads/staging')) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      # test.yml checks this on main; staging skips test.yml, so it is checked here
+      # for both. Seconds to run.
+      - name: Require the base image to be pinned by digest
+        run: .github/scripts/check-base-pin.sh
+
+      - name: Name the image
+        id: name
+        run: echo "image=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Log in to GHCR
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      - name: Build and push (immutable tag only)
+        id: build
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.name.outputs.image }}:sha-${{ github.sha }}
+
+      # The same gate as test.yml's image scan, on the bytes that were published.
+      - name: Scan the pushed digest
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        env:
+          TRIVY_USERNAME: ${{ github.actor }}
+          TRIVY_PASSWORD: ${{ github.token }}
+        with:
+          image-ref: ${{ steps.name.outputs.image }}@${{ steps.build.outputs.digest }}
+          format: table
+          exit-code: '1'
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          trivyignores: .trivyignore
+
+      - name: Attest build provenance
+        # Attestations need a public repository, or a GitHub plan that supports them for
+        # private ones; set ATTEST_PROVENANCE=true on such a plan. Without one, the
+        # deployer's component must say provenance=none.
+        if: ${{ github.event.repository.visibility == 'public' || vars.ATTEST_PROVENANCE == 'true' }}
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-name: ${{ steps.name.outputs.image }}
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true
+
+      - name: Tag the branch
+        env:
+          IMAGE: ${{ steps.name.outputs.image }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: docker buildx imagetools create --tag "$IMAGE:$GITHUB_REF_NAME" "$IMAGE@$DIGEST"
+
+      - name: Summary
+        env:
+          IMAGE: ${{ steps.name.outputs.image }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: echo "Published \`$IMAGE@$DIGEST\` (\`$IMAGE:$GITHUB_REF_NAME\`)." >> "$GITHUB_STEP_SUMMARY"
+
+      # Optional: ask the deployer for a STAGING deploy of what was just published.
+      # Production is always started by a person, in the deployer. Set the variables
+      # DEPLOY_DISPATCH_REPO (owner/repo), DEPLOY_DISPATCH_PROJECT and
+      # DEPLOY_DISPATCH_COMPONENT, and the secret DEPLOY_DISPATCH_TOKEN: a fine-grained
+      # token with ONLY Actions: write on that repository. It can start the
+      # deployer's Deploy workflow; it cannot change a file there.
+      - name: Ask for a staging deploy
+        if: ${{ github.ref == 'refs/heads/staging' && vars.DEPLOY_DISPATCH_REPO != '' }}
+        env:
+          GH_TOKEN: ${{ secrets.DEPLOY_DISPATCH_TOKEN }}
+          REPO: ${{ vars.DEPLOY_DISPATCH_REPO }}
+          PROJECT: ${{ vars.DEPLOY_DISPATCH_PROJECT }}
+          COMPONENT: ${{ vars.DEPLOY_DISPATCH_COMPONENT }}
+          IMAGE: ${{ steps.name.outputs.image }}@${{ steps.build.outputs.digest }}
+        run: |
+          gh workflow run deploy.yml --repo "$REPO" --ref main \
+            -f environment=staging -f project="$PROJECT" -f component="$COMPONENT" \
+            -f image="$IMAGE"

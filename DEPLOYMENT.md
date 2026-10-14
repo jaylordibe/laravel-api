@@ -516,7 +516,7 @@ deliberately contains no Terraform, Pulumi, CDK or Kubernetes manifests** — th
 mapping lives outside the application.
 
 ```
-api image              <registry>/<repo>:<tag>          (built from ./Dockerfile)
+api image              <registry>/<repo>@sha256:<digest> (built from ./Dockerfile; deployed by digest, §14)
 api command            APP_RUNTIME_MODE=api             (image default)
 api port               80, or the value of PORT
 health path            /up            (liveness)
@@ -558,29 +558,44 @@ runtime secrets        APP_KEY
 
 ---
 
-## 14. Wiring up a real deployment
+## 14. Publishing an image, and what a deployer must do
 
-`.github/workflows/deploy-to-production.yml` and `deploy-to-staging.yml` are ready
-except for the step that ships. Replace the `Deploy to …` step, then set the
-repository variable `DEPLOY_ENABLED=true`.
+This repository **publishes**; it never deploys. `.github/workflows/publish-image.yml`
+runs on every push to `main` or `staging`:
 
-**Keep the surrounding shape** — each property is load-bearing:
+1. the guard;
+2. `test.yml` (on `main`; `staging` skips the suite for speed, and pull requests into it are still tested);
+3. `security.yml`;
+4. the base-image pin check.
 
-| Property | Why it is there |
+It then pushes the image to GHCR under `sha-<commit>`, scans **that digest** with
+Trivy, attests its build provenance, and only then moves the `main` / `staging`
+tag. An image that fails the scan has no attestation.
+
+Enable it with the repository variable `PUBLISH_ENABLED=true`. A fresh fork runs
+the gates and skips the push. The workflow holds no server credential. Its one
+optional link to a deployer, the staging dispatch, uses a token that can only
+start the deployer's workflow, never change it.
+
+**Attestations need a public repository**, or a GitHub plan that supports them on
+private ones (set `ATTEST_PROVENANCE=true` there). A private repository without
+them publishes unattested images, and its deployer must be told so explicitly
+(jaylordibe/cicd: `provenance=none` on the component).
+
+**Deploying is the deployer's job.** For one server that is
+[jaylordibe/cicd](https://github.com/jaylordibe/cicd), whose `laravel-api` template
+implements everything below. Any deployer must:
+
+| Obligation | Why |
 |---|---|
-| `uses: ./.github/workflows/test.yml` | The deploy gates on the *same* test workflow a PR runs. Restating the job is how a check ends up enforced on the PR but not on the deploy that follows it. |
-| `if: vars.DEPLOY_ENABLED == 'true'` | A fresh fork runs CI and skips the deploy, instead of failing on secrets it does not have yet. |
-| `concurrency` with `cancel-in-progress: false` | Two pushes in quick succession queue instead of racing; an in-flight deploy is never killed half-done. |
-| `environment:` | Scopes secrets to the environment and lets you require reviewer approval — the human gate on production. |
-| `timeout-minutes` | A runaway-job guard. If it trips, find out what got stuck rather than raising the number. |
-| Smoke test | `.github/scripts/smoke-check.sh` — one definition for both environments, and its header owns what passes, what retries and every timeout. Passes only on HTTP 200 from `/api/health/ready` with the ready body. An unset `*_URL` fails the run. |
+| Deploy **by digest**, and only a digest attested by this repository's `publish-image.yml` (from `main` for production) | A tag moves; an unattested image skipped the gates above |
+| Run, in order: **migrate → sync permissions → start/replace workers → start/replace API → verify** | Syncing permissions is the `permission command` one-shot in the §13 contract (see below) |
+| Verify with `GET /api/health/ready`: HTTP 200 and `"status":"ready"`, never following a redirect, every attempt time-bounded | A probe that lands on a login page or another host has proved nothing |
+| Generate `APP_KEY` and the Passport keys **once** per environment (§4b) | Regenerating them signs everyone out and makes encrypted data unreadable |
+| On the **first** deploy only, create the Passport personal access client: `APP_RUNTIME_MODE=artisan passport:client --personal --name='API Personal Access Client' --provider=users --no-interaction` | Sign-in issues personal access tokens and fails without one |
+| Never run `db:seed` with `DatabaseSeeder` or `UserSeeder` in production | `UserSeeder` creates test users with a published password |
 
-A deploy should run, in order: **migrate → sync permissions → start/replace workers →
-start/replace API → verify**. Syncing permissions is the `permission command` one-shot in the §13 contract (idempotent;
-it adds any new `UserPermission` case to the roles — it never revokes, so taking a permission
-away from a role needs an explicit `revokePermissionTo` data change). Skip it and a newly gated action answers
-403 for everyone, admins included — it fails closed. `app:reset-role-permissions` also *deletes*
-permissions and roles missing from the enums, so do not use it on a fork that keeps extra ones in the database.
+**About the permission sync.** It is idempotent: it adds any new `UserPermission` case to the roles, and never revokes, so taking a permission away from a role needs an explicit `revokePermissionTo` data change. Skip it and a newly gated action answers 403 for everyone, admins included: it fails closed. `app:reset-role-permissions` also *deletes* permissions and roles missing from the enums, so do not use it on a fork that keeps extra ones in the database.
 
 ---
 
@@ -597,6 +612,8 @@ permissions and roles missing from the enums, so do not use it on a fork that ke
   not start Horizon.
 - **`.github/workflows/security.yml`**, **`security-dast.yml`** — dependency
   advisories, Trivy, OWASP ZAP.
+- **`.github/workflows/publish-image.yml`** — the gated build, scan, attestation and
+  push of the production image (§14).
 
 ---
 

@@ -1,11 +1,11 @@
 name: Test
 
 # Runs on pull requests, on pushes to the long-lived branches (so a direct push is
-# still checked), and as a reusable workflow the deploy workflows call via `uses:`.
+# still checked), and as a reusable workflow publish-image.yml calls via `uses:`.
 #
-# `workflow_call` is what lets one definition serve both. Without it each deploy
+# `workflow_call` is what lets one definition serve both. Without it the publish
 # workflow needs its own copy of the test job, and the copies drift — a check
-# ends up enforced on a pull request but not on the deploy that follows it.
+# ends up enforced on a pull request but not on the image that follows it.
 on:
   pull_request:
     branches:
@@ -22,9 +22,12 @@ on:
   workflow_call:
 
 # Cancel in-flight runs for the same ref. Avoids two concurrent CI runs on
-# rapid pushes; the newer commit wins.
+# rapid pushes; the newer commit wins. `github.workflow` keeps this run and the one
+# publish-image.yml calls (whose workflow is "Publish Image") in separate groups:
+# sharing one, the two runs a push to main starts would cancel each other, and a
+# cancelled call skips the publish.
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 # Least-privilege default: read access to the repository and nothing else.
@@ -32,7 +35,7 @@ permissions:
   contents: read
 
 jobs:
-  # Every job below is independent, with no `needs:` between them — the deploy
+  # Every job below is independent, with no `needs:` between them — the publish
   # gate is bounded by the SLOWEST job, not by their sum. (Stated without a
   # count on purpose: a number here goes stale the moment a job is added.)
 
@@ -85,8 +88,8 @@ jobs:
   # time. This job is the only thing standing in front of either.
   #
   # Deliberately NOT `needs: tests`. Gating would append this job's runtime to
-  # every deploy; running it alongside costs a wasted image build on runs where
-  # the suite fails, and saves those minutes on every green deploy.
+  # every publish; running it alongside costs a wasted image build on runs where
+  # the suite fails, and saves those minutes on every green publish.
   docker:
     name: Build and scan the production image
     runs-on: ubuntu-latest
