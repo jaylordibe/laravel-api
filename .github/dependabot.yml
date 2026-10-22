@@ -7,6 +7,14 @@
 # each rebuild into ONE pull request that bumps both files together — two separate
 # pull requests could each only ever fail the same-digest check — and the `docker`
 # job scans and boots the new base before it can merge.
+#
+# The base is exempt from Dependabot's cooldown. Dependabot holds back any version
+# published less than 3 days ago — by DEFAULT, even with no `cooldown` configured —
+# and the base is republished every Monday, so a Tuesday check always found a
+# day-old tag and skipped it ("Skipping tag 8.5 due to cooldown period"): no
+# base-image pull request was ever opened. The cooldown guards against a bad
+# upstream release; this image is our own, gated by its own CI before it is
+# published and by the `docker` job here before it can merge.
 version: 2
 
 multi-ecosystem-groups:
@@ -20,11 +28,15 @@ updates:
     directory: /
     patterns: ["jaylordibe/laravel-php"]
     multi-ecosystem-group: base-image
+    cooldown:
+      exclude: ["jaylordibe/laravel-php"]
 
   - package-ecosystem: docker-compose
     directory: /
     patterns: ["jaylordibe/laravel-php"]
     multi-ecosystem-group: base-image
+    cooldown:
+      exclude: ["jaylordibe/laravel-php"]
 
   # Every action in .github/workflows is pinned to a full commit SHA, with its
   # release as a trailing comment: a tag can be moved to other code, a SHA cannot.

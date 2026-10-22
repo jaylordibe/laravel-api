@@ -42,8 +42,9 @@ return Application::configure(basePath: dirname(__DIR__))
          * serving, which poisons every absolute URL the application generates —
          * password-reset links, email-verification links and signed URLs all
          * point at an attacker's host while carrying a valid signature. The base
-         * image's nginx does not forward that header either, so this closes the
-         * same hole on the application side.
+         * image's nginx DOES pass it on — from a listed proxy, or from every peer
+         * when TRUSTED_PROXIES is unset — so leaving it out here is what closes
+         * the hole.
          *
          * X-Forwarded-Prefix is omitted for the same reason: it lets a client
          * prepend a path to every generated URL.

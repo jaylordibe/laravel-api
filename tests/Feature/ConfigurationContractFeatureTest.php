@@ -70,10 +70,10 @@ class ConfigurationContractFeatureTest extends TestCase
             self::assertSame([], $config['horizon_dashboard_emails'], 'The dashboard must deny everyone until explicitly configured.');
         });
 
-        $this->withEnv('TRUSTED_PROXIES', null, function (): void {
+        $this->withEnvs(['TRUSTED_PROXIES' => null, 'TRUST_ANY_PROXY' => null], function (): void {
             $config = require config_path('trustedproxy.php');
 
-            self::assertEmpty($config['proxies'], 'No proxy may be trusted by default.');
+            self::assertNull($config['proxies'], 'No proxy may be trusted by default.');
         });
     }
 
@@ -347,19 +347,47 @@ class ConfigurationContractFeatureTest extends TestCase
     public function trustedProxiesUseTheFrameworksOwnConfigHook(): void
     {
         // Laravel's TrustProxies middleware falls back to
-        // `config('trustedproxy.proxies')` and does the comma-splitting, trimming
-        // and '*' handling itself. This asserts the template feeds that hook
-        // rather than re-implementing the parsing and pushing the result in from
-        // a service provider.
+        // `config('trustedproxy.proxies')`. This asserts the template feeds that
+        // hook rather than pushing a value in from a service provider.
         self::assertTrue(
             file_exists(config_path('trustedproxy.php')),
             'config/trustedproxy.php is the key TrustProxies reads; the name is not arbitrary.'
         );
+    }
 
-        $this->withEnv('TRUSTED_PROXIES', '10.0.1.0/24, 192.168.1.7', function (): void {
+    #[Test]
+    public function laravelBelievesWhatTheBaseImagesNginxPassesOnceAProxyIsListed(): void
+    {
+        // TRUSTED_PROXIES is the base image's nginx setting, in its syntax
+        // (space-separated). nginx resolves the client into REMOTE_ADDR and strips
+        // forwarded headers from everyone but the listed proxy, so REMOTE_ADDR is
+        // the CLIENT and no address list here could match it: Laravel must trust
+        // '*', or HTTPS detection behind the edge silently fails. Passing the list
+        // through instead is the defect this replaces — Laravel would have split
+        // nginx's space-separated value on commas and trusted nothing.
+        $this->withEnvs(['TRUSTED_PROXIES' => '10.0.1.0/24 192.168.1.7', 'TRUST_ANY_PROXY' => null], function (): void {
             $config = require config_path('trustedproxy.php');
 
-            self::assertSame('10.0.1.0/24, 192.168.1.7', $config['proxies']);
+            self::assertSame('*', $config['proxies']);
+        });
+    }
+
+    #[Test]
+    public function trustAnyProxyIsAnExplicitOptInOfItsOwn(): void
+    {
+        // The managed-platform case: the balancer's address is unknowable, so
+        // nginx is left unfiltered and Laravel believes every peer. It must be
+        // asked for by name, and "false" must mean false.
+        $this->withEnvs(['TRUSTED_PROXIES' => null, 'TRUST_ANY_PROXY' => 'true'], function (): void {
+            $config = require config_path('trustedproxy.php');
+
+            self::assertSame('*', $config['proxies']);
+        });
+
+        $this->withEnvs(['TRUSTED_PROXIES' => null, 'TRUST_ANY_PROXY' => 'false'], function (): void {
+            $config = require config_path('trustedproxy.php');
+
+            self::assertNull($config['proxies']);
         });
     }
 

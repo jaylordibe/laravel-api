@@ -365,7 +365,7 @@ jobs:
             echo "horizon: ${status}"
             docker exec "$name" grep -E '^[[:space:]]*listen' /etc/nginx/conf.d/default.conf
           }
-          trap 'docker rm -f api-probe all-probe port-probe >/dev/null 2>&1 || true' EXIT
+          trap 'docker rm -f api-probe all-probe port-probe trust-probe >/dev/null 2>&1 || true' EXIT
 
           # HORIZON_ENABLED=true is injected on purpose: a shared env file can carry
           # it to every service, and api mode must override it rather than defer.
@@ -382,6 +382,35 @@ jobs:
             exit 1
           fi
           docker rm -f api-probe >/dev/null
+          echo '::endgroup::'
+
+          # TRUSTED_PROXIES is read by the base image's nginx AND decides Laravel's
+          # trust, so the value DEPLOYMENT.md documents must both boot the web stack
+          # and make Laravel believe what nginx passes ('*'). The comma form Laravel
+          # alone would accept must be refused at start, naming the variable,
+          # rather than left half-working.
+          echo '::group::api mode: the documented TRUSTED_PROXIES value boots and Laravel trusts nginx'
+          boot_web_runtime trust-probe api -e 'TRUSTED_PROXIES=10.0.1.0/24 192.168.1.7' >/dev/null
+          proxies=$(docker exec -u www-data trust-probe php artisan config:show trustedproxy.proxies --no-ansi)
+          printf '%s\n' "$proxies"
+          # config:show pads the line, so the value is matched as the last word.
+          if ! grep -qE '[[:space:]]\*[[:space:]]*$' <<<"$proxies"; then
+            echo '::error::with TRUSTED_PROXIES set, Laravel does not trust what nginx passes — HTTPS detection behind the edge would fail'
+            exit 1
+          fi
+          docker rm -f trust-probe >/dev/null
+          if refused=$(timeout 120 docker run --rm \
+              -e APP_RUNTIME_MODE=api -e APP_RUNTIME_CONFIG_CACHE=false -e APP_CONFIG_CHECK=false \
+              -e APP_KEY=base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA= \
+              -e 'TRUSTED_PROXIES=10.0.1.0/24,192.168.1.7' laravel-api:ci 2>&1); then
+            echo '::error::a comma-separated TRUSTED_PROXIES did not stop the container'
+            exit 1
+          fi
+          if ! grep -q 'TRUSTED_PROXIES' <<<"$refused"; then
+            printf '%s\n' "$refused"
+            echo '::error::the TRUSTED_PROXIES refusal does not name the variable'
+            exit 1
+          fi
           echo '::endgroup::'
 
           # PORT is honoured, and the php-fpm ping listener moves out of the way

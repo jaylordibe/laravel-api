@@ -72,7 +72,7 @@ return [
          * many accounts. 30 leaves room for an office or carrier NAT where many
          * people sign in at once, while capping a sprayer at 30 accounts a
          * minute per address. Keyed on the client IP, which is only correct
-         * behind a proxy listed in config/trustedproxy.php.
+         * behind a load balancer when proxy trust is configured (DEPLOYMENT.md §10).
          */
         'sign_in_per_ip' => (int) env('RATE_LIMIT_SIGN_IN_PER_IP', 30),
         'heavy' => (int) env('RATE_LIMIT_HEAVY', 10),
@@ -105,10 +105,9 @@ return [
      * NOTE: trusted proxies are NOT configured here.
      *
      * They live in config/trustedproxy.php, because Laravel's TrustProxies
-     * middleware reads `config('trustedproxy.proxies')` itself — including the
-     * comma-splitting, trimming and '*' handling. Re-implementing that parsing
-     * here and pushing the result into the middleware from a service provider
-     * is what this template used to do; the framework already does it.
+     * middleware reads `config('trustedproxy.proxies')` itself. Pushing a value
+     * into the middleware from a service provider instead is what this template
+     * used to do; the framework already reads it, at the right time.
      */
 
     /*

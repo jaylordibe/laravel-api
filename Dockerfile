@@ -1,4 +1,4 @@
-FROM jaylordibe/laravel-php:8.5@sha256:ade69b76fcbbdb3eb73988ca9b9c002e171cd11739c9216f4d9a8e1911baf2a0
+FROM jaylordibe/laravel-php:8.5@sha256:20ca3ba78389b027087efa504dfa03210343c13397b6c9c53812844fdde5b0dd
 
 WORKDIR /var/www/html
 

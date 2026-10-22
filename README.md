@@ -266,7 +266,7 @@ verify readiness**.
 - [ ] The database link uses TLS (`DB_SSLMODE=require` at minimum; `verify-full` across an untrusted network).
 - [ ] `CACHE_STORE=redis`, so locks and cache invalidation work across replicas.
 - [ ] The upload disk is private (`s3` or `gcs`), served through signed URLs.
-- [ ] `TRUSTED_PROXIES` names only the proxies in front of the API — see `DEPLOYMENT.md` §10.
+- [ ] Behind a load balancer, `TRUSTED_PROXIES` (space-separated) names only the proxies that connect to the API, or `TRUST_ANY_PROXY=true` where nothing else can reach it — see `DEPLOYMENT.md` §10.
 - [ ] The API runs `APP_RUNTIME_MODE=api` and the worker runs `worker`; `all` is only for a single container.
 - [ ] Something invokes `APP_RUNTIME_MODE=scheduler` every minute.
 - [ ] The Passport personal access client created once (sign-in needs it).

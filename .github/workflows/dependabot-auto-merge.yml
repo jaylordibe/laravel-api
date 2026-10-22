@@ -1,0 +1,52 @@
+name: Dependabot auto-merge
+
+# Approves Dependabot's routine pull requests and turns on auto-merge, so they land
+# by themselves once every REQUIRED status check on `main` has passed. That makes
+# the required checks the gate: without them on the branch protection, this would
+# merge untested changes. It never merges anything directly.
+#
+# Routine means anything below a semver-major bump: patch and minor updates, and
+# the base image's digest bumps (a digest carries no semver change). A major bump
+# — a framework release, an action's new major — gets neither the approval nor
+# auto-merge and waits for a human, as does any pull request not opened by
+# Dependabot.
+#
+# `pull_request`, not `pull_request_target`: nothing here checks out or runs the
+# pull request's code, and Dependabot's runs get only the permissions declared
+# below.
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-merge:
+    name: Approve and auto-merge routine updates
+    # The PR's author, not github.actor: a human re-running this job on a
+    # Dependabot PR must not be what qualifies it.
+    if: github.event.pull_request.user.login == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Read the update's metadata
+        id: meta
+        uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3.1.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      # For a grouped pull request update-type is the HIGHEST bump in the group,
+      # so one major update holds back the whole group.
+      - name: Approve and enable auto-merge
+        if: steps.meta.outputs.update-type != 'version-update:semver-major'
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          gh pr review --approve "$PR_URL"
+          gh pr merge --auto --merge "$PR_URL"
