@@ -446,7 +446,7 @@ class CheckConfigCommand extends Command
         // load balancer the symptom is subtle — http:// links generated for an
         // https:// site, and every client IP recorded as the balancer's, which
         // also collapses per-IP rate limiting onto one bucket.
-        $this->warnings[] = 'TRUSTED_PROXIES is empty. If this runs behind a load balancer, set it — otherwise generated URLs use the wrong scheme and every request appears to come from the proxy.';
+        $this->warnings[] = 'No proxy is trusted. If this runs behind a load balancer, set TRUSTED_PROXIES to its address (or TRUST_ANY_PROXY=true where nothing else can reach the container) — otherwise generated URLs use the wrong scheme and every request appears to come from the proxy.';
     }
 
     /**

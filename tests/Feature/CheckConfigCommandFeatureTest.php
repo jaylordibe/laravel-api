@@ -184,6 +184,22 @@ class CheckConfigCommandFeatureTest extends TestCase
     }
 
     #[Test]
+    public function itWarnsWhenNoProxyIsTrustedInProduction(): void
+    {
+        // Not a failure: trusting nothing is the safe state for a container exposed directly. It
+        // warns because behind a load balancer the symptom is subtle, and the message must name
+        // both settings that end it, since TRUSTED_PROXIES alone cannot express every platform.
+        config()->set('trustedproxy.proxies', null);
+
+        self::assertSame(0, Artisan::call('app:check-config'));
+        self::assertSame(1, Artisan::call('app:check-config', ['--strict' => true]));
+        // Read once: Artisan::output() empties the buffer it returns.
+        $output = Artisan::output();
+        self::assertStringContainsString('TRUSTED_PROXIES', $output);
+        self::assertStringContainsString('TRUST_ANY_PROXY', $output);
+    }
+
+    #[Test]
     public function itWarnsWhenTheApiDocsCredentialIsOnlyHalfConfigured(): void
     {
         // The staging shape: not production, flag on, password never injected. It fails closed,

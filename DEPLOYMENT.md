@@ -205,7 +205,7 @@ correct.
 | `AUTH_TOKEN_TTL_MINUTES` | Sign-in session lifetime in minutes. Optional — default 30 days (`config/custom.php`). Applies to newly issued tokens only |
 | `APP_RUNTIME_MODE` | `api` \| `worker` \| `scheduler` \| `migrate` \| `artisan` \| `all` |
 | `PORT` | HTTP port; defaults to 80 |
-| `TRUSTED_PROXIES` | See below — **required behind a load balancer** |
+| `TRUSTED_PROXIES` / `TRUST_ANY_PROXY` | See §10 — **one of them is required behind a load balancer** |
 | `LOG_CHANNEL=stderr`, `LOG_LEVEL` | Container-native logging |
 | `CACHE_STORE=redis` | **Must not** be `file` when scaled |
 | `QUEUE_CONNECTION=redis` | Horizon only manages Redis queues |
@@ -446,27 +446,45 @@ internet, restrict it at the edge.
 
 ## 10. Reverse proxies
 
-`TRUSTED_PROXIES` is **empty by default**, so no proxy is trusted and
-`X-Forwarded-*` is ignored.
+Nothing is trusted by default. Behind a load balancer that must change, or Laravel
+generates `http://` links for an `https://` site and records every client IP as the
+balancer's — which also collapses per-IP rate limiting into a single bucket.
 
-Behind a load balancer this **must** be set, or Laravel generates `http://` links
-for an `https://` site and records every client IP as the balancer's — which also
-collapses per-IP rate limiting into a single bucket.
+Two layers decide who the client is. The base image's **nginx** is the trust
+boundary: it reads `TRUSTED_PROXIES`, resolves the client into `REMOTE_ADDR`, and
+decides which forwarded headers reach PHP. **Laravel** (`config/trustedproxy.php`)
+then only decides whether to believe what nginx passes. Pick the row that matches
+the deployment:
 
-```env
-TRUSTED_PROXIES=10.0.1.0/24,192.168.1.7   # enumerate where you can
-TRUSTED_PROXIES=*                          # managed platforms, where nothing else can reach the container
-```
+| Deployment | Set | nginx | Laravel |
+|---|---|---|---|
+| Load balancer with a known address | `TRUSTED_PROXIES="10.0.1.0/24 192.168.1.7"` | resolves the client from `X-Forwarded-For`; passes `X-Forwarded-Proto/Port` only from those addresses; never passes `X-Forwarded-For` on | trusts `*` — safe, nginx has already filtered |
+| Managed platform: the balancer's address is unknowable **and nothing else can reach the container** | `TRUST_ANY_PROXY=true` | passes every peer's headers | trusts `*`, resolves the client from `X-Forwarded-For` |
+| Exposed directly, no proxy | neither | passes headers, but… | …trusts none: `REMOTE_ADDR` is the client |
 
-**`X-Forwarded-Host` is never trusted**, whatever you set. Trusting it lets a
-client choose the host Laravel believes it is serving, which poisons every
-absolute URL the application generates — password-reset and email-verification
-links, and signed URLs, all pointing at an attacker's host while carrying a valid
-signature. The base image's nginx does not forward that header either.
+`TRUSTED_PROXIES` is **space-separated** — addresses, CIDRs or hostnames (resolved
+once, at start). It is the base image's setting, in the base image's syntax: a
+comma, `*` or a `/0` network stops the container at start with a message naming the
+variable. List only the proxies that actually connect to the container; every
+address listed can choose the client IP it reports.
 
-The value is read by Laravel's own `TrustProxies` middleware from
-`config/trustedproxy.php`, which is the framework's documented hook; the trusted
-HEADER set is pinned in `bootstrap/app.php`.
+`TRUST_ANY_PROXY=true` believes whatever any peer claims, so it is wrong wherever
+another workload or the internet can reach the container's port.
+
+**The edge must sanitize.** Whatever a trusted proxy forwards is believed, so it
+must overwrite `X-Forwarded-Proto`/`-Port` from the connection and *append* the
+client to `X-Forwarded-For`, never pass a client's values through.
+
+**`X-Forwarded-Host` and `X-Forwarded-Prefix` are never trusted**, whatever you set.
+nginx does pass them on, so excluding them in `bootstrap/app.php` is what stops a
+client choosing the host or path Laravel builds absolute URLs from — password-reset
+and verification links and signed URLs would otherwise point at an attacker's host
+while carrying a valid signature. Set `APP_URL`.
+
+This split needs the base image's filtering, first published in
+`jaylordibe/laravel-php:8.5` built from base revision `b5a59fd` (its
+`org.opencontainers.image.revision` label). An older base passes client-supplied
+forwarded headers through, and must not be combined with `TRUSTED_PROXIES` here.
 
 ---
 
@@ -482,7 +500,7 @@ its required settings or set to public visibility; missing Passport keys; a
 Horizon timeout that meets or exceeds the queue's `retry_after`.
 
 **Warns:** file-based Passport keys; file log channel; `SESSION_DRIVER=file`;
-`TRUSTED_PROXIES` empty; `DB_SSLMODE=require` without full verification; a local
+no proxy trusted (neither `TRUSTED_PROXIES` nor `TRUST_ANY_PROXY`); `DB_SSLMODE=require` without full verification; a local
 storage disk in production.
 
 The one-shot runtimes deliberately skip the check, so an operator can still run

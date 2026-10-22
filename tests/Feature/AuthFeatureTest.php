@@ -226,8 +226,10 @@ class AuthFeatureTest extends TestCase
     #[Test]
     public function behindATrustedProxyThePerIpBudgetIsKeyedByTheForwardedClient(): void
     {
+        // The TRUST_ANY_PROXY shape: nginx unfiltered, the balancer at REMOTE_ADDR, the client in
+        // X-Forwarded-For. '*' is the only non-null value config/trustedproxy.php produces.
         $this->withMiddleware(ThrottleRequests::class);
-        config(['custom.rate_limits.sensitive' => 5, 'custom.rate_limits.sign_in_per_ip' => 3, 'trustedproxy.proxies' => '127.0.0.1']);
+        config(['custom.rate_limits.sensitive' => 5, 'custom.rate_limits.sign_in_per_ip' => 3, 'trustedproxy.proxies' => '*']);
 
         $this->failSignInWithDistinctIdentifiers(3, '127.0.0.1', ['X-Forwarded-For' => '198.51.100.7']);
 
@@ -235,6 +237,25 @@ class AuthFeatureTest extends TestCase
             ->assertStatus(429);
         // A different client behind the same proxy is not locked out.
         $this->postJson("{$this->resource}/sign-in", ['identifier' => 'next@example.test', 'password' => 'Password1'], ['X-Forwarded-For' => '198.51.100.8'])
+            ->assertBadRequest();
+    }
+
+    #[Test]
+    public function withProxiesListedForNginxThePerIpBudgetIsKeyedByTheClientNginxResolved(): void
+    {
+        // The TRUSTED_PROXIES shape: the base image's nginx has already put the client in
+        // REMOTE_ADDR and passes no X-Forwarded-For, and Laravel trusts '*'. Trusting '*' must not
+        // collapse clients into one bucket — each REMOTE_ADDR keeps its own budget.
+        $this->withMiddleware(ThrottleRequests::class);
+        config(['custom.rate_limits.sensitive' => 5, 'custom.rate_limits.sign_in_per_ip' => 3, 'trustedproxy.proxies' => '*']);
+
+        $this->failSignInWithDistinctIdentifiers(3, '198.51.100.7');
+
+        $this->withServerVariables(['REMOTE_ADDR' => '198.51.100.7'])
+            ->postJson("{$this->resource}/sign-in", ['identifier' => 'next@example.test', 'password' => 'Password1'])
+            ->assertStatus(429);
+        $this->withServerVariables(['REMOTE_ADDR' => '198.51.100.8'])
+            ->postJson("{$this->resource}/sign-in", ['identifier' => 'next@example.test', 'password' => 'Password1'])
             ->assertBadRequest();
     }
 
