@@ -593,7 +593,11 @@ Trivy, attests its build provenance, and only then moves the `main` / `staging`
 tag. An image that fails the scan has no attestation.
 
 Enable it with the repository variable `PUBLISH_ENABLED=true`. A fresh fork runs
-the gates and skips the push. The workflow holds no server credential.
+the gates and skips the push. The `publish` job holds no server credential.
+
+The `publish` job outputs the pushed digest as `image`
+(`ghcr.io/<owner>/<repo>@sha256:…`), so a deploy job added to this workflow with
+`needs: publish` deploys exactly what was scanned.
 
 **Attestations need a public repository**, or a GitHub plan that supports them on
 private ones (set `ATTEST_PROVENANCE=true` there). A private repository without
