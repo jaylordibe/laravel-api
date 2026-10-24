@@ -358,14 +358,12 @@ class ConfigurationContractFeatureTest extends TestCase
     #[Test]
     public function laravelBelievesWhatTheBaseImagesNginxPassesOnceAProxyIsListed(): void
     {
-        // TRUSTED_PROXIES is the base image's nginx setting, in its syntax
-        // (space-separated). nginx resolves the client into REMOTE_ADDR and strips
-        // forwarded headers from everyone but the listed proxy, so REMOTE_ADDR is
-        // the CLIENT and no address list here could match it: Laravel must trust
-        // '*', or HTTPS detection behind the edge silently fails. Passing the list
-        // through instead is the defect this replaces — Laravel would have split
-        // nginx's space-separated value on commas and trusted nothing.
-        $this->withEnvs(['TRUSTED_PROXIES' => '10.0.1.0/24 192.168.1.7', 'TRUST_ANY_PROXY' => null], function (): void {
+        // TRUSTED_PROXIES is the base image's nginx setting (comma-separated).
+        // nginx resolves the client into REMOTE_ADDR and strips forwarded headers
+        // from everyone but the listed proxy, so REMOTE_ADDR is the CLIENT and no
+        // address list here could match it: Laravel must trust '*', or HTTPS
+        // detection behind the edge silently fails.
+        $this->withEnvs(['TRUSTED_PROXIES' => '10.0.1.0/24,192.168.1.7', 'TRUST_ANY_PROXY' => null], function (): void {
             $config = require config_path('trustedproxy.php');
 
             self::assertSame('*', $config['proxies']);

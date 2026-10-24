@@ -458,14 +458,14 @@ the deployment:
 
 | Deployment | Set | nginx | Laravel |
 |---|---|---|---|
-| Load balancer with a known address | `TRUSTED_PROXIES="10.0.1.0/24 192.168.1.7"` | resolves the client from `X-Forwarded-For`; passes `X-Forwarded-Proto/Port` only from those addresses; never passes `X-Forwarded-For` on | trusts `*` — safe, nginx has already filtered |
+| Load balancer with a known address | `TRUSTED_PROXIES="10.0.1.0/24,192.168.1.7"` | resolves the client from `X-Forwarded-For`; passes `X-Forwarded-Proto/Port` only from those addresses; never passes `X-Forwarded-For` on | trusts `*` — safe, nginx has already filtered |
 | Managed platform: the balancer's address is unknowable **and nothing else can reach the container** | `TRUST_ANY_PROXY=true` | passes every peer's headers | trusts `*`, resolves the client from `X-Forwarded-For` |
 | Exposed directly, no proxy | neither | passes headers, but… | …trusts none: `REMOTE_ADDR` is the client |
 
-`TRUSTED_PROXIES` is **space-separated** — addresses, CIDRs or hostnames (resolved
-once, at start). It is the base image's setting, in the base image's syntax: a
-comma, `*` or a `/0` network stops the container at start with a message naming the
-variable. List only the proxies that actually connect to the container; every
+`TRUSTED_PROXIES` is **comma-separated**, as Laravel reads it — addresses, CIDRs or
+hostnames (resolved once, at start); spaces also separate entries. It is the base
+image's setting: `*`, a `/0` network or anything that is not an address, CIDR or
+hostname stops the container at start with a message naming the variable. List only the proxies that actually connect to the container; every
 address listed can choose the client IP it reports.
 
 `TRUST_ANY_PROXY=true` believes whatever any peer claims, so it is wrong wherever
@@ -485,6 +485,8 @@ This split needs the base image's filtering, first published in
 `jaylordibe/laravel-php:8.5` built from base revision `b5a59fd` (its
 `org.opencontainers.image.revision` label). An older base passes client-supplied
 forwarded headers through, and must not be combined with `TRUSTED_PROXIES` here.
+The comma-separated form needs a base built from revision `3779ac4` or later; an
+earlier one stops at start on a comma.
 
 ---
 

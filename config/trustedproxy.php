@@ -13,8 +13,8 @@ return [
     | nginx hands it.
     |
     | TRUSTED_PROXIES belongs to the base image (jaylordibe/laravel-php): its
-    | nginx reads it as SPACE-separated addresses, CIDRs or hostnames, and a
-    | comma or '*' stops the container at start. When it is set, nginx resolves
+    | nginx reads it as comma-separated addresses, CIDRs or hostnames, and '*'
+    | or a /0 network stops the container at start. When it is set, nginx resolves
     | the client into REMOTE_ADDR, passes X-Forwarded-Proto/Port only on
     | connections from a listed proxy, and never passes X-Forwarded-For on.
     | REMOTE_ADDR is then the client, not the proxy, so no address list could

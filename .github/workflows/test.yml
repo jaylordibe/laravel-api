@@ -385,12 +385,11 @@ jobs:
           echo '::endgroup::'
 
           # TRUSTED_PROXIES is read by the base image's nginx AND decides Laravel's
-          # trust, so the value DEPLOYMENT.md documents must both boot the web stack
-          # and make Laravel believe what nginx passes ('*'). The comma form Laravel
-          # alone would accept must be refused at start, naming the variable,
-          # rather than left half-working.
+          # trust, so the value DEPLOYMENT.md documents (comma-separated) must both
+          # boot the web stack and make Laravel believe what nginx passes ('*'). A /0
+          # network in the list must be refused at start, naming the variable.
           echo '::group::api mode: the documented TRUSTED_PROXIES value boots and Laravel trusts nginx'
-          boot_web_runtime trust-probe api -e 'TRUSTED_PROXIES=10.0.1.0/24 192.168.1.7' >/dev/null
+          boot_web_runtime trust-probe api -e 'TRUSTED_PROXIES=10.0.1.0/24,192.168.1.7' >/dev/null
           proxies=$(docker exec -u www-data trust-probe php artisan config:show trustedproxy.proxies --no-ansi)
           printf '%s\n' "$proxies"
           # config:show pads the line, so the value is matched as the last word.
@@ -402,8 +401,8 @@ jobs:
           if refused=$(timeout 120 docker run --rm \
               -e APP_RUNTIME_MODE=api -e APP_RUNTIME_CONFIG_CACHE=false -e APP_CONFIG_CHECK=false \
               -e APP_KEY=base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA= \
-              -e 'TRUSTED_PROXIES=10.0.1.0/24,192.168.1.7' laravel-api:ci 2>&1); then
-            echo '::error::a comma-separated TRUSTED_PROXIES did not stop the container'
+              -e 'TRUSTED_PROXIES=10.0.1.0/24,0.0.0.0/0' laravel-api:ci 2>&1); then
+            echo '::error::a /0 network in TRUSTED_PROXIES did not stop the container'
             exit 1
           fi
           if ! grep -q 'TRUSTED_PROXIES' <<<"$refused"; then
