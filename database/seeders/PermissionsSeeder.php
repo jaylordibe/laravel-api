@@ -25,9 +25,11 @@ class PermissionsSeeder extends Seeder
             Permission::firstOrCreate(['name' => $permission->value, 'guard_name' => UserPermission::getApiGuardName()]);
         }
 
-        // Create roles and assign existing permissions
+        // Create roles and make each hold exactly its mapped permissions. This seeder is the
+        // deploy-time permission sync (DEPLOYMENT.md), so syncing rather than adding is what lets a
+        // permission taken out of UserPermission::fromUserRole actually leave the role.
         foreach (UserRole::cases() as $userRole) {
-            Role::firstOrCreate(['name' => $userRole->value, 'guard_name' => UserPermission::getApiGuardName()])->givePermissionTo(UserPermission::fromUserRole($userRole));
+            Role::firstOrCreate(['name' => $userRole->value, 'guard_name' => UserPermission::getApiGuardName()])->syncPermissions(UserPermission::fromUserRole($userRole));
         }
     }
 

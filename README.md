@@ -203,8 +203,11 @@ git clone https://github.com/jaylordibe/laravel-api.git my-api && cd my-api
 |---|---|
 | API | [localhost:8000](http://localhost:8000) |
 | API docs | [localhost:8000/docs/api](http://localhost:8000/docs/api) |
-| pgAdmin (development database) | [localhost:8001](http://localhost:8001) · PostgreSQL on port 5433 |
+| pgAdmin (development database) | [localhost:8001](http://localhost:8001) · PostgreSQL on port 5436 |
 | pgAdmin (test database) | [localhost:8002](http://localhost:8002) · PostgreSQL on port 5435 |
+
+These are the default host ports. If another project already holds one, set its
+override (`APP_PORT`, `FORWARD_DB_PORT`, ...) in `.env`; `.env.example` lists them.
 
 ### Commands
 

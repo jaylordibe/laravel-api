@@ -83,9 +83,16 @@ fi
 
 docker exec -it $SERVICE_NAME-api bash -c "$commands"
 
+# Ask compose which host port each service actually got, so the overrides in .env
+# (APP_PORT, FORWARD_*_PORT) and the defaults in docker-compose.yml stay the only
+# place a port number is written.
+host_port() {
+    docker compose port "$1" "$2" | awk -F: '{print $NF}'
+}
+
 echo -e "\033[0m \033[1;35m Application is running at: \033[0m"
-echo -e "\033[0m \033[1;32m \t http://localhost:8000/ \033[0m"
+echo -e "\033[0m \033[1;32m \t http://localhost:$(host_port app-api 80)/ \033[0m"
 echo -e "\033[0m \033[1;35m pgAdmin is running at: \033[0m"
-echo -e "\033[0m \033[1;32m \t http://localhost:8001/ on postgres port 5433 \033[0m"
+echo -e "\033[0m \033[1;32m \t http://localhost:$(host_port app-db-gui 80)/ on postgres port $(host_port app-db 5432) \033[0m"
 echo -e "\033[0m \033[1;35m Test environment pgAdmin is running at: \033[0m"
-echo -e "\033[0m \033[1;32m \t http://localhost:8002/ on postgres port 5435 \033[0m"
+echo -e "\033[0m \033[1;32m \t http://localhost:$(host_port app-db-test-gui 80)/ on postgres port $(host_port app-db-test 5432) \033[0m"
