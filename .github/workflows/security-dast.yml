@@ -85,15 +85,17 @@ jobs:
       - name: Prepare the scan environment
         run: |
           set -euo pipefail
+          db_port=$(docker compose port app-db-test 5432 | awk -F: '{print $NF}')
+          redis_port=$(docker compose port app-redis 6379 | awk -F: '{print $NF}')
           {
             echo 'APP_ENV=local'
             echo 'APP_DEBUG=false'
             echo 'APP_URL=http://localhost:8001'
             echo 'DB_HOST=127.0.0.1'
-            echo 'DB_PORT=5435'
+            echo "DB_PORT=${db_port}"
             echo 'DB_SSLMODE=disable'
             echo 'REDIS_HOST=127.0.0.1'
-            echo 'REDIS_PORT=6378'
+            echo "REDIS_PORT=${redis_port}"
             echo 'RATE_LIMIT_PUBLIC=1000000'
             echo 'RATE_LIMIT_SENSITIVE=1000000'
             echo 'RATE_LIMIT_API_PER_TOKEN=1000000'

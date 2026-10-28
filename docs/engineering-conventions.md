@@ -7,7 +7,7 @@ rule in a line or two; this file keeps the mechanics and the reasons.
 
 **Runtime:** the whole stack runs in Docker. Almost every command below runs *inside* the `${SERVICE_NAME}-api` container — `SERVICE_NAME=laravel` by default, so the container is `laravel-api`; a fork renames this in `.env`.
 
-**Local dev and production run DIFFERENT images.** `docker-compose.yml` uses the base image directly (nginx + php-fpm + Horizon in one container, serving on `:80` → host `8000`). The production image is built from the `Dockerfile`, which installs `docker/entrypoint.sh` and selects one runtime per container via `APP_RUNTIME_MODE` (`api` | `worker` | `scheduler` | `migrate` | `artisan` | `all`). `DEPLOYMENT.md` is authoritative for the runtime contract.
+**Local dev and production run DIFFERENT images.** `docker-compose.yml` uses the base image directly (nginx + php-fpm + Horizon in one container, serving on `:80` → host `APP_PORT`, `8000` by default). The production image is built from the `Dockerfile`, which installs `docker/entrypoint.sh` and selects one runtime per container via `APP_RUNTIME_MODE` (`api` | `worker` | `scheduler` | `migrate` | `artisan` | `all`). `DEPLOYMENT.md` is authoritative for the runtime contract.
 
 ## Why the high-risk paths are high risk
 

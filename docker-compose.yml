@@ -14,6 +14,12 @@
 # The API port is published normally so phones and other devices on your network can
 # reach it. Databases, Redis and pgAdmin have no real authentication here, so they
 # bind to localhost only.
+#
+# Every host port below is the default for an override in .env (APP_PORT,
+# FORWARD_*_PORT), so this stack can run beside another project already holding
+# one. The defaults avoid every port the sibling NestJS template publishes, so
+# both templates run side by side untouched. Only the HOST side moves: inside the network the services keep 80, 5432
+# and 6379, which is what DB_PORT and REDIS_PORT in .env describe.
 services:
   app-api:
     image: jaylordibe/laravel-php:8.5@sha256:6e4ec9c9d73caf459a7dd996cd74a0b940cd887a2a7d858ae9fc6ce2cf567b52
@@ -22,7 +28,7 @@ services:
     tty: true
     platform: linux/amd64
     ports:
-      - "8000:80"
+      - "${APP_PORT:-8000}:80"
     volumes:
       - .:/var/www/html
     working_dir: /var/www/html
@@ -42,7 +48,7 @@ services:
     tty: true
     platform: linux/amd64
     ports:
-      - "127.0.0.1:5433:5432"
+      - "127.0.0.1:${FORWARD_DB_PORT:-5436}:5432"
     environment:
       POSTGRES_DB: ${DB_DATABASE}
       POSTGRES_USER: ${DB_USERNAME}
@@ -74,7 +80,7 @@ services:
     restart: unless-stopped
     platform: linux/amd64
     ports:
-      - "127.0.0.1:8001:80"
+      - "127.0.0.1:${FORWARD_DB_GUI_PORT:-8001}:80"
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
@@ -92,11 +98,8 @@ services:
     restart: unless-stopped
     tty: true
     platform: linux/amd64
-    # 5435, not 5434: the sibling NestJS template publishes its test database on
-    # 5434, and two templates in the same workspace must be able to run at the
-    # same time. The dev database keeps 5433 (5432 + 1).
     ports:
-      - "127.0.0.1:5435:5432"
+      - "127.0.0.1:${FORWARD_TEST_DB_PORT:-5435}:5432"
     environment:
       POSTGRES_DB: ${TEST_DB_DATABASE}
       POSTGRES_USER: ${TEST_DB_USERNAME}
@@ -118,7 +121,7 @@ services:
     restart: unless-stopped
     platform: linux/amd64
     ports:
-      - "127.0.0.1:8002:80"
+      - "127.0.0.1:${FORWARD_TEST_DB_GUI_PORT:-8002}:80"
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
@@ -131,7 +134,7 @@ services:
     container_name: ${SERVICE_NAME}-redis
     restart: unless-stopped
     ports:
-      - "127.0.0.1:6378:6379"
+      - "127.0.0.1:${FORWARD_REDIS_PORT:-6381}:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 2s
