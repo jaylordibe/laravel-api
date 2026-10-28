@@ -41,9 +41,10 @@ class ResetRolePermissionsCommand extends Command
         $permissionNames = collect(UserPermission::cases())->map(fn(UserPermission $userPermission) => $userPermission->value)->toArray();
         Permission::whereNotIn('name', $permissionNames)->where('guard_name', UserPermission::getApiGuardName())->delete();
 
-        // Create roles and assign existing permissions
+        // Create roles and make each hold exactly its mapped permissions. Syncing rather than adding
+        // is what lets a permission taken out of the mapping actually leave the role.
         foreach (UserRole::cases() as $userRole) {
-            Role::firstOrCreate(['name' => $userRole->value, 'guard_name' => UserPermission::getApiGuardName()])->givePermissionTo(UserPermission::fromUserRole($userRole));
+            Role::firstOrCreate(['name' => $userRole->value, 'guard_name' => UserPermission::getApiGuardName()])->syncPermissions(UserPermission::fromUserRole($userRole));
         }
 
         // Delete old roles that are not in the list

@@ -553,6 +553,7 @@ migration ordering     before the new build serves traffic
 
 permission sync        yes, as a one-shot job after the migration
 permission command     APP_RUNTIME_MODE=artisan db:seed --class=PermissionsSeeder --force
+permission check       APP_RUNTIME_MODE=artisan app:check-role-permissions (non-zero exit = drift)
 permission ordering    after migration, before the new build serves traffic
 
 scheduler enabled      yes, as a one-shot invocation
@@ -609,13 +610,13 @@ an autoscaled cluster. Whichever it is, the deployment must:
 | Obligation | Why |
 |---|---|
 | Deploy **by digest**, ideally only a digest attested by this repository's `publish-image.yml` (from `main` for production) | A tag moves; an unattested image skipped the gates above |
-| Run, in order: **migrate → sync permissions → start/replace workers → start/replace API → verify** | Syncing permissions is the `permission command` one-shot in the §13 contract (see below) |
+| Run, in order: **migrate → sync permissions → check permissions → start/replace workers → start/replace API → verify** | Syncing and checking permissions are the `permission command` and `permission check` one-shots in the §13 contract (see below); a failed check stops the rollout |
 | Verify with `GET /api/health/ready`: HTTP 200 and `"status":"ready"`, never following a redirect, every attempt time-bounded | A probe that lands on a login page or another host has proved nothing |
 | Generate `APP_KEY` and the Passport keys **once** per environment (§4b) | Regenerating them signs everyone out and makes encrypted data unreadable |
 | On the **first** deploy only, create the Passport personal access client: `APP_RUNTIME_MODE=artisan passport:client --personal --name='API Personal Access Client' --provider=users --no-interaction` | Sign-in issues personal access tokens and fails without one |
 | Never run `db:seed` with `DatabaseSeeder` or `UserSeeder` in production | `UserSeeder` creates test users with a published password |
 
-**About the permission sync.** It is idempotent: it adds any new `UserPermission` case to the roles, and never revokes, so taking a permission away from a role needs an explicit `revokePermissionTo` data change. Skip it and a newly gated action answers 403 for everyone, admins included: it fails closed. `app:reset-role-permissions` also *deletes* permissions and roles missing from the enums, so do not use it on a fork that keeps extra ones in the database.
+**About the permission sync.** It is idempotent and exact: each role is synced to precisely what `UserPermission::fromUserRole` grants, so adding a permission to the mapping grants it and removing one revokes it on the next deploy. Grants made by hand in the database are revoked too — put them in the mapping instead. Skip the sync and a newly gated action answers 403 for everyone, admins included: it fails closed. `app:check-role-permissions` then compares the database with the enums and exits non-zero on any missing or extra permission or grant, so a skipped or failed sync stops the rollout instead of surfacing later as unexplained 403s. `app:reset-role-permissions` additionally *deletes* permission and role rows missing from the enums.
 
 ---
 

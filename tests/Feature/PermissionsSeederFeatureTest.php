@@ -62,4 +62,18 @@ class PermissionsSeederFeatureTest extends TestCase
         }
     }
 
+    #[Test]
+    public function reRunningTheSeederRevokesAGrantTheMappingDoesNotMake(): void
+    {
+        // Stands in for a permission taken out of UserPermission::fromUserRole: the role still holds
+        // it in the database, and the deploy-time sync must take it away.
+        Permission::create(['name' => 'retired_permission', 'guard_name' => UserPermission::getApiGuardName()]);
+        $role = Role::findByName(UserRole::APP_ADMIN->value, UserPermission::getApiGuardName());
+        $role->givePermissionTo('retired_permission');
+
+        $this->seed(PermissionsSeeder::class);
+
+        self::assertNotContains('retired_permission', $this->permissionsOf(UserRole::APP_ADMIN));
+    }
+
 }
