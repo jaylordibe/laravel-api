@@ -323,3 +323,4 @@ updated or recorded as unaffected, with the deploy order stated.
 | Database design worksheet | `docs/database-design.md` |
 | CI, security and image publishing | `.github/workflows/test.yml`, `security.yml`, `security-dast.yml`, `publish-image.yml` |
 | Deployment and runtime modes | `DEPLOYMENT.md` |
+| MCP endpoint (`/api/mcp`), client tokens, adding a tool | `docs/mcp.md` |

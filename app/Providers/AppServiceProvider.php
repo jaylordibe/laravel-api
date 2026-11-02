@@ -120,6 +120,13 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(config('custom.rate_limits.api_docs'))->by('ip:' . $request->ip());
         });
 
+        // The MCP endpoint (/api/mcp). Keyed by address because it runs BEFORE the client token is
+        // checked: an unauthenticated caller has nothing else to key on, and counting first is what
+        // caps token guessing.
+        RateLimiter::for('mcp', function (Request $request) {
+            return Limit::perMinute(config('custom.rate_limits.mcp'))->by('mcp:ip:' . $request->ip());
+        });
+
         // Define the gate permissions. checkPermissionTo denies an unseeded permission instead of throwing.
         foreach (UserPermission::cases() as $permission) {
             Gate::define($permission, function (User $user) use ($permission) {

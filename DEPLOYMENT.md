@@ -228,6 +228,7 @@ correct.
 | `REDIS_USERNAME`, `REDIS_PASSWORD` | If the endpoint is authenticated |
 | `MAILGUN_SECRET` / `MAIL_PASSWORD` | Mail transport |
 | `SYSAD_*`, `APPAD_*` | Seeded admin accounts |
+| `MCP_CLIENT_TOKENS` | Optional. `name:sha256hex` digests of the MCP clients' tokens (never a raw token); unset leaves `/api/mcp` off (404). See `docs/mcp.md`. `MCP_ALLOWED_ORIGINS` (not secret) lists browser origins allowed to call it |
 
 The application reads **plain environment variables**. It has no dependency on
 any secret-manager SDK, which is what lets any platform's secret injection work
@@ -499,7 +500,8 @@ earlier one stops at start on a comma.
 database settings; a downgrading `DB_SSLMODE`; `CACHE_STORE=file` in production;
 Redis TLS with verification disabled or a missing CA file; a storage disk missing
 its required settings or set to public visibility; missing Passport keys; a
-Horizon timeout that meets or exceeds the queue's `retry_after`.
+Horizon timeout that meets or exceeds the queue's `retry_after`; a malformed
+`MCP_CLIENT_TOKENS` or `MCP_ALLOWED_ORIGINS`.
 
 **Warns:** file-based Passport keys; file log channel; `SESSION_DRIVER=file`;
 no proxy trusted (neither `TRUSTED_PROXIES` nor `TRUST_ANY_PROXY`); `DB_SSLMODE=require` without full verification; a local

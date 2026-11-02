@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Utils\McpClientCredentialUtil;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
 
@@ -78,6 +79,7 @@ class CheckConfigCommand extends Command
         $this->checkLogging($isProduction);
         $this->checkProxies($isProduction);
         $this->checkApiDocs($isProduction);
+        $this->checkMcp();
 
         foreach ($this->warnings as $warning) {
             $this->components->warn($warning);
@@ -480,6 +482,25 @@ class CheckConfigCommand extends Command
 
         if ($username === '' || $password === '') {
             $this->warnings[] = 'API_DOCS_ENABLED is true but API_DOCS_USERNAME and/or API_DOCS_PASSWORD is unset, so /docs/api stays 403. An unset half is treated as unconfigured on purpose — an empty credential must never be matchable.';
+        }
+    }
+
+    /**
+     * Check the MCP endpoint's client credentials and allowed origins.
+     *
+     * A malformed value keeps /api/mcp off (AuthenticateMcpClient treats it as no clients), which
+     * would otherwise look like a silently missing integration; failing here names the cause.
+     *
+     * @return void
+     */
+    private function checkMcp(): void
+    {
+        if (McpClientCredentialUtil::parseCredentials((string) config('custom.mcp.client_tokens')) === null) {
+            $this->errors[] = 'MCP_CLIENT_TOKENS must be comma-separated "name:sha256hex" pairs: a lowercase slug name and the 64-character lowercase hex SHA-256 of that client\'s token, with no name or digest repeated.';
+        }
+
+        if (McpClientCredentialUtil::parseOrigins((string) config('custom.mcp.allowed_origins')) === null) {
+            $this->errors[] = 'MCP_ALLOWED_ORIGINS must be comma-separated origins such as "https://app.example.com" (scheme, host and optional port; no path).';
         }
     }
 

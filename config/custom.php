@@ -83,6 +83,37 @@ return [
          * and then browses the rendered result locally.
          */
         'api_docs' => (int) env('RATE_LIMIT_API_DOCS', 20),
+
+        /*
+         * Requests per minute to the MCP endpoint (/api/mcp), keyed by address
+         * and counted before the client token is checked, so token guessing is
+         * capped too. Generous for one automation client.
+         */
+        'mcp' => (int) env('RATE_LIMIT_MCP', 60),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | MCP endpoint
+    |--------------------------------------------------------------------------
+    |
+    | The Model Context Protocol server at /api/mcp (routes/ai.php, app/Mcp,
+    | docs/mcp.md). It is OFF -- answering 404 -- until at least one client
+    | credential is configured.
+    |
+    | client_tokens: comma-separated `name:sha256hex` pairs, one per client; only
+    | the SHA-256 of each client's token, never the token itself. Parsed by
+    | App\Utils\McpClientCredentialUtil; a malformed value keeps the endpoint
+    | off and fails `app:check-config`.
+    |
+    | allowed_origins: exact browser origins allowed to call the endpoint. Empty
+    | refuses every request carrying an `Origin` header; server-side clients
+    | (n8n, Claude Code) send none.
+    |
+    */
+    'mcp' => [
+        'client_tokens' => (string) env('MCP_CLIENT_TOKENS', ''),
+        'allowed_origins' => (string) env('MCP_ALLOWED_ORIGINS', ''),
     ],
 
     /*

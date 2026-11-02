@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Http\Middleware\AuthenticateMcpClient;
 use App\Enums\UserPermission;
 use App\Enums\UserRole;
 use App\Models\User;
@@ -70,7 +71,10 @@ class AccessControlFeatureTest extends TestCase
 
         $unauthenticated = collect(app('router')->getRoutes()->getRoutes())
             ->filter(fn (Route $route): bool => str_starts_with($route->uri(), 'api/'))
-            ->reject(fn (Route $route): bool => in_array('auth:api', $route->gatherMiddleware(), true))
+            // A route is authenticated by Passport (`auth:api`) or, for the MCP endpoint only, by an
+            // MCP client token (AuthenticateMcpClient, covered by McpFeatureTest). Neither is public.
+            ->reject(fn (Route $route): bool => in_array('auth:api', $route->gatherMiddleware(), true)
+                || in_array(AuthenticateMcpClient::class, $route->gatherMiddleware(), true))
             ->flatMap(fn (Route $route): array => collect($route->methods())
                 ->reject(fn (string $method): bool => $method === 'HEAD')
                 ->map(fn (string $method): string => "{$method} {$route->uri()}")
