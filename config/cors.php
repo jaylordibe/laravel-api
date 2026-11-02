@@ -15,7 +15,9 @@ return [
     |
     */
 
-    'paths' => ['api/*', 'sanctum/csrf-cookie'],
+    // The MCP OAuth discovery documents and the endpoints a browser-based MCP client (the MCP Inspector UI)
+    // calls cross-origin. The sign-in and consent pages are navigated to, never fetched, so they are not listed.
+    'paths' => ['api/*', 'sanctum/csrf-cookie', '.well-known/oauth-*', 'oauth/register', 'oauth/token'],
 
     'allowed_methods' => ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
 

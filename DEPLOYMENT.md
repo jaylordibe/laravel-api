@@ -209,7 +209,7 @@ correct.
 | `LOG_CHANNEL=stderr`, `LOG_LEVEL` | Container-native logging |
 | `CACHE_STORE=redis` | **Must not** be `file` when scaled |
 | `QUEUE_CONNECTION=redis` | Horizon only manages Redis queues |
-| `SESSION_DRIVER` | `redis` if anything uses sessions |
+| `SESSION_DRIVER` | `redis` or `database` when scaled: the MCP OAuth sign-in carries a browser session from the sign-in page to the consent page (`docs/mcp.md`). Set `SESSION_SECURE_COOKIE=true` with it |
 | `FILESYSTEM_DISK` | `local` \| `s3` \| `gcs` |
 | `DB_CONNECTION=pgsql`, `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_SSLMODE` | Database |
 | `REDIS_HOST`, `REDIS_PORT`, `REDIS_TLS_ENABLED` | Redis |
@@ -228,7 +228,6 @@ correct.
 | `REDIS_USERNAME`, `REDIS_PASSWORD` | If the endpoint is authenticated |
 | `MAILGUN_SECRET` / `MAIL_PASSWORD` | Mail transport |
 | `SYSAD_*`, `APPAD_*` | Seeded admin accounts |
-| `MCP_CLIENT_TOKENS` | Optional. `name:sha256hex` digests of the MCP clients' tokens (never a raw token); unset leaves `/api/mcp` off (404). See `docs/mcp.md`. `MCP_ALLOWED_ORIGINS` (not secret) lists browser origins allowed to call it |
 
 The application reads **plain environment variables**. It has no dependency on
 any secret-manager SDK, which is what lets any platform's secret injection work
@@ -501,7 +500,8 @@ database settings; a downgrading `DB_SSLMODE`; `CACHE_STORE=file` in production;
 Redis TLS with verification disabled or a missing CA file; a storage disk missing
 its required settings or set to public visibility; missing Passport keys; a
 Horizon timeout that meets or exceeds the queue's `retry_after`; a malformed
-`MCP_CLIENT_TOKENS` or `MCP_ALLOWED_ORIGINS`.
+`MCP_ALLOWED_ORIGINS` or `MCP_OAUTH_REDIRECT_DOMAINS`, or an MCP token lifetime
+outside its range.
 
 **Warns:** file-based Passport keys; file log channel; `SESSION_DRIVER=file`;
 no proxy trusted (neither `TRUSTED_PROXIES` nor `TRUST_ANY_PROXY`); `DB_SSLMODE=require` without full verification; a local
@@ -617,6 +617,7 @@ an autoscaled cluster. Whichever it is, the deployment must:
 | Generate `APP_KEY` and the Passport keys **once** per environment (§4b) | Regenerating them signs everyone out and makes encrypted data unreadable |
 | On the **first** deploy only, create the Passport personal access client: `APP_RUNTIME_MODE=artisan passport:client --personal --name='API Personal Access Client' --provider=users --no-interaction` | Sign-in issues personal access tokens and fails without one |
 | Never run `db:seed` with `DatabaseSeeder` or `UserSeeder` in production | `UserSeeder` creates test users with a published password |
+| When **rolling back** to a release without the MCP OAuth sign-in, revoke every MCP token **once no pod of the newer release is serving** (it keeps issuing tokens until then; or block `/oauth/token` at the edge first): `UPDATE oauth_access_tokens SET revoked = true WHERE client_id IN (SELECT id FROM oauth_clients WHERE grant_types::jsonb ? 'authorization_code');` then `UPDATE oauth_refresh_tokens SET revoked = true WHERE access_token_id IN (SELECT id FROM oauth_access_tokens WHERE revoked);` | Older releases have no `RejectMcpToken`, so a live MCP token would work on the whole REST API. `passport:purge` does not help: it deletes only tokens already revoked or expired |
 
 **About the permission sync.** It is idempotent and exact: each role is synced to precisely what `UserPermission::fromUserRole` grants, so adding a permission to the mapping grants it and removing one revokes it on the next deploy. Grants made by hand in the database are revoked too — put them in the mapping instead. Skip the sync and a newly gated action answers 403 for everyone, admins included: it fails closed. `app:check-role-permissions` then compares the database with the enums and exits non-zero on any missing or extra permission or grant, so a skipped or failed sync stops the rollout instead of surfacing later as unexplained 403s. `app:reset-role-permissions` additionally *deletes* permission and role rows missing from the enums.
 

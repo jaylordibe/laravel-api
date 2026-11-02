@@ -90,6 +90,14 @@ return [
          * capped too. Generous for one automation client.
          */
         'mcp' => (int) env('RATE_LIMIT_MCP', 60),
+
+        /*
+         * Requests per minute, keyed by address, to the MCP OAuth endpoints
+         * (discovery, client registration, authorize, token, the consent
+         * page). Unauthenticated by nature, and registration writes a row per
+         * call. The sign-in form itself uses the `sign-in` limiter.
+         */
+        'oauth' => (int) env('RATE_LIMIT_OAUTH', 30),
     ],
 
     /*
@@ -98,22 +106,29 @@ return [
     |--------------------------------------------------------------------------
     |
     | The Model Context Protocol server at /api/mcp (routes/ai.php, app/Mcp,
-    | docs/mcp.md). It is OFF -- answering 404 -- until at least one client
-    | credential is configured.
-    |
-    | client_tokens: comma-separated `name:sha256hex` pairs, one per client; only
-    | the SHA-256 of each client's token, never the token itself. Parsed by
-    | App\Utils\McpClientCredentialUtil; a malformed value keeps the endpoint
-    | off and fails `app:check-config`.
+    | docs/mcp.md) and the OAuth 2.1 sign-in its clients use (routes/oauth.php,
+    | Passport). Works with nothing configured.
     |
     | allowed_origins: exact browser origins allowed to call the endpoint. Empty
     | refuses every request carrying an `Origin` header; server-side clients
     | (n8n, Claude Code) send none.
     |
+    | oauth.access_token_ttl_minutes: lifetime of an MCP access token.
+    | oauth.refresh_token_ttl_days: lifetime of the refresh token the client
+    | renews it with; each renewal issues a new one with this lifetime.
+    | oauth.redirect_domains: comma-separated https origins a client may
+    | register as its OAuth redirect; empty allows any https origin. Loopback
+    | (http://localhost, 127.0.0.1, [::1]) is always allowed. Parsed and applied
+    | by App\Utils\McpConfigUtil, before laravel/mcp's own registration check.
+    |
     */
     'mcp' => [
-        'client_tokens' => (string) env('MCP_CLIENT_TOKENS', ''),
         'allowed_origins' => (string) env('MCP_ALLOWED_ORIGINS', ''),
+        'oauth' => [
+            'access_token_ttl_minutes' => (int) env('MCP_OAUTH_ACCESS_TOKEN_TTL_MINUTES', 60),
+            'refresh_token_ttl_days' => (int) env('MCP_OAUTH_REFRESH_TOKEN_TTL_DAYS', 30),
+            'redirect_domains' => (string) env('MCP_OAUTH_REDIRECT_DOMAINS', ''),
+        ],
     ],
 
     /*

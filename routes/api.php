@@ -6,6 +6,7 @@ use App\Http\Controllers\ConstantController;
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\JobStatusController;
 use App\Http\Controllers\UserController;
+use App\Http\Middleware\RejectMcpToken;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DeviceTokenController;
 use App\Http\Controllers\ActivityLogController;
@@ -48,7 +49,7 @@ Route::middleware(['throttle:sensitive'])->group(function () {
 });
 
 // Authenticated Routes
-Route::middleware(['auth:api', 'throttle:api'])->group(function () {
+Route::middleware(['auth:api', RejectMcpToken::class, 'throttle:api'])->group(function () {
     // Auth
     Route::post('auth/sign-out', [AuthController::class, 'signOut']);
     Route::post('auth/sign-out-all', [AuthController::class, 'signOutAll']);

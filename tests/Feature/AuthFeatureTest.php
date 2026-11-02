@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Routing\Route as RoutingRoute;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 use Illuminate\Routing\Middleware\ThrottleRequests;
@@ -97,29 +98,42 @@ class AuthFeatureTest extends TestCase
     }
 
     /**
-     * Passport's `/oauth/*` routes stay unregistered (matched by the `passport.` route-name prefix).
+     * Only the Passport routes the MCP OAuth sign-in needs are registered (routes/oauth.php); Passport's own
+     * route file stays off, so its device-code, token-refresh and management routes do not exist.
      */
     #[Test]
-    public function passportHttpRoutesAreNotRegistered(): void
+    public function onlyThePassportRoutesTheMcpSignInNeedsAreRegistered(): void
     {
         $passportRoutes = collect(Route::getRoutes()->getRoutes())
             ->map(fn (RoutingRoute $route): string => (string) $route->getName())
             ->filter(fn (string $name): bool => Str::startsWith($name, 'passport.'))
+            ->sort()
             ->values()
             ->all();
 
-        self::assertSame([], $passportRoutes);
+        self::assertSame([
+            'passport.authorizations.approve',
+            'passport.authorizations.authorize',
+            'passport.authorizations.deny',
+            'passport.token',
+        ], $passportRoutes);
 
-        $this->get('/oauth/authorize')->assertNotFound();
         $this->get('/oauth/device')->assertNotFound();
-        $this->post('/oauth/token', ['grant_type' => 'client_credentials'])
-            ->assertNotFound()
-            ->assertDontSee('grant', false);
+        $this->post('/oauth/token/refresh')->assertNotFound();
+        $this->get('/oauth/tokens')->assertNotFound();
+        $this->get('/oauth/clients')->assertNotFound();
+
+        // The token endpoint now exists, but only the authorization-code and refresh grants of a registered
+        // MCP client lead anywhere: no client here may use client_credentials.
+        $client = DB::table('oauth_clients')->first();
+        $this->post('/oauth/token', ['grant_type' => 'client_credentials', 'client_id' => $client->id, 'client_secret' => 'guess'])
+            ->assertClientError()
+            ->assertJsonMissingPath('access_token');
     }
 
     /**
-     * The token sign-in issues still authenticates once Passport's routes are gone, because
-     * createToken() and the `api` guard never depended on them.
+     * The token sign-in issues authenticates without any Passport HTTP route, because createToken() and
+     * the `api` guard never depended on them.
      */
     #[Test]
     public function signInTokenAuthenticatesWithoutPassportRoutes(): void

@@ -11,9 +11,13 @@ return [
     | authenticating users. This value should correspond with one of your
     | guards that is already present in your "auth" configuration file.
     |
+    | It is the browser session guard the authorize, approve and deny steps of
+    | the MCP OAuth sign-in use (routes/oauth.php), so it must be a stateful
+    | (session) guard. API requests still authenticate with the `api` guard.
+    |
     */
 
-    'guard' => 'api',
+    'guard' => 'web',
 
     /*
     |--------------------------------------------------------------------------

@@ -301,7 +301,7 @@ schedules in `routes/console.php`.
 
 | Consumer | Repository / location | Audience | Owner |
 |---|---|---|---|
-| (none — internal only: starter template with no clients of its own) | | | |
+| application-security-framework | `../application-security-framework` (`.github/workflows/reference-apps.yml`) | Reference-app CI: clones this repo's default branch unpinned, boots it from `.env.example` and scans the generated OpenAPI document (`/docs/api.json`) | jaylordibe |
 
 A fork must replace this row with its real consumers before its first
 contract change. A contract change is done only when every consumer is
@@ -323,4 +323,4 @@ updated or recorded as unaffected, with the deploy order stated.
 | Database design worksheet | `docs/database-design.md` |
 | CI, security and image publishing | `.github/workflows/test.yml`, `security.yml`, `security-dast.yml`, `publish-image.yml` |
 | Deployment and runtime modes | `DEPLOYMENT.md` |
-| MCP endpoint (`/api/mcp`), client tokens, adding a tool | `docs/mcp.md` |
+| MCP endpoint (`/api/mcp`), its OAuth sign-in, adding a tool | `docs/mcp.md` |

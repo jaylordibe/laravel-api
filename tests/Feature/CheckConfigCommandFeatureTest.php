@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use Illuminate\Support\Facades\Artisan;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -42,6 +43,31 @@ class CheckConfigCommandFeatureTest extends TestCase
         // A positive control. Without it, every assertion below could be passing
         // for an unrelated reason.
         self::assertSame(0, Artisan::call('app:check-config'));
+    }
+
+    /**
+     * MCP settings that must stop the container from starting.
+     *
+     * @return array<string, array{0: string, 1: mixed, 2: string}>
+     */
+    public static function invalidMcpSettings(): array
+    {
+        return [
+            'a malformed allowed origin' => ['custom.mcp.allowed_origins', 'https://a.example.com/app', 'MCP_ALLOWED_ORIGINS'],
+            'a plain-http redirect domain' => ['custom.mcp.oauth.redirect_domains', 'http://n8n.example.com', 'MCP_OAUTH_REDIRECT_DOMAINS'],
+            'a too-short access token lifetime' => ['custom.mcp.oauth.access_token_ttl_minutes', 1, 'MCP_OAUTH_ACCESS_TOKEN_TTL_MINUTES'],
+            'a too-long refresh token lifetime' => ['custom.mcp.oauth.refresh_token_ttl_days', 365, 'MCP_OAUTH_REFRESH_TOKEN_TTL_DAYS'],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('invalidMcpSettings')]
+    public function itFailsOnAnInvalidMcpSetting(string $key, mixed $value, string $variable): void
+    {
+        config()->set($key, $value);
+
+        self::assertSame(1, Artisan::call('app:check-config'));
+        self::assertStringContainsString($variable, Artisan::output());
     }
 
     #[Test]

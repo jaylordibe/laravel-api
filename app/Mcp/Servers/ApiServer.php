@@ -3,6 +3,7 @@
 namespace App\Mcp\Servers;
 
 use App\Mcp\Tools\EchoTool;
+use App\Mcp\Tools\GetCurrentUserTool;
 use App\Mcp\Tools\GetServerInfoTool;
 use App\Mcp\Tools\PingTool;
 use Laravel\Mcp\Server;
@@ -27,7 +28,7 @@ class ApiServer extends Server
      *
      * @var string
      */
-    public const string VERSION = '1.0.0';
+    public const string VERSION = '1.1.0';
 
     /**
      * The tools, in `tools/list` order (the spec asks that order to be deterministic).
@@ -38,6 +39,7 @@ class ApiServer extends Server
         PingTool::class,
         EchoTool::class,
         GetServerInfoTool::class,
+        GetCurrentUserTool::class,
     ];
 
     /**

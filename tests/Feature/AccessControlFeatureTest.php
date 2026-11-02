@@ -2,7 +2,8 @@
 
 namespace Tests\Feature;
 
-use App\Http\Middleware\AuthenticateMcpClient;
+use App\Http\Middleware\EnsureMcpToken;
+use App\Http\Middleware\RejectMcpToken;
 use App\Enums\UserPermission;
 use App\Enums\UserRole;
 use App\Models\User;
@@ -72,9 +73,9 @@ class AccessControlFeatureTest extends TestCase
         $unauthenticated = collect(app('router')->getRoutes()->getRoutes())
             ->filter(fn (Route $route): bool => str_starts_with($route->uri(), 'api/'))
             // A route is authenticated by Passport (`auth:api`) or, for the MCP endpoint only, by an
-            // MCP client token (AuthenticateMcpClient, covered by McpFeatureTest). Neither is public.
+            // MCP access token (EnsureMcpToken, covered by McpFeatureTest). Neither is public.
             ->reject(fn (Route $route): bool => in_array('auth:api', $route->gatherMiddleware(), true)
-                || in_array(AuthenticateMcpClient::class, $route->gatherMiddleware(), true))
+                || in_array(EnsureMcpToken::class, $route->gatherMiddleware(), true))
             ->flatMap(fn (Route $route): array => collect($route->methods())
                 ->reject(fn (string $method): bool => $method === 'HEAD')
                 ->map(fn (string $method): string => "{$method} {$route->uri()}")
@@ -84,6 +85,52 @@ class AccessControlFeatureTest extends TestCase
             ->all();
 
         self::assertSame(collect($publicRoutes)->sort()->values()->all(), $unauthenticated);
+    }
+
+    #[Test]
+    public function everyRestRouteBehindAuthApiRefusesAnMcpToken(): void
+    {
+        // Passport's guard accepts a token from any client, so a REST route that lost RejectMcpToken would
+        // accept the token an MCP client was given for tool calls. This catches the omission.
+        $missing = collect(app('router')->getRoutes()->getRoutes())
+            ->filter(fn (Route $route): bool => str_starts_with($route->uri(), 'api/')
+                && in_array('auth:api', $route->gatherMiddleware(), true))
+            ->reject(fn (Route $route): bool => in_array(RejectMcpToken::class, $route->gatherMiddleware(), true))
+            ->map(fn (Route $route): string => $route->uri())
+            ->values()
+            ->all();
+
+        self::assertSame([], $missing);
+    }
+
+    #[Test]
+    public function theOAuthSurfaceAtTheRootIsExactlyTheMcpSignIn(): void
+    {
+        // The MCP OAuth sign-in is the only surface outside /api besides the health check and the root
+        // redirect. Anything else appearing at the root fails here until it is listed.
+        $oauthRoutes = collect(app('router')->getRoutes()->getRoutes())
+            ->filter(fn (Route $route): bool => str_starts_with($route->uri(), 'oauth/')
+                || str_starts_with($route->uri(), '.well-known/'))
+            ->flatMap(fn (Route $route): array => collect($route->methods())
+                ->reject(fn (string $method): bool => $method === 'HEAD')
+                ->map(fn (string $method): string => "{$method} {$route->uri()}")
+                ->all())
+            ->sort()
+            ->values()
+            ->all();
+
+        self::assertSame([
+            'DELETE oauth/authorize',
+            'GET .well-known/oauth-authorization-server',
+            'GET .well-known/oauth-protected-resource',
+            'GET .well-known/oauth-protected-resource/{path}',
+            'GET oauth/authorize',
+            'GET oauth/login',
+            'POST oauth/authorize',
+            'POST oauth/login',
+            'POST oauth/register',
+            'POST oauth/token',
+        ], $oauthRoutes);
     }
 
     #[Test]

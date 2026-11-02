@@ -7,6 +7,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -15,6 +16,9 @@ return Application::configure(basePath: dirname(__DIR__))
         api: __DIR__ . '/../routes/api.php',
         commands: __DIR__ . '/../routes/console.php',
         health: '/up',
+        then: function () {
+            Route::group([], base_path('routes/oauth.php'));
+        },
     )
     ->withMiddleware(function (Middleware $middleware) {
         // Prevent from redirecting to login page (which triggers RouteNotFoundException)
@@ -56,6 +60,13 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions) {
         $exceptions->render(function (AuthenticationException $e, $request) {
+            // The MCP OAuth flow is the one browser-facing surface: a browser that is not signed in is sent to
+            // its sign-in page, which returns it to the authorization request afterwards. Every other route
+            // keeps the API's JSON 401.
+            if ($request->is('oauth/authorize') && $request->isMethod('GET')) {
+                return redirect()->guest(route('mcp.oauth.login'));
+            }
+
             return ResponseUtil::unauthorized();
         });
 

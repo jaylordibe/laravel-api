@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Utils\McpClientCredentialUtil;
+use App\Utils\McpConfigUtil;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
 
@@ -272,7 +272,7 @@ class CheckConfigCommand extends Command
         }
 
         if (config('session.driver') === 'file') {
-            $this->warnings[] = "SESSION_DRIVER is 'file' in production, which is per-container. Harmless for a pure token API; wrong if anything relies on sessions.";
+            $this->warnings[] = "SESSION_DRIVER is 'file' in production, which is per-container. The MCP OAuth sign-in carries a browser session from its sign-in page to its consent page, so with more than one replica the flow fails intermittently. Use 'database' or 'redis'.";
         }
     }
 
@@ -486,21 +486,33 @@ class CheckConfigCommand extends Command
     }
 
     /**
-     * Check the MCP endpoint's client credentials and allowed origins.
+     * Check the MCP endpoint's settings: allowed origins, the OAuth redirect allowlist and token lifetimes.
      *
-     * A malformed value keeps /api/mcp off (AuthenticateMcpClient treats it as no clients), which
-     * would otherwise look like a silently missing integration; failing here names the cause.
+     * A malformed origin list would silently refuse or admit browsers, and a malformed redirect allowlist
+     * would silently allow any https host; failing here names the cause before the container serves.
      *
      * @return void
      */
     private function checkMcp(): void
     {
-        if (McpClientCredentialUtil::parseCredentials((string) config('custom.mcp.client_tokens')) === null) {
-            $this->errors[] = 'MCP_CLIENT_TOKENS must be comma-separated "name:sha256hex" pairs: a lowercase slug name and the 64-character lowercase hex SHA-256 of that client\'s token, with no name or digest repeated.';
+        if (McpConfigUtil::parseOrigins((string) config('custom.mcp.allowed_origins')) === null) {
+            $this->errors[] = 'MCP_ALLOWED_ORIGINS must be comma-separated origins such as "https://app.example.com" (scheme, host and optional port; no path).';
         }
 
-        if (McpClientCredentialUtil::parseOrigins((string) config('custom.mcp.allowed_origins')) === null) {
-            $this->errors[] = 'MCP_ALLOWED_ORIGINS must be comma-separated origins such as "https://app.example.com" (scheme, host and optional port; no path).';
+        if (McpConfigUtil::parseRedirectOrigins((string) config('custom.mcp.oauth.redirect_domains')) === null) {
+            $this->errors[] = 'MCP_OAUTH_REDIRECT_DOMAINS must be comma-separated https origins such as "https://claude.ai" (scheme, host and optional port; no path).';
+        }
+
+        $accessMinutes = (int) config('custom.mcp.oauth.access_token_ttl_minutes');
+
+        if ($accessMinutes < 5 || $accessMinutes > 1440) {
+            $this->errors[] = 'MCP_OAUTH_ACCESS_TOKEN_TTL_MINUTES must be between 5 and 1440.';
+        }
+
+        $refreshDays = (int) config('custom.mcp.oauth.refresh_token_ttl_days');
+
+        if ($refreshDays < 1 || $refreshDays > 90) {
+            $this->errors[] = 'MCP_OAUTH_REFRESH_TOKEN_TTL_DAYS must be between 1 and 90.';
         }
     }
 

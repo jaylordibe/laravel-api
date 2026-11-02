@@ -25,7 +25,7 @@ use Symfony\Component\HttpFoundation\Response;
  * parse errors keep theirs. Responses that are not JSON-RPC error bodies (this API's own 401, 403,
  * 404 and 429) are never touched.
  *
- * Registered after AuthenticateMcpClient in routes/ai.php, so it only ever sees authenticated
+ * Registered after EnsureMcpToken in routes/ai.php, so it only ever sees authenticated
  * requests, and before laravel/mcp's own route middleware, so it sees the final MCP response.
  */
 class NormalizeLegacyMcpErrorStatus

@@ -3,17 +3,20 @@
 namespace Tests\Feature;
 
 use App\Mcp\Servers\ApiServer;
+use App\Models\User;
 use App\Mcp\Tools\EchoTool;
 use App\Mcp\Tools\GetServerInfoTool;
 use App\Mcp\Tools\PingTool;
 use Illuminate\Testing\TestResponse;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\SignsInMcpClients;
 use Tests\TestCase;
 
 /**
- * Covers the MCP endpoint at /api/mcp: routes/ai.php, App\Http\Middleware\AuthenticateMcpClient,
- * App\Mcp\Servers\ApiServer and its three tools.
+ * Covers the MCP endpoint at /api/mcp: routes/ai.php, App\Http\Middleware\EnsureMcpToken,
+ * App\Mcp\Servers\ApiServer and its tools. Requests carry an access token from the MCP OAuth sign-in
+ * (Tests\SignsInMcpClients); that flow, and every way the token stops working, is McpOAuthFeatureTest.
  *
  * The protocol is exercised through the full HTTP stack with real JSON-RPC, in both protocol eras:
  * the 2025 `initialize` handshake (what n8n and most clients speak today) and the 2026-07-28
@@ -27,6 +30,8 @@ use Tests\TestCase;
 class McpFeatureTest extends TestCase
 {
 
+    use SignsInMcpClients;
+
     /**
      * The endpoint.
      *
@@ -35,18 +40,11 @@ class McpFeatureTest extends TestCase
     private string $endpoint = '/api/mcp';
 
     /**
-     * The n8n client's raw token, generated per test.
+     * An MCP access token for a signed-in user, obtained per test.
      *
      * @var string
      */
     private string $n8nToken;
-
-    /**
-     * The Claude Code client's raw token, generated per test.
-     *
-     * @var string
-     */
-    private string $claudeCodeToken;
 
     /**
      * The one browser origin allowed in these tests.
@@ -56,7 +54,7 @@ class McpFeatureTest extends TestCase
     private string $allowedOrigin = 'https://allowed.example.com';
 
     /**
-     * Configure two MCP clients by the digests of fresh random tokens.
+     * Sign a client in for a fresh user and allow one browser origin.
      *
      * @return void
      */
@@ -64,13 +62,8 @@ class McpFeatureTest extends TestCase
     {
         parent::setUp();
 
-        $this->n8nToken = bin2hex(random_bytes(32));
-        $this->claudeCodeToken = bin2hex(random_bytes(32));
-
-        config([
-            'custom.mcp.client_tokens' => 'n8n:' . hash('sha256', $this->n8nToken) . ',claude-code:' . hash('sha256', $this->claudeCodeToken),
-            'custom.mcp.allowed_origins' => $this->allowedOrigin,
-        ]);
+        config(['custom.mcp.allowed_origins' => $this->allowedOrigin]);
+        $this->n8nToken = $this->signInMcpClient(User::factory()->create()->email)['access_token'];
     }
 
     /**
@@ -195,12 +188,12 @@ class McpFeatureTest extends TestCase
     }
 
     #[Test]
-    public function discoversExactlyTheThreeToolsInAStableOrderWithSchemas(): void
+    public function discoversExactlyTheFourToolsInAStableOrderWithSchemas(): void
     {
         $response = $this->legacyCall('tools/list')->assertOk();
 
         $tools = $response->json('result.tools');
-        self::assertSame(['ping', 'echo', 'get_server_info'], array_column($tools, 'name'));
+        self::assertSame(['ping', 'echo', 'get_server_info', 'get_current_user'], array_column($tools, 'name'));
 
         foreach ($tools as $tool) {
             self::assertNotEmpty($tool['description']);
@@ -403,9 +396,11 @@ class McpFeatureTest extends TestCase
     }
 
     #[Test]
-    public function acceptsEachConfiguredClientWithItsOwnToken(): void
+    public function acceptsEachSignedInClientWithItsOwnToken(): void
     {
-        $this->rpc($this->initializeMessage(), ['Authorization' => 'Bearer ' . $this->claudeCodeToken])
+        $secondToken = $this->signInMcpClient(User::factory()->create()->email)['access_token'];
+
+        $this->rpc($this->initializeMessage(), ['Authorization' => 'Bearer ' . $secondToken])
             ->assertOk()
             ->assertJsonPath('result.serverInfo.name', config('app.name'));
     }
@@ -415,7 +410,11 @@ class McpFeatureTest extends TestCase
     {
         $response = $this->rpc($this->initializeMessage())->assertUnauthorized();
 
-        self::assertStringStartsWith('Bearer ', (string) $response->headers->get('WWW-Authenticate'));
+        // Where to sign in (RFC 9728 §5.1): what starts a client's OAuth flow.
+        self::assertSame(
+            'Bearer realm="mcp", resource_metadata="' . url('/.well-known/oauth-protected-resource/api/mcp') . '"',
+            $response->headers->get('WWW-Authenticate')
+        );
     }
 
     /**
@@ -440,12 +439,12 @@ class McpFeatureTest extends TestCase
     }
 
     #[Test]
-    public function refusesTheConfiguredDigestPresentedAsTheToken(): void
+    public function refusesATruncatedToken(): void
     {
-        $response = $this->rpc($this->initializeMessage(), ['Authorization' => 'Bearer ' . hash('sha256', $this->n8nToken)]);
+        $response = $this->rpc($this->initializeMessage(), ['Authorization' => 'Bearer ' . substr($this->n8nToken, 0, -1)]);
 
         $response->assertUnauthorized();
-        self::assertStringContainsString('error="invalid_token"', (string) $response->headers->get('WWW-Authenticate'));
+        self::assertStringContainsString('resource_metadata=', (string) $response->headers->get('WWW-Authenticate'));
     }
 
     #[Test]
@@ -489,22 +488,6 @@ class McpFeatureTest extends TestCase
             'Authorization' => 'Bearer ' . $this->n8nToken,
             'Origin' => $this->allowedOrigin,
         ])->assertOk();
-    }
-
-    #[Test]
-    public function answers404WhenNoClientIsConfigured(): void
-    {
-        config(['custom.mcp.client_tokens' => '']);
-
-        $this->rpc($this->initializeMessage(), ['Authorization' => 'Bearer ' . $this->n8nToken])->assertNotFound();
-    }
-
-    #[Test]
-    public function answers404WhenTheClientListIsMalformed(): void
-    {
-        config(['custom.mcp.client_tokens' => 'n8n:not-a-sha256-digest']);
-
-        $this->rpc($this->initializeMessage(), ['Authorization' => 'Bearer ' . $this->n8nToken])->assertNotFound();
     }
 
     #[Test]

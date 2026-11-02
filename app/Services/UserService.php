@@ -20,6 +20,7 @@ use App\Repositories\UserRepository;
 use App\Repositories\UserRoleRepository;
 use App\Utils\AppUtil;
 use App\Utils\FileUtil;
+use App\Utils\McpSignInUtil;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\UploadedFile;
@@ -31,6 +32,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
+use Laravel\Passport\AuthCode;
 use Laravel\Passport\RefreshToken;
 use Throwable;
 
@@ -66,7 +68,14 @@ class UserService
             }
 
             $tokens->update(['revoked' => true]);
+
+            // Authorization codes not yet redeemed (the MCP OAuth flow) die too: one issued just before the
+            // revocation could otherwise be exchanged afterwards for a token the user never meant to keep.
+            AuthCode::query()->where('user_id', $user->id)->where('revoked', false)->update(['revoked' => true]);
         });
+
+        // A sign-in still waiting on the MCP consent page cannot be reached from here; this lets it be refused.
+        McpSignInUtil::recordRevocation($user->id);
     }
 
     /**
@@ -335,15 +344,24 @@ class UserService
     }
 
     /**
-     * Delete user.
+     * Delete user, revoking every token and pending authorization code first.
      *
      * @param int $id
      *
      * @return bool
      * @throws BadRequestException
+     * @throws Throwable
      */
     public function delete(int $id): bool
     {
+        $user = $this->userRepository->findById($id);
+
+        // A deleted account's tokens already fail (the guard cannot load the user), but a refresh token would
+        // still be exchanged for new ones; revoking them makes the end of access explicit everywhere.
+        if ($user !== null) {
+            $this->revokeAllUserTokens($user);
+        }
+
         $isDeleted = $this->userRepository->delete($id);
 
         if (!$isDeleted) {

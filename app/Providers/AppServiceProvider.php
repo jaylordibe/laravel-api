@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use App\Enums\UserPermission;
 use App\Models\User;
+use App\Repositories\SingleUseAuthCodeRepository;
+use App\Repositories\SingleUseRefreshTokenRepository;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -12,6 +14,8 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Passport\Bridge\AuthCodeRepository;
+use Laravel\Passport\Bridge\RefreshTokenRepository;
 use Laravel\Passport\Passport;
 
 class AppServiceProvider extends ServiceProvider
@@ -20,11 +24,16 @@ class AppServiceProvider extends ServiceProvider
     /**
      * Register any application services.
      *
-     * Passport's `/oauth/*` routes are not registered: sign-in issues tokens with `createToken()`.
+     * Passport's own route file is not registered: REST sign-in issues tokens with `createToken()`, and the
+     * MCP OAuth flow registers only the Passport routes it needs (routes/oauth.php).
      */
     public function register(): void
     {
         Passport::ignoreRoutes();
+
+        // Codes and refresh tokens are single-use under concurrency, not only in sequence.
+        $this->app->bind(AuthCodeRepository::class, SingleUseAuthCodeRepository::class);
+        $this->app->bind(RefreshTokenRepository::class, SingleUseRefreshTokenRepository::class);
     }
 
     /**
@@ -35,9 +44,10 @@ class AppServiceProvider extends ServiceProvider
         // Disable the wrapping of the outermost resource
         JsonResource::withoutWrapping();
 
-        // OAuth grant tokens (unused while /oauth/* routes are off).
-        Passport::tokensExpireIn(now()->addHours(8));
-        Passport::refreshTokensExpireIn(now()->addDays(30));
+        // MCP OAuth tokens (routes/oauth.php): the only tokens issued through an authorization code.
+        Passport::tokensExpireIn(now()->addMinutes(config('custom.mcp.oauth.access_token_ttl_minutes')));
+        Passport::refreshTokensExpireIn(now()->addDays(config('custom.mcp.oauth.refresh_token_ttl_days')));
+        Passport::authorizationView('mcp.authorize');
         // The reset link opens the client app, which posts the token back to /api/reset-password.
         ResetPassword::createUrlUsing(fn (User $user, string $token): string => config('custom.app_frontend_url')
             . '/reset-password?' . http_build_query(['token' => $token, 'email' => $user->getEmailForPasswordReset()]));
@@ -125,6 +135,12 @@ class AppServiceProvider extends ServiceProvider
         // caps token guessing.
         RateLimiter::for('mcp', function (Request $request) {
             return Limit::perMinute(config('custom.rate_limits.mcp'))->by('mcp:ip:' . $request->ip());
+        });
+
+        // The MCP OAuth endpoints (discovery, registration, authorize, token, consent), keyed by address:
+        // unauthenticated by nature, and every registration writes a row. The sign-in form uses `sign-in`.
+        RateLimiter::for('oauth', function (Request $request) {
+            return Limit::perMinute(config('custom.rate_limits.oauth'))->by('oauth:ip:' . $request->ip());
         });
 
         // Define the gate permissions. checkPermissionTo denies an unseeded permission instead of throwing.
