@@ -22,7 +22,7 @@
 # and 6379, which is what DB_PORT and REDIS_PORT in .env describe.
 services:
   app-api:
-    image: jaylordibe/laravel-php:8.5@sha256:e22920797203c594ba3b684be17241d56774de8c575b731dc127a0fd4b115b0c
+    image: jaylordibe/laravel-php:8.5@sha256:b52788fca7565b2dfdfd6b35acc8d0b0f81b7d4e58d78e1c9e018421bf7f1287
     container_name: ${SERVICE_NAME}-api
     restart: unless-stopped
     tty: true
