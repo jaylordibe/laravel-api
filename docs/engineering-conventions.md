@@ -1,4 +1,4 @@
-# Engineering conventions — laravel-api
+# Engineering conventions — laravel-api-starter
 
 Long-form reference moved verbatim from `AGENTS.md`. `AGENTS.md` keeps each
 rule in a line or two; this file keeps the mechanics and the reasons.

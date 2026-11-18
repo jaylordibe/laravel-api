@@ -156,7 +156,7 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 
 ---
 
-# Repository truth — laravel-api
+# Repository truth — laravel-api-starter
 
 Repository truth for every coding agent. Keep it short: only what applies to
 most changes. The reasoning behind each rule lives in

@@ -1,5 +1,5 @@
 {
-    "name": "jaylordibe/laravel-api",
+    "name": "jaylordibe/laravel-api-starter",
     "type": "project",
     "description": "Laravel API starter template: PostgreSQL, Redis/Horizon, Passport, run in Docker.",
     "keywords": ["laravel", "api", "starter", "template", "postgresql", "passport"],
